@@ -116,7 +116,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-white">
+    <div suppressHydrationWarning className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-white">
       
       {/* 🌟 CỘT TRÁI: GALLERY ẢNH CHUẨN NIKE (LUÔN HIỂN THỊ) 🌟 */}
       <div className="lg:col-span-7 lg:pr-10 pt-10 lg:pt-0">
