@@ -25,7 +25,7 @@ class OrderController extends Controller
     {
         // 1. Validate dữ liệu đầu vào
         $validatedData = $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'nullable|exists:users,id', // Cho phép null nếu khách không đăng nhập
             'shipping_address' => 'required|string',
             'items' => 'required|array|min:1',
             'items.*.variant_id' => 'required|exists:product_variants,id',

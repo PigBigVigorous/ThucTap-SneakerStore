@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
         $table->bigIncrements('id'); // ID nội bộ (Dùng để Join)
         $table->string('order_tracking_code')->unique(); // Mã đơn khách hàng thấy (#ORD-99X8)
-        $table->foreignId('user_id')->constrained('users'); // Giả định bảng users đã có
-        
+        $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();        
         $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
         $table->decimal('total_amount', 15, 2);
         $table->text('shipping_address');

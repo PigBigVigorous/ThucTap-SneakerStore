@@ -50,48 +50,49 @@ export default function CheckoutPage() {
     // Gộp địa chỉ theo chuẩn DB hiện tại
     const fullShippingAddress = `Người nhận: ${formData.lastName} ${formData.firstName} - SĐT: ${formData.phone} - Email: ${formData.email || 'Không có'} - Địa chỉ: ${formData.address}`;
 
-    // 🚨 BẮT BUỘC: Lấy thông tin User và Token từ LocalStorage
-    // (Giả sử bạn đang lưu thông tin user đăng nhập với key là 'user')
+    // Lấy thông tin User và Token từ LocalStorage (Nếu có)
     const userString = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     const user = userString ? JSON.parse(userString) : null;
 
-    if (!user || !user.id || !token) {
-      toast.error("Vui lòng đăng nhập lại để đặt hàng!");
-      setIsLoading(false);
-      return;
-    }
+    // 🚨 BỎ ĐOẠN CHẶN ĐĂNG NHẬP Ở ĐÂY 🚨
 
-    // 🚨 TẠO PAYLOAD KHỚP 100% VỚI ORDER CONTROLLER CỦA BẠN
+    // TẠO PAYLOAD (Nếu không có user thì user_id sẽ là null)
     const orderPayload = {
-      user_id: user.id, // Gửi kèm user_id cho Backend
+      user_id: user ? user.id : null, // 🚨 Gửi null nếu là khách vãng lai
       shipping_address: fullShippingAddress,
       items: cart.map(item => ({
-        variant_id: item.variant_id, // Gửi đúng tên 'variant_id'
+        variant_id: item.variant_id,
         quantity: item.quantity
       }))
     };
 
     try {
-      // 💡 Sử dụng API service layer
-      const data = await orderAPI.create(orderPayload, token);
+      // Gọi API service layer (truyền token nếu có, nếu không truyền rỗng)
+      const data = await orderAPI.create(orderPayload, token || "");
 
       if (data.success) {
-        toast.success("Đặt hàng thành công! Cảm ơn bạn.");
+        // Hiển thị mã đơn hàng để khách vãng lai có thể lưu lại tra cứu
+        const trackingCode = data.data?.order_tracking_code || '';
+        toast.success(`Đặt hàng thành công! Mã đơn: ${trackingCode}`, { duration: 4000 });
+        
         clearCart(); // Xóa giỏ hàng
         
-        // Chuyển hướng sang trang Quản lý đơn hàng sau 1.5 giây
+        // 🚨 CHUYỂN HƯỚNG THÔNG MINH
         setTimeout(() => {
-          router.push("/my-orders"); 
-        }, 1500);
+          if (user) {
+            router.push("/my-orders"); // Có tài khoản -> Đi tới quản lý đơn
+          } else {
+            router.push("/"); // Không có tài khoản -> Về trang chủ (hoặc trang Cảm ơn)
+          }
+        }, 2000);
       } else {
-        // Backend báo lỗi (VD: Hết hàng, Validate sai...)
         toast.error(data.message || "Có lỗi xảy ra từ máy chủ.");
         console.error("Lỗi từ backend:", data);
       }
     } catch (error) {
       console.error("Lỗi Network/CORS:", error);
-      toast.error("Không thể kết nối đến máy chủ. Kiểm tra lại Laravel Server.");
+      toast.error("Không thể kết nối đến máy chủ.");
     } finally {
       setIsLoading(false);
     }

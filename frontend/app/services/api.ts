@@ -114,11 +114,19 @@ export const authAPI = {
 
 export const productAPI = {
   // Lấy danh sách sản phẩm
+  // Lấy danh sách sản phẩm
   getAll: async () => {
     const res = await fetch(`${API_URL}/products`, {
       cache: "no-store",
     });
-    if (!res.ok) throw new Error("Lỗi không thể tải dữ liệu");
+    
+    // NẾU CÓ LỖI, IN THẲNG LỖI ĐÓ RA TERMINAL ĐỂ BẮT BỆNH
+    if (!res.ok) {
+      const errorDetails = await res.text();
+      console.error("🚨 CHI TIẾT LỖI TỪ LARAVEL 🚨:", errorDetails);
+      throw new Error("Lỗi không thể tải dữ liệu");
+    }
+    
     return res.json();
   },
 
