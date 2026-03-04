@@ -233,4 +233,30 @@ export const adminAPI = {
     });
     return res.json();
   },
+
+  // Lấy danh sách sản phẩm cho POS
+  getPosProducts: async (token: string, branchId: number = 1, limit: number = 50) => {
+    const res = await fetch(`${API_URL}/admin/pos/products?branch_id=${branchId}&limit=${limit}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    if (!res.ok) throw new Error("Lỗi khi tải danh sách sản phẩm POS");
+    return res.json();
+  },
+
+  // Tạo đơn hàng POS
+  posCreateOrder: async (token: string, data: { items: Array<{ variant_id: number; quantity: number }>; branch_id: number }) => {
+    const res = await fetch(`${API_URL}/admin/pos/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
 };

@@ -15,18 +15,19 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        // 1. Kiểm tra dữ liệu đầu vào
+        // 1. Kiểm tra dữ liệu đầu vào (🚨 Đã bỏ chữ 'confirmed' vì frontend đã check)
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed', // Cần truyền thêm password_confirmation
+            'password' => 'required|string|min:6', 
         ]);
 
         // 2. Tạo User mới trong CSDL
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password), // Mã hóa mật khẩu
+            // 🚨 SỬA LỖI DOUBLE HASHING: Chỉ cần truyền text thẳng, Model User sẽ tự động mã hóa
+            'password' => $request->password, 
         ]);
 
         // 3. Cấp Token cho User vừa tạo
@@ -56,7 +57,7 @@ class AuthController extends Controller
         // 2. Kiểm tra thông tin đăng nhập trong CSDL
         $user = User::where('email', $request->email)->first();
 
-        // Nếu email không tồn tại hoặc sai mật khẩu
+        // 🚨 VẪN DÙNG Hash::check BÌNH THƯỜNG ĐỂ SO SÁNH
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
@@ -64,10 +65,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // 3. Xóa các Token cũ (nếu muốn mỗi tài khoản chỉ đăng nhập 1 thiết bị thì bật dòng này)
-        // $user->tokens()->delete();
-
-        // 4. Cấp Token mới
+        // 3. Cấp Token mới
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

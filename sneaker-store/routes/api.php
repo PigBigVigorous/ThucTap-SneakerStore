@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\Admin\InventoryController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Api\Admin\PosController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Middleware\AdminMiddleware;
 
@@ -21,19 +22,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     // 1. CÁC API DÀNH CHO KHÁCH HÀNG (USER)
     // ==========================================
-    Route::post('/logout', [\App\Http\Controllers\Api\AuthController::class, 'logout']);
+    Route::post('/logout', [AuthController::class, 'logout']);
     
-    Route::get('/user', function (\Illuminate\Http\Request $request) {
+    Route::get('/user', function (Request $request) {
         return response()->json(['success' => true, 'data' => $request->user()]);
     });
 
-    Route::get('/my-orders', [\App\Http\Controllers\Api\OrderController::class, 'myOrders']);
+    Route::get('/my-orders', [OrderController::class, 'myOrders']);
 
 
     // ==========================================
     // 2. 🚨 KHU VỰC DÀNH RIÊNG CHO ADMIN
     // ==========================================
-    Route::middleware(\App\Http\Middleware\AdminMiddleware::class)->prefix('admin')->group(function () {
+    Route::middleware(AdminMiddleware::class)->prefix('admin')->group(function () {
         
         // --- API THỐNG KÊ DOANH THU (Dành cho Dashboard) ---
         Route::get('/statistics', function () {
@@ -64,6 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // --- API QUẢN LÝ ĐƠN HÀNG (Đã được khôi phục) ---
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
+
+        // --- API QUẢN LÝ HỆ THỐNG BÁN HÀNG TẠI QUẦY (POS) ---
+        Route::get('/pos/products', [PosController::class, 'getProducts']);
+        Route::post('/pos/orders', [PosController::class, 'placeOrder']);
     });
 
 });
