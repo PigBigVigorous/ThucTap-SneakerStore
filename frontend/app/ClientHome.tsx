@@ -29,7 +29,7 @@ export default function ClientHome({ initialProducts }: { initialProducts: any[]
             BƯỚC ĐI TỰ TIN <br/><span className="text-red-500">DẪN ĐẦU PHONG CÁCH</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-200 mb-10 font-medium drop-shadow-md">
-            Khám phá bộ sưu tập những đôi Sneaker giới hạn, độc quyền và mới nhất từ các thương hiệu hàng đầu thế giới.
+            Khám phá bộ sưu tập những đôi giày giới hạn, độc quyền và mới nhất từ các thương hiệu hàng đầu thế giới.
           </p>
           
           {/* Thanh tìm kiếm */}

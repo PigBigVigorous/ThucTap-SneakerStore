@@ -174,7 +174,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
 
           {uniqueColors.length > 1 && (
             <div className="py-2">
-              <p className="font-medium text-gray-900 text-base mb-3">Màu sắc: <span className="text-gray-500">{selectedColor?.name}</span></p>
+              
               <div className="flex flex-wrap gap-2.5">
                 {uniqueColors.map((color: any) => {
                   const isSelected = selectedColor?.id === color.id;

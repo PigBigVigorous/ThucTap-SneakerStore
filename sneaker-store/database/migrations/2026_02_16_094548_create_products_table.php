@@ -33,7 +33,7 @@ return new class extends Migration
         $table->foreignId('color_id')->constrained('colors');
         $table->decimal('price', 15, 2); // Giá bán
         $table->integer('current_stock')->default(0); // Cache tồn kho
-        $table->string('variant_image_url')->nullable(); // Ảnh riêng theo màu
+        
         $table->timestamps();
     });
 }
