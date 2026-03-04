@@ -1,0 +1,37 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Branch extends Model
+{
+    protected $table = 'branches';
+
+    protected $fillable = [
+        'name', 'address', 'phone', 'is_active'
+    ];
+
+    public function variantStocks()
+    {
+        return $this->hasMany(VariantBranchStock::class, 'branch_id');
+    }
+
+    // Return transactions where this branch is either source or destination.
+    public function inventoryTransactionsFrom()
+    {
+        return $this->hasMany(InventoryTransaction::class, 'from_branch_id');
+    }
+
+    public function inventoryTransactionsTo()
+    {
+        return $this->hasMany(InventoryTransaction::class, 'to_branch_id');
+    }
+
+    // Helpful combined query (not a relation object) — use when fetching collections.
+    public function inventoryTransactions()
+    {
+        return InventoryTransaction::where('from_branch_id', $this->id)
+            ->orWhere('to_branch_id', $this->id);
+    }
+}

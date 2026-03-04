@@ -9,15 +9,16 @@ class ProductVariant extends Model
     protected $table = 'product_variants';
     
     protected $fillable = [
-        'product_id', 'sku', 'size_id', 'color_id', 
-        'price', 'current_stock', 'variant_image_url'
+        'product_id', 'sku', 'size_id', 'color_id',
+        'price', 'variant_image_url'
     ];
 
     // Ép kiểu dữ liệu để đảm bảo an toàn khi tính toán
     protected $casts = [
         'price' => 'decimal:2',
-        'current_stock' => 'integer',
     ];
+
+    protected $appends = ['total_stock'];
 
     // Quan hệ: Thuộc về 1 Sản phẩm cha
     public function product()
@@ -47,5 +48,16 @@ class ProductVariant extends Model
     public function purchaseOrderDetails()
     {
         return $this->hasMany(PurchaseOrderDetail::class, 'variant_id');
+    }
+
+    public function branchStocks()
+    {
+        return $this->hasMany(VariantBranchStock::class, 'variant_id');
+    }
+
+    public function getTotalStockAttribute()
+    {
+        // Sum stock across all branch stocks. Use DB-side aggregation for efficiency.
+        return (int) $this->branchStocks()->sum('stock');
     }
 }
