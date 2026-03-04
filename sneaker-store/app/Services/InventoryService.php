@@ -7,18 +7,26 @@ use Illuminate\Support\Str;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductVariant;
+use App\Models\VariantBranchStock;
 use App\Models\InventoryTransaction;
 use Exception;
 
 class InventoryService
 {
     /**
-     * Hàm xử lý đặt hàng và trừ kho an toàn
+     * Hàm xử lý đặt hàng và trừ kho an toàn (Multi-warehouse support)
+     * 
+     * @param int $userId
+     * @param string $shippingAddress
+     * @param array $items
+     * @param int $saleschannelId
+     * @param int $branchId
+     * @return Order
      */
-    public function placeOrder($userId, $shippingAddress, $items)
+    public function placeOrder($userId, $shippingAddress, $items, $saleschannelId = null, $branchId = null)
     {
         // Bắt đầu Transaction: Nếu có bất kỳ lỗi nào (throw Exception), tự động Rollback toàn bộ DB.
-        return DB::transaction(function () use ($userId, $shippingAddress, $items) {
+        return DB::transaction(function () use ($userId, $shippingAddress, $items, $saleschannelId, $branchId) {
             
             $totalAmount = 0;
 
@@ -29,6 +37,8 @@ class InventoryService
                 'shipping_address' => $shippingAddress,
                 'total_amount' => 0, 
                 'status' => 'pending',
+                'sales_channel_id' => $saleschannelId,
+                'branch_id' => $branchId,
             ]);
 
             // 2. Lặp qua từng sản phẩm khách mua
@@ -41,14 +51,23 @@ class InventoryService
                     throw new Exception("Sản phẩm (Biến thể ID: {$item['variant_id']}) không tồn tại.");
                 }
 
-                // 3. Kiểm tra tồn kho
-                if ($variant->current_stock < $item['quantity']) {
-                    throw new Exception("Sản phẩm {$variant->sku} không đủ số lượng. Tồn kho hiện tại: {$variant->current_stock}");
+                // 3. Kiểm tra tồn kho tại chi nhánh
+                $branchStock = VariantBranchStock::where('variant_id', $variant->id)
+                    ->where('branch_id', $branchId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$branchStock) {
+                    throw new Exception("Sản phẩm {$variant->sku} không có tồn kho tại chi nhánh này.");
                 }
 
-                // 4. Trừ tồn kho và lưu lại
-                $variant->current_stock -= $item['quantity'];
-                $variant->save();
+                if ($branchStock->stock < $item['quantity']) {
+                    throw new Exception("Sản phẩm {$variant->sku} không đủ số lượng. Tồn kho tại chi nhánh: {$branchStock->stock}");
+                }
+
+                // 4. Trừ tồn kho chi nhánh
+                $branchStock->stock -= $item['quantity'];
+                $branchStock->save();
 
                 // 5. Tính tiền
                 $itemTotal = $variant->price * $item['quantity'];
@@ -66,6 +85,7 @@ class InventoryService
                 InventoryTransaction::create([
                     'product_variant_id' => $variant->id,
                     'transaction_type' => 'SALE',
+                    'from_branch_id' => $branchId, // Xuất từ chi nhánh này
                     'reference_id' => $order->id, // Trỏ về ID đơn hàng
                     'quantity_change' => -$item['quantity'], // Số âm vì là bán ra
                     'note' => "Xuất bán cho đơn hàng: " . $order->order_tracking_code,
@@ -79,6 +99,44 @@ class InventoryService
 
             // Nếu chạy đến đây mà không có lỗi gì, tự động Commit vào DB.
             return $order;
+        });
+    }
+
+    /**
+     * Hàm xử lý hủy đơn hàng và nhập stock lại
+     * 
+     * @param Order $order
+     * @return void
+     */
+    public function cancelOrder(Order $order)
+    {
+        return DB::transaction(function () use ($order) {
+            // Lặp qua các sản phẩm trong đơn hàng
+            foreach ($order->items as $item) {
+                // Tăng lại stock tại chi nhánh
+                $branchStock = VariantBranchStock::where('variant_id', $item->product_variant_id)
+                    ->where('branch_id', $order->branch_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($branchStock) {
+                    $branchStock->stock += $item->quantity;
+                    $branchStock->save();
+                }
+
+                // Log giao dịch hoàn kho
+                InventoryTransaction::create([
+                    'product_variant_id' => $item->product_variant_id,
+                    'transaction_type' => 'RESTOCK',
+                    'to_branch_id' => $order->branch_id, // Nhập lại vào chi nhánh này
+                    'reference_id' => $order->id,
+                    'quantity_change' => $item->quantity, // Số dương vì nhập lại
+                    'note' => "Hoàn kho do hủy đơn hàng: " . $order->order_tracking_code,
+                    'created_at' => now(),
+                ]);
+            }
+
+            return true;
         });
     }
 }
