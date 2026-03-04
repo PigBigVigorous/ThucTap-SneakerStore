@@ -32,8 +32,11 @@ return new class extends Migration
 
         Schema::create('colors', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // VD: Red, Black
-            $table->string('hex_code')->nullable(); // VD: #FFFFFF
+            $table->string('name');
+            // 🚨 THÊM DÒNG NÀY VÀO (Cho phép null nếu có màu không cần base_color)
+            $table->string('base_color')->nullable(); 
+            $table->string('hex_code')->nullable();
+            $table->timestamps();
         });
     }
 

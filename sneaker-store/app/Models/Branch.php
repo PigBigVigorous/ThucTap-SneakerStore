@@ -34,4 +34,10 @@ class Branch extends Model
         return InventoryTransaction::where('from_branch_id', $this->id)
             ->orWhere('to_branch_id', $this->id);
     }
+
+    // Quan hệ: Có nhiều đơn hàng được xử lý/giao hàng từ chi nhánh này
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'branch_id');
+    }
 }

@@ -8,7 +8,7 @@ class Order extends Model
 {
     protected $fillable = [
         'order_tracking_code', 'user_id', 'status', 
-        'total_amount', 'shipping_address'
+        'total_amount', 'shipping_address', 'sales_channel_id', 'branch_id', 'cashier_id'
     ];
 
     protected $casts = [
@@ -19,6 +19,24 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // Quan hệ: Thuộc về 1 Sales Channel
+    public function salesChannel()
+    {
+        return $this->belongsTo(SalesChannel::class, 'sales_channel_id');
+    }
+
+    // Quan hệ: Thuộc về 1 Chi nhánh (Branch)
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    // Quan hệ: Thuộc về 1 Nhân viên (Cashier)
+    public function cashier()
+    {
+        return $this->belongsTo(User::class, 'cashier_id');
     }
 
     // Quan hệ: Có nhiều chi tiết đơn hàng (Sản phẩm trong đơn)

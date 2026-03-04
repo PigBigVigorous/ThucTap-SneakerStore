@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str; // <-- ĐÃ THÊM THƯ VIỆN STR ĐỂ XỬ LÝ TIẾNG VIỆT
+use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Brand;
 use App\Models\Category;
@@ -16,37 +16,62 @@ use App\Models\Supplier;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\InventoryTransaction;
+use App\Models\Branch;
+use App\Models\VariantBranchStock;
+// 🚨 IMPORT MODEL KÊNH BÁN HÀNG (PHASE 2)
+use App\Models\SalesChannel;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
         // 1. TẠO USERS
-        User::create([
+        $admin = User::create([
             'name' => 'Quản trị viên',
             'email' => 'admin@sneaker.com',
             'password' => Hash::make('password123'),
         ]);
 
-        User::create([
+        $customer = User::create([
             'name' => 'Khách hàng VIP',
             'email' => 'khachhang@gmail.com',
             'password' => Hash::make('password123'),
         ]);
 
-        // 2. TẠO BRANDS (Thương hiệu)
+        // 2. TẠO CHI NHÁNH / KHO HÀNG
+        $mainBranch = Branch::create([
+            'name' => 'Kho Tổng TP.HCM',
+            'address' => '123 Đường ABC, Quận 1, TP.HCM',
+            'phone' => '0909123456',
+            'is_active' => true
+        ]);
+
+        // 🌟 3. TẠO KÊNH BÁN HÀNG (PHASE 2 - OMNICHANNEL)
+        $webChannel = SalesChannel::create([
+            'name' => 'Website Chính Thức',
+            'type' => 'online',
+            'is_active' => true
+        ]);
+
+        $posChannel = SalesChannel::create([
+            'name' => 'POS - Cửa Hàng Quận 1',
+            'type' => 'offline',
+            'is_active' => true
+        ]);
+
+        // 4. TẠO BRANDS
         $nike = Brand::create(['name' => 'Nike', 'description' => 'Just do it.']);
         $adidas = Brand::create(['name' => 'Adidas', 'description' => 'Impossible is nothing.']);
         $vans = Brand::create(['name' => 'Vans', 'description' => 'Off the wall.']);
 
-        // 3. TẠO CATEGORIES (Danh mục - Có phân cấp)
+        // 5. TẠO CATEGORIES
         $catNam = Category::create(['name' => 'Giày Nam']);
         $catNu = Category::create(['name' => 'Giày Nữ']);
         
         $catSneakerNam = Category::create(['name' => 'Sneaker Nam', 'parent_id' => $catNam->id]);
         $catChayBo = Category::create(['name' => 'Giày Chạy Bộ', 'parent_id' => $catNam->id]);
 
-        // 4. TẠO SIZES & COLORS (Master Data)
+        // 6. TẠO SIZES & COLORS
         $sizes = [
             Size::create(['name' => '39', 'code' => 'EU-39']),
             Size::create(['name' => '40', 'code' => 'EU-40']),
@@ -55,12 +80,12 @@ class DatabaseSeeder extends Seeder
         ];
 
         $colors = [
-            Color::create(['name' => 'Trắng', 'hex_code' => '#FFFFFF']),
-            Color::create(['name' => 'Đen', 'hex_code' => '#000000']),
-            Color::create(['name' => 'Đỏ', 'hex_code' => '#FF0000']),
+            Color::create(['name' => 'Trắng', 'base_color' => 'Trắng', 'hex_code' => '#FFFFFF']),
+            Color::create(['name' => 'Đen', 'base_color' => 'Đen', 'hex_code' => '#000000']),
+            Color::create(['name' => 'Đỏ', 'base_color' => 'Đỏ', 'hex_code' => '#FF0000']),
         ];
 
-        // 5. TẠO NHÀ CUNG CẤP & PHIẾU NHẬP KHO (Chuẩn bị nhập hàng)
+        // 7. TẠO NHÀ CUNG CẤP & PHIẾU NHẬP KHO
         $supplier = Supplier::create([
             'name' => 'Tổng kho giày dép VN', 
             'contact_info' => '0909123456 - TP.HCM'
@@ -71,49 +96,49 @@ class DatabaseSeeder extends Seeder
             'po_code' => 'PO-' . strtoupper(uniqid()),
             'order_date' => now(),
             'status' => 'Received',
-            'total_amount' => 0, // Sẽ cộng dồn sau
+            'total_amount' => 0,
         ]);
 
         $totalPoAmount = 0;
 
-        // 6. TẠO SẢN PHẨM & BIẾN THỂ (Sản phẩm 1: Nike Air Force 1)
+        // 8. TẠO SẢN PHẨM & BIẾN THỂ
         $product1 = Product::create([
             'name' => 'Nike Air Force 1 Low',
-            // slug tự động sinh nhờ EloquentSluggable
             'description' => 'Huyền thoại đường phố không bao giờ lỗi thời.',
             'brand_id' => $nike->id,
             'category_id' => $catSneakerNam->id,
-            'base_image_url' => 'https://example.com/images/af1-base.jpg',
+            'base_image_url' => 'https://static.nike.com/a/images/t_PDP_1728_v1/f_auto,q_auto:eco/b7d9211c-26e7-431a-ac24-b0540fb3c00f/AIR+FORCE+1+%2707.png',
             'is_active' => true,
         ]);
 
-        // Tạo Biến thể cho Nike AF1 (2 Màu x 2 Size = 4 SKUs)
-        $af1Colors = [$colors[0], $colors[1]]; // Trắng, Đen
-        $af1Sizes = [$sizes[1], $sizes[2]]; // 40, 41
+        $af1Colors = [$colors[0], $colors[1]]; 
+        $af1Sizes = [$sizes[1], $sizes[2]]; 
 
         foreach ($af1Colors as $color) {
             foreach ($af1Sizes as $size) {
-                // Giá bán 2.500.000đ
                 $price = 2500000;
-                $importQty = 50; // Nhập 50 đôi mỗi loại
-                $importCost = 1500000; // Giá vốn 1.500.000đ
+                $importQty = 50; 
+                $importCost = 1500000; 
 
-                // ĐÃ SỬA LỖI TIẾNG VIỆT Ở ĐÂY
-                $colorSlug = Str::slug($color->name); // Sẽ biến 'Trắng' thành 'trang'
-                $colorCode = strtoupper(substr($colorSlug, 0, 3)); // Biến 'trang' thành 'TRA'
+                $colorSlug = Str::slug($color->name); 
+                $colorCode = strtoupper(substr($colorSlug, 0, 3)); 
 
-                // Tạo SKU
                 $variant = ProductVariant::create([
                     'product_id' => $product1->id,
-                    'sku' => 'NK-AF1-' . $colorCode . '-' . $size->name, // Sẽ ra NK-AF1-TRA-40
+                    'sku' => 'NK-AF1-' . $colorCode . '-' . $size->name, 
                     'size_id' => $size->id,
                     'color_id' => $color->id,
                     'price' => $price,
-                    'current_stock' => $importQty, 
-                    'variant_image_url' => 'https://example.com/images/af1-' . $colorSlug . '.jpg', // Sẽ ra af1-trang.jpg
                 ]);
 
-                // Ghi vào Chi tiết phiếu nhập
+                // LƯU TỒN KHO
+                VariantBranchStock::create([
+                    'variant_id' => $variant->id,
+                    'branch_id' => $mainBranch->id,
+                    'stock' => $importQty,
+                ]);
+
+                // CHI TIẾT NHẬP
                 PurchaseOrderDetail::create([
                     'po_id' => $purchaseOrder->id,
                     'variant_id' => $variant->id,
@@ -121,13 +146,14 @@ class DatabaseSeeder extends Seeder
                     'unit_cost' => $importCost,
                 ]);
 
-                // GHI LOG GIAO DỊCH KHO (Bắt buộc theo chuẩn Enterprise)
+                // LOG GIAO DỊCH KHO 
                 InventoryTransaction::create([
                     'product_variant_id' => $variant->id,
                     'transaction_type' => 'IMPORT',
+                    'to_branch_id' => $mainBranch->id, 
                     'reference_id' => $purchaseOrder->id,
-                    'quantity_change' => $importQty, // Cộng 50
-                    'note' => 'Nhập kho lần đầu từ PO: ' . $purchaseOrder->po_code,
+                    'quantity_change' => $importQty, 
+                    'note' => 'Nhập kho lần đầu vào Kho Tổng từ PO: ' . $purchaseOrder->po_code,
                     'created_at' => now(),
                 ]);
 
@@ -135,7 +161,6 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // Cập nhật tổng tiền phiếu nhập
         $purchaseOrder->update(['total_amount' => $totalPoAmount]);
     }
 }

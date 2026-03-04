@@ -28,9 +28,15 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    // Quan hệ: Một người dùng có nhiều đơn hàng
+    // Quan hệ: Một người dùng có nhiều đơn hàng (as customer)
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    // Quan hệ: Một nhân viên xử lý nhiều đơn hàng POS (as cashier)
+    public function posOrders()
+    {
+        return $this->hasMany(Order::class, 'cashier_id');
     }
 }
