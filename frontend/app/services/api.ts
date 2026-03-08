@@ -278,3 +278,81 @@ export const adminAPI = {
     return res.json();
   },
 };
+
+// ==========================================
+// 📦 ADMIN PRODUCT ENDPOINTS
+// ==========================================
+
+export const adminProductAPI = {
+  // Lấy danh sách sản phẩm (admin)
+  getAll: async (token: string) => {
+    const res = await fetch(`${API_URL}/admin/products`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    if (!res.ok) throw new Error("Lỗi khi tải danh sách sản phẩm");
+    return res.json();
+  },
+
+  // Tạo sản phẩm mới
+  create: async (data: any, token: string) => {
+    const res = await fetch(`${API_URL}/admin/products`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+};
+
+// ==========================================
+// 📦 ADMIN INVENTORY ENDPOINTS
+// ==========================================
+
+export const adminInventoryAPI = {
+  // Lấy lịch sử giao dịch kho
+  getTransactions: async (token: string) => {
+    const res = await fetch(`${API_URL}/admin/inventory/transactions`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    if (!res.ok) throw new Error("Lỗi khi tải giao dịch kho");
+    return res.json();
+  },
+
+  // Chuyển kho
+  transferStock: async (data: { variant_id: number; from_branch_id: number; to_branch_id: number; quantity: number; note?: string }, token: string) => {
+    const res = await fetch(`${API_URL}/admin/inventory/transfer`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  // Kiểm kê/Bù trừ
+  adjustStock: async (data: { variant_id: number; branch_id: number; quantity_change: number; note?: string }, token: string) => {
+    const res = await fetch(`${API_URL}/admin/inventory/adjust`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+};
