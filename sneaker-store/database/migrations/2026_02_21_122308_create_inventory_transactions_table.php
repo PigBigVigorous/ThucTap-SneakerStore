@@ -15,8 +15,8 @@ return new class extends Migration
         $table->bigIncrements('id'); // BigInt: Chuẩn bị cho hàng triệu record
         $table->foreignId('product_variant_id')->constrained('product_variants');
         
-        // Loại giao dịch: Nhập hàng, Bán hàng, Trả hàng, Kiểm kê
-        $table->enum('transaction_type', ['IMPORT', 'SALE', 'RETURN', 'ADJUSTMENT']);
+        // Loại giao dịch: Nhập hàng, Bán hàng, Trả hàng, Kiểm kê, Chuyển kho
+        $table->enum('transaction_type', ['IMPORT', 'SALE', 'RETURN', 'ADJUSTMENT', 'TRANSFER']);
         
         $table->unsignedBigInteger('reference_id')->nullable(); // ID của Order hoặc Purchase Order
         $table->integer('quantity_change'); // Số âm hoặc dương (+10, -1)

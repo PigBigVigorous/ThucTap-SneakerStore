@@ -61,6 +61,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // --- API QUẢN LÝ KHO ---
         Route::get('/inventory/transactions', [InventoryController::class, 'index']);
+        Route::post('/inventory/transfer', [InventoryController::class, 'transfer']);
+        Route::post('/inventory/adjust', [InventoryController::class, 'adjust']);
+        
+        // --- API QUẢN LÝ CHI NHÁNH ---
+        Route::apiResource('branches', \App\Http\Controllers\Api\Admin\BranchController::class);
+        
+        // --- API QUẢN LÝ SẢN PHẨM ---
+        Route::apiResource('products', \App\Http\Controllers\Api\Admin\ProductCatalogController::class);
         
         // --- API QUẢN LÝ ĐƠN HÀNG (Đã được khôi phục) ---
         Route::get('/orders', [AdminOrderController::class, 'index']);

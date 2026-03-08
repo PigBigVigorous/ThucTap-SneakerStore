@@ -139,4 +139,119 @@ class InventoryService
             return true;
         });
     }
+
+    /**
+     * Transfer stock between branches
+     *
+     * @param int $variantId
+     * @param int $fromBranchId
+     * @param int $toBranchId
+     * @param int $quantity
+     * @param string $note
+     * @return void
+     * @throws Exception
+     */
+    public function transferStock($variantId, $fromBranchId, $toBranchId, $quantity, $note)
+    {
+        return DB::transaction(function () use ($variantId, $fromBranchId, $toBranchId, $quantity, $note) {
+            // Find and lock the source branch stock
+            $fromStock = VariantBranchStock::where('variant_id', $variantId)
+                ->where('branch_id', $fromBranchId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$fromStock || $fromStock->stock < $quantity) {
+                throw new Exception("Insufficient stock in source branch. Available: " . ($fromStock ? $fromStock->stock : 0));
+            }
+
+            // Decrement stock from source branch
+            $fromStock->stock -= $quantity;
+            $fromStock->save();
+
+            // Find or create and lock the destination branch stock
+            $toStock = VariantBranchStock::where('variant_id', $variantId)
+                ->where('branch_id', $toBranchId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$toStock) {
+                $toStock = VariantBranchStock::create([
+                    'variant_id' => $variantId,
+                    'branch_id' => $toBranchId,
+                    'stock' => 0,
+                ]);
+                $toStock = VariantBranchStock::where('variant_id', $variantId)
+                    ->where('branch_id', $toBranchId)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            // Increment stock in destination branch
+            $toStock->stock += $quantity;
+            $toStock->save();
+
+            // Log the transaction
+            InventoryTransaction::create([
+                'product_variant_id' => $variantId,
+                'transaction_type' => 'TRANSFER',
+                'from_branch_id' => $fromBranchId,
+                'to_branch_id' => $toBranchId,
+                'quantity_change' => $quantity,
+                'note' => $note,
+                'created_at' => now(),
+            ]);
+        });
+    }
+
+    /**
+     * Adjust stock (positive for found items, negative for damaged/lost)
+     *
+     * @param int $variantId
+     * @param int $branchId
+     * @param int $quantityChange
+     * @param string $note
+     * @return void
+     * @throws Exception
+     */
+    public function adjustStock($variantId, $branchId, $quantityChange, $note)
+    {
+        return DB::transaction(function () use ($variantId, $branchId, $quantityChange, $note) {
+            // Find and lock the branch stock
+            $stock = VariantBranchStock::where('variant_id', $variantId)
+                ->where('branch_id', $branchId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$stock) {
+                $stock = VariantBranchStock::create([
+                    'variant_id' => $variantId,
+                    'branch_id' => $branchId,
+                    'stock' => 0,
+                ]);
+                $stock = VariantBranchStock::where('variant_id', $variantId)
+                    ->where('branch_id', $branchId)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            $newStock = $stock->stock + $quantityChange;
+            if ($newStock < 0) {
+                throw new Exception("Adjustment would result in negative stock. Current: {$stock->stock}, Change: {$quantityChange}");
+            }
+
+            // Update the stock
+            $stock->stock = $newStock;
+            $stock->save();
+
+            // Log the transaction
+            InventoryTransaction::create([
+                'product_variant_id' => $variantId,
+                'transaction_type' => 'ADJUSTMENT',
+                'from_branch_id' => $branchId,
+                'quantity_change' => $quantityChange,
+                'note' => $note,
+                'created_at' => now(),
+            ]);
+        });
+    }
 }

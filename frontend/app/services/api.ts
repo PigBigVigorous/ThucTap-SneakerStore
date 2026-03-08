@@ -147,16 +147,34 @@ export const productAPI = {
 export const orderAPI = {
   // Tạo đơn hàng
   create: async (data: any, token: string) => {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    };
+
+    // 🚨 CHỈ GẮN TOKEN NẾU THỰC SỰ CÓ (Tránh gửi chuỗi "Bearer null" làm Laravel sập)
+    if (token && token !== "null" && token !== "") {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${API_URL}/orders`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
+      headers,
       body: JSON.stringify(data),
     });
-    return res.json();
+
+    const result = await res.json();
+
+    // 🚨 NẾU LARAVEL TRẢ VỀ LỖI (Ví dụ 422 Validation, 500, v.v.), chuẩn hóa lại response
+    if (!res.ok) {
+      return {
+        success: false,
+        message: result.message || "Lỗi hệ thống từ máy chủ",
+        errors: result.errors || result // Lấy chi tiết lỗi để in ra log
+      };
+    }
+
+    return result;
   },
 
   // Lấy chi tiết đơn hàng theo tracking code

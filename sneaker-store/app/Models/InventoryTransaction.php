@@ -11,7 +11,8 @@ class InventoryTransaction extends Model
 
     protected $fillable = [
         'product_variant_id', 'transaction_type', 
-        'reference_id', 'quantity_change', 'note'
+        'reference_id', 'quantity_change', 'note',
+        'from_branch_id', 'to_branch_id'
     ];
 
     protected $casts = [

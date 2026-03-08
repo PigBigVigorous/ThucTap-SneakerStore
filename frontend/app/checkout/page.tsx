@@ -14,7 +14,7 @@ export default function CheckoutPage() {
   const [activeStep, setActiveStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   
-  // 🚨 1. STATE LƯU THÔNG TIN KHÁCH NHẬP
+  // 1. STATE LƯU THÔNG TIN KHÁCH NHẬP
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -55,11 +55,9 @@ export default function CheckoutPage() {
     const token = localStorage.getItem("token");
     const user = userString ? JSON.parse(userString) : null;
 
-    // 🚨 BỎ ĐOẠN CHẶN ĐĂNG NHẬP Ở ĐÂY 🚨
-
     // TẠO PAYLOAD (Nếu không có user thì user_id sẽ là null)
     const orderPayload = {
-      user_id: user ? user.id : null, // 🚨 Gửi null nếu là khách vãng lai
+      user_id: user ? user.id : null, // Gửi null nếu là khách vãng lai
       shipping_address: fullShippingAddress,
       items: cart.map(item => ({
         variant_id: item.variant_id,
@@ -78,17 +76,19 @@ export default function CheckoutPage() {
         
         clearCart(); // Xóa giỏ hàng
         
-        // 🚨 CHUYỂN HƯỚNG THÔNG MINH
+        // CHUYỂN HƯỚNG THÔNG MINH
         setTimeout(() => {
           if (user) {
             router.push("/my-orders"); // Có tài khoản -> Đi tới quản lý đơn
           } else {
-            router.push("/"); // Không có tài khoản -> Về trang chủ (hoặc trang Cảm ơn)
+            router.push("/"); // Không có tài khoản -> Về trang chủ
           }
         }, 2000);
       } else {
-        toast.error(data.message || "Có lỗi xảy ra từ máy chủ.");
-        console.error("Lỗi từ backend:", data);
+        // ÉP ÉP KIỂU CHUỖI ĐỂ TRÌNH DUYỆT KHÔNG THỂ GIẤU LỖI NỮA
+        console.error("🚨 CHI TIẾT LỖI TỪ BACKEND:", JSON.stringify(data, null, 2));
+        
+        toast.error(data.message || "Có lỗi xảy ra từ máy chủ. Vui lòng bật F12 để xem chi tiết!");
       }
     } catch (error) {
       console.error("Lỗi Network/CORS:", error);
