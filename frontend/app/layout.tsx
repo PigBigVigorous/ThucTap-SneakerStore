@@ -47,15 +47,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
 
                 {/* MENU CHÍNH */}
-                <nav className="flex h-full items-center justify-start lg:justify-center gap-4 lg:gap-6 pr-4">
-                  <div className="hidden lg:block h-full">
-                    <MegaMenu />
-                  </div>
-                  <Link href="/track-order" className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 font-bold uppercase text-xs lg:text-sm tracking-wide transition-colors">
-                    <Truck size={18} /> Tra cứu
-                  </Link>
-                  <AdminLinks /> 
-                </nav>
+                <nav className="flex-1 flex h-full items-center justify-start lg:justify-center gap-4 lg:gap-6 pr-4">
+        <MegaMenu />
+        <Link href="/track-order" className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 font-bold uppercase text-xs lg:text-sm tracking-wide transition-colors">
+          <Truck size={18} /> Tra cứu
+        </Link>
+        {/* Nút Admin thu gọn */}
+        <AdminLinks />
+      </nav>
 
                 {/* GIỎ HÀNG & USER */}
                 <div className="flex justify-self-end items-center gap-4 lg:gap-6 border-l border-gray-200 pl-4 lg:pl-6 relative z-50 bg-white h-full">
