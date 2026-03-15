@@ -7,46 +7,52 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
 class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Reset lại cache của thư viện để tránh lỗi
+        // 1. Dọn dẹp Cache và Xóa sạch dữ liệu phân quyền cũ (Tránh rác)
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 2. Tạo danh sách các Quyền (Permissions) cụ thể
+        Schema::disableForeignKeyConstraints();
+        DB::table('model_has_permissions')->truncate();
+        DB::table('model_has_roles')->truncate();
+        DB::table('role_has_permissions')->truncate();
+        DB::table('permissions')->truncate();
+        DB::table('roles')->truncate();
+        Schema::enableForeignKeyConstraints();
+
+        // 2. Tạo quyền (Permissions) với guard 'sanctum'
         $permissions = [
-            'view-dashboard',   // Xem thống kê doanh thu
-            'manage-products',  // Thêm sửa xóa sản phẩm
-            'manage-inventory', // Chuyển kho, kiểm kê
-            'manage-orders',    // Xác nhận, hủy, trả đơn hàng
-            'pos-sale',         // Bán hàng tại quầy POS
+            'view-dashboard',
+            'manage-products',
+            'manage-inventory',
+            'manage-orders',
+            'pos-sale',
         ];
 
         foreach ($permissions as $permission) {
-            Permission::findOrCreate($permission, 'api'); // Lưu ý guard là 'api'
+            Permission::findOrCreate($permission, 'sanctum'); 
         }
 
-        // 3. Tạo Vai trò (Roles) và Gắn quyền cho Vai trò đó
-        
-        // --- THU NGÂN (Cashier) ---
-        $cashierRole = Role::findOrCreate('cashier', 'api');
+        // 3. Tạo Vai trò (Roles) và Gắn quyền
+        $cashierRole = Role::findOrCreate('cashier', 'sanctum');
         $cashierRole->syncPermissions(['pos-sale', 'manage-orders']);
 
-        // --- QUẢN LÝ KHO (Warehouse Manager) ---
-        $warehouseRole = Role::findOrCreate('warehouse-manager', 'api');
+        $warehouseRole = Role::findOrCreate('warehouse-manager', 'sanctum');
         $warehouseRole->syncPermissions(['manage-products', 'manage-inventory']);
 
-        // --- SẾP TỔNG (Super Admin) ---
-        $superAdminRole = Role::findOrCreate('super-admin', 'api');
-        // Super Admin không cần sync quyền, vì lát nữa ta sẽ cấu hình cho nó tự động pass mọi quyền.
+        $superAdminRole = Role::findOrCreate('super-admin', 'sanctum');
 
-        // 4. Tìm User admin cũ trong hệ thống và phong tước "Super Admin" cho họ
+        // 4. Tìm Admin và thăng chức Super Admin
         $adminUsers = User::where('role', 'admin')->get();
         foreach ($adminUsers as $admin) {
             $admin->assignRole($superAdminRole);
         }
 
-        $this->command->info('Đã khởi tạo xong Hệ thống Phân quyền RBAC!');
+        $this->command->info('Đã FIX xong hệ thống Phân quyền Sanctum!');
     }
 }

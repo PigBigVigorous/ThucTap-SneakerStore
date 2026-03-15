@@ -47,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('admin')->group(function () {
         
         // 📊 1. NHÓM XEM THỐNG KÊ (Chỉ Sếp tổng hoặc ai có quyền view-dashboard)
-        Route::middleware(['permission:view-dashboard'])->group(function () {
+        Route::middleware(['permission:view-dashboard,sanctum'])->group(function () {
             Route::get('/statistics', function () {
                 $totalRevenue = Order::where('status', 'delivered')->sum('total_amount');
                 $totalOrders = Order::count();
@@ -72,14 +72,14 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // 📦 2. NHÓM QUẢN LÝ KHO (Chỉ Thủ kho hoặc Sếp tổng)
-        Route::middleware(['permission:manage-inventory'])->group(function () {
+        Route::middleware(['permission:manage-inventory,sanctum'])->group(function () {
             Route::get('/inventory/transactions', [InventoryController::class, 'index']);
             Route::post('/inventory/transfer', [InventoryController::class, 'transfer']);
             Route::post('/inventory/adjust', [InventoryController::class, 'adjust']);
         });
 
         // 🏷 3. NHÓM QUẢN LÝ SẢN PHẨM & CHI NHÁNH (Chỉ Quản lý kho hoặc Sếp)
-        Route::middleware(['permission:manage-products'])->group(function () {
+        Route::middleware(['permission:manage-products,sanctum'])->group(function () {
             Route::apiResource('branches', BranchController::class);
             
             Route::get('/products', [ProductCatalogController::class, 'index']);
@@ -89,13 +89,13 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // 🚚 4. NHÓM QUẢN LÝ ĐƠN HÀNG (Chỉ Thu ngân hoặc Sếp)
-        Route::middleware(['permission:manage-orders'])->group(function () {
+        Route::middleware(['permission:manage-orders,sanctum'])->group(function () {
             Route::get('/orders', [AdminOrderController::class, 'index']);
             Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
         });
 
         // 🏪 5. NHÓM POS BÁN TẠI QUẦY (Chỉ Thu ngân)
-        Route::middleware(['permission:pos-sale'])->group(function () {
+        Route::middleware(['permission:pos-sale,sanctum'])->group(function () {
             Route::get('/pos/products', [PosController::class, 'getProducts']);
             Route::post('/pos/orders', [PosController::class, 'placeOrder']);
         });
