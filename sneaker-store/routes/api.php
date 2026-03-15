@@ -36,10 +36,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // 🚨 BƯỚC 3 ĐƯỢC TÍCH HỢP Ở ĐÂY: Gửi kèm chức vụ (roles/permissions) cho Frontend
     Route::get('/user', function (Request $request) {
         $user = $request->user();
-        $user->load('roles', 'permissions'); // Tải thêm "Hồ sơ chức vụ"
+        
+        // 👇 SỬA LẠI 2 DÒNG NÀY 👇
+        $user->load('roles');
+        $user->setRelation('permissions', $user->getAllPermissions()); 
+        
         return response()->json(['success' => true, 'data' => $user]);
     });
-
 
     // ==========================================
     // 🚨 KHU VỰC QUẢN TRỊ (ĐÃ ĐƯỢC PHÂN LÔ CẮM MỐC BẰNG SPATIE)

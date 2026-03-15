@@ -30,8 +30,15 @@ class AuthController extends Controller
         ]);
 
         // 🚨 Tải kèm chức vụ (Mặc định User mới tạo sẽ rỗng, nhưng phải có để Frontend không bị lỗi undefined)
-        $user->load('roles', 'permissions');
+        //$user->load('roles', 'permissions');
 
+        $user->load('roles'); // Tải thông tin Role
+        // Hút TOÀN BỘ quyền (từ Role + trực tiếp) và gắn đè vào chữ 'permissions'
+        $user->setRelation('permissions', $user->getAllPermissions()); 
+        
+        // 3. Cấp Token mới
+        $token = $user->createToken('auth_token')->plainTextToken;
+        
         // 3. Cấp Token cho User vừa tạo
         $token = $user->createToken('auth_token')->plainTextToken;
 

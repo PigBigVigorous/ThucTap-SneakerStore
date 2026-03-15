@@ -13,6 +13,9 @@ export type User = {
   name: string;
   email: string;
   role: string;
+  // 👇 THÊM 2 DÒNG NÀY VÀO ĐỂ NHẬN QUYỀN TỪ BACKEND
+  roles?: { name: string }[];
+  permissions?: { name: string }[];
 };
 
 export type AuthResponse = {
