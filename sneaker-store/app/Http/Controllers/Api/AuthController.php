@@ -15,7 +15,7 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        // 1. Kiểm tra dữ liệu đầu vào (🚨 Đã bỏ chữ 'confirmed' vì frontend đã check)
+        // 1. Kiểm tra dữ liệu đầu vào
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -26,9 +26,11 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            // 🚨 SỬA LỖI DOUBLE HASHING: Chỉ cần truyền text thẳng, Model User sẽ tự động mã hóa
             'password' => $request->password, 
         ]);
+
+        // 🚨 Tải kèm chức vụ (Mặc định User mới tạo sẽ rỗng, nhưng phải có để Frontend không bị lỗi undefined)
+        $user->load('roles', 'permissions');
 
         // 3. Cấp Token cho User vừa tạo
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -57,13 +59,15 @@ class AuthController extends Controller
         // 2. Kiểm tra thông tin đăng nhập trong CSDL
         $user = User::where('email', $request->email)->first();
 
-        // 🚨 VẪN DÙNG Hash::check BÌNH THƯỜNG ĐỂ SO SÁNH
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email hoặc mật khẩu không chính xác!'
             ], 401);
         }
+
+        // 🚨 BƯỚC ĐỘ THÊM: Tải kèm chức vụ (roles) và quyền (permissions) ngay khi Login thành công
+        $user->load('roles', 'permissions');
 
         // 3. Cấp Token mới
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -72,7 +76,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Đăng nhập thành công!',
             'data' => [
-                'user' => $user,
+                'user' => $user, // Lúc này cục $user đã phình to ra, chứa cả mảng roles bên trong
                 'token' => $token
             ]
         ]);
