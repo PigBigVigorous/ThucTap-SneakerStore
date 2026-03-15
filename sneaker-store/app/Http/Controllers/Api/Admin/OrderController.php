@@ -79,7 +79,7 @@ class OrderController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled'
+            'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled,returned'
         ]);
 
         try {
@@ -99,6 +99,11 @@ class OrderController extends Controller
                 // Nếu chuyển sang trạng thái "cancelled" (hủy), hoàn lại kho
                 if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
                     $this->inventoryService->cancelOrder($order);
+                }
+
+                // 🚨 NẾU LÀ TRẢ HÀNG (RETURNED), HOÀN LẠI KHO VỚI LOGIC RETURN
+                if ($newStatus === 'returned' && $oldStatus !== 'returned') {
+                    $this->inventoryService->returnOrder($order);
                 }
 
                 // Cập nhật trạng thái

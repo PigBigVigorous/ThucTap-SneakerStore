@@ -127,7 +127,7 @@ class InventoryService
                 // Log giao dịch hoàn kho
                 InventoryTransaction::create([
                     'product_variant_id' => $item->product_variant_id,
-                    'transaction_type' => 'RESTOCK',
+                    'transaction_type' => 'RETURN',
                     'to_branch_id' => $order->branch_id, // Nhập lại vào chi nhánh này
                     'reference_id' => $order->id,
                     'quantity_change' => $item->quantity, // Số dương vì nhập lại
@@ -252,6 +252,39 @@ class InventoryService
                 'note' => $note,
                 'created_at' => now(),
             ]);
+        });
+    }
+    /**
+     * Nghiệp vụ Trả Hàng (Hoàn lại kho và ghi log RETURN)
+     */
+    public function returnOrder($order)
+    {
+        // Bọc trong transaction và lock table để an toàn tuyệt đối
+        DB::transaction(function () use ($order) {
+            foreach ($order->items as $item) {
+                // 1. Tìm tồn kho của biến thể tại chi nhánh đã mua (có lock)
+                $branchStock = VariantBranchStock::where('variant_id', $item->variant_id)
+                    ->where('branch_id', $order->branch_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($branchStock) {
+                    // 2. Cộng lại số lượng giày vào kho
+                    $branchStock->stock += $item->quantity;
+                    $branchStock->save();
+
+                    // 3. Ghi lịch sử biến động là RETURN để kế toán kiểm tra
+                    InventoryTransaction::create([
+                        'product_variant_id' => $item->variant_id,
+                        'transaction_type' => 'RETURN', // 🚨 Khác với CANCEL hoặc SALE
+                        'reference_id' => $order->id,
+                        'quantity_change' => $item->quantity, // Số dương (cộng vào)
+                        'note' => 'Khách trả hàng (Mã đơn: ' . $order->order_tracking_code . ')',
+                        'to_branch_id' => $order->branch_id, // Hàng chạy thẳng vào chi nhánh
+                        'created_at' => now(),
+                    ]);
+                }
+            }
         });
     }
 }

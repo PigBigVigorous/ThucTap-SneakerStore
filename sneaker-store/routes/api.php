@@ -70,6 +70,16 @@ Route::middleware('auth:sanctum')->group(function () {
         // --- API QUẢN LÝ SẢN PHẨM ---
         Route::apiResource('products', \App\Http\Controllers\Api\Admin\ProductCatalogController::class);
         
+        // 👇 THÊM DÒNG NÀY ĐỂ MỞ KHÓA API THÊM SẢN PHẨM 👇
+        Route::post('/products', [\App\Http\Controllers\Api\Admin\ProductCatalogController::class, 'store']);
+        
+        // 👇 THÊM DÒNG NÀY ĐỂ MỞ KHÓA API XÓA 👇
+        Route::delete('/products/{id}', [\App\Http\Controllers\Api\Admin\ProductCatalogController::class, 'destroy']);
+
+        // 👇 THÊM DÒNG NÀY ĐỂ MỞ KHÓA API SỬA 👇
+        // Lưu ý: Dùng POST thay vì PUT/PATCH vì trình duyệt upload File qua FormData rất kỵ PUT.
+        Route::post('/products/{id}', [\App\Http\Controllers\Api\Admin\ProductCatalogController::class, 'update']);
+
         // --- API QUẢN LÝ ĐƠN HÀNG (Đã được khôi phục) ---
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);

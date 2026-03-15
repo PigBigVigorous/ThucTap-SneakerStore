@@ -4,15 +4,15 @@ import { useState, useEffect } from "react";
 import { adminAPI } from "../../services/api";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { useAuth } from "../../context/AuthContext"; // 👈 Nhúng AuthContext
+import { useAuth } from "../../context/AuthContext"; 
 
 export default function AdminOrdersPage() {
-  const { token } = useAuth(); // 👈 Lấy token của Admin đang đăng nhập
+  const { token } = useAuth(); 
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
-    if (!token) return; // Nếu chưa load xong token thì khoan gọi API
+    if (!token) return; 
     try {
       const json = await adminAPI.getOrders(token);
       if (json.success) {
@@ -29,7 +29,7 @@ export default function AdminOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-  }, [token]); // Gắn token vào mảng dependency để tự động gọi lại khi có token
+  }, [token]); 
 
   const handleUpdateStatus = async (orderId: number, newStatus: string) => {
     if (!token) {
@@ -102,9 +102,10 @@ export default function AdminOrdersPage() {
                         order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
                         order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                         order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                        order.status === 'returned' ? 'bg-orange-100 text-orange-800' : // 🚨 Thêm màu cam cho Trả hàng
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {order.status}
+                        {order.status === 'returned' ? 'Trả hàng' : order.status}
                       </span>
                     </td>
                     <td className="p-5">
@@ -139,12 +140,30 @@ export default function AdminOrdersPage() {
                           </button>
                         )}
                         
+                        {/* 🚨 THÊM NÚT TRẢ HÀNG KHI ĐƠN ĐÃ GIAO XONG */}
                         {order.status === 'delivered' && (
-                          <span className="text-gray-400 font-bold text-sm">✔ Đã giao</span>
+                          <div className="flex flex-col gap-2 items-center">
+                            <span className="text-gray-400 font-bold text-sm">✔ Đã giao</span>
+                            <button 
+                              onClick={() => {
+                                if(window.confirm('⚠️ Xác nhận khách TRẢ HÀNG? Sản phẩm sẽ được tự động cộng lại vào kho Chi nhánh.')) {
+                                  handleUpdateStatus(order.id, 'returned');
+                                }
+                              }}
+                              className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-lg font-bold text-xs shadow-md transition"
+                            >
+                              Hoàn / Trả hàng
+                            </button>
+                          </div>
                         )}
 
                         {order.status === 'cancelled' && (
                           <span className="text-red-500 font-bold text-sm">❌ Đã hủy</span>
+                        )}
+
+                        {/* 🚨 HIỂN THỊ KHI ĐÃ TRẢ HÀNG */}
+                        {order.status === 'returned' && (
+                          <span className="text-orange-500 font-bold text-sm">🔙 Đã hoàn kho</span>
                         )}
                       </div>
                     </td>

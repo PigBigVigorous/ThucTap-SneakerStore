@@ -286,28 +286,55 @@ export const adminAPI = {
 export const adminProductAPI = {
   // Lấy danh sách sản phẩm (admin)
   getAll: async (token: string) => {
-    const res = await fetch(`${API_URL}/admin/products`, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Accept": "application/json",
+      const res = await fetch(`${API_URL}/admin/products`, {
+        headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+      });
+      return res.json();
+    },
+    
+    // 👇 THÊM HÀM CREATE NÀY VÀO 👇
+    create: async (formData: FormData, token: string) => {
+      const res = await fetch(`${API_URL}/admin/products`, {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/json"
+          // 🚨 LƯU Ý: Tuyệt đối KHÔNG set "Content-Type": "application/json" ở đây. 
+          // Browser sẽ tự động set "multipart/form-data" khi thấy FormData.
+        },
+        body: formData, // Gửi nguyên cục FormData chứa cả chữ lẫn file ảnh
+      });
+      return res.json();
+    },
+    
+    delete: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/admin/products/${id}`, {
+      method: "DELETE",
+      headers: { 
+        "Authorization": `Bearer ${token}`, 
+        "Accept": "application/json" 
       },
     });
-    if (!res.ok) throw new Error("Lỗi khi tải danh sách sản phẩm");
     return res.json();
   },
-
-  // Tạo sản phẩm mới
-  create: async (data: any, token: string) => {
-    const res = await fetch(`${API_URL}/admin/products`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
+  // 👇 THÊM HÀM UPDATE NÀY VÀO 👇
+  update: async (id: number, formData: FormData, token: string) => {
+    const res = await fetch(`${API_URL}/admin/products/${id}`, {
+      method: "POST", // Dùng POST để gửi FormData chứa ảnh
+      headers: { 
         "Authorization": `Bearer ${token}`,
+        "Accept": "application/json"
       },
-      body: JSON.stringify(data),
+      body: formData,
     });
-    return res.json();
+    
+    const result = await res.json();
+    
+    if (!res.ok) {
+      console.error("🚨 LỖI CHI TIẾT TỪ BACKEND:", JSON.stringify(result.errors || result, null, 2));
+      return { success: false, message: result.message || "Lỗi cập nhật", errors: result.errors };
+    }
+    return result;
   },
 };
 

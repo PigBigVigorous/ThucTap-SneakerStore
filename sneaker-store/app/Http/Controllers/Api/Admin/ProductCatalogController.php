@@ -10,6 +10,7 @@ use App\Models\VariantBranchStock;
 use App\Models\ProductImage;
 use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ProductCatalogController extends Controller
 {
@@ -31,69 +32,92 @@ class ProductCatalogController extends Controller
      */
     public function store(Request $request)
     {
+        // 1. Validate dữ liệu khắt khe
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'brand_id' => 'required|exists:brands,id',
             'category_id' => 'required|exists:categories,id',
-            'base_image_url' => 'nullable|url',
-            'is_active' => 'boolean',
-            'variants' => 'required|array|min:1',
-            'variants.*.sku' => 'required|string|unique:product_variants,sku',
-            'variants.*.color_id' => 'required|exists:colors,id',
-            'variants.*.size_id' => 'required|exists:sizes,id',
-            'variants.*.price' => 'required|numeric|min:0',
-            'variants.*.stock' => 'required|array',
-            'variants.*.stock.*.branch_id' => 'required|exists:branches,id',
-            'variants.*.stock.*.quantity' => 'required|integer|min:0',
-            'images' => 'nullable|array',
-            'images.*.image_url' => 'required|url',
-            'images.*.sort_order' => 'integer|min:0',
+            'brand_id' => 'required|exists:brands,id',
+            'description' => 'nullable|string',
+            'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',// Cấm up file độc hại, tối đa 2MB
+            'gallery_images' => 'nullable|array',
+            'gallery_images.*' => 'file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
+            'variants' => 'required|string', // Chuỗi JSON chứa danh sách biến thể (Màu, Size, Giá, Tồn kho)
+            'branch_id' => 'required|exists:branches,id' // Chi nhánh nhập kho mặc định
         ]);
 
-        return DB::transaction(function () use ($request) {
-            // Create product
-            $product = Product::create($request->only([
-                'name', 'description', 'brand_id', 'category_id', 'base_image_url', 'is_active'
-            ]));
-
-            // Create variants
-            foreach ($request->variants as $variantData) {
-                $variant = ProductVariant::create([
-                    'product_id' => $product->id,
-                    'sku' => $variantData['sku'],
-                    'color_id' => $variantData['color_id'],
-                    'size_id' => $variantData['size_id'],
-                    'price' => $variantData['price'],
-                ]);
-
-                // Create branch stocks
-                foreach ($variantData['stock'] as $stockData) {
-                    VariantBranchStock::create([
-                        'variant_id' => $variant->id,
-                        'branch_id' => $stockData['branch_id'],
-                        'stock' => $stockData['quantity'],
-                    ]);
-                }
+        DB::beginTransaction();
+        try {
+            // 2. Xử lý Upload Ảnh (Lưu vào thư mục ổ cứng server)
+            $imageUrl = null;
+            if ($request->hasFile('base_image')) {
+                // Lưu vào storage/app/public/products
+                $path = $request->file('base_image')->store('products', 'public');
+                $imageUrl = asset('storage/' . $path);
             }
 
-            // Create images
-            if ($request->has('images')) {
-                foreach ($request->images as $imageData) {
+            
+
+            // 3. Tạo Sản phẩm gốc
+            $product = Product::create([
+                'name' => $request->name,
+                'slug' => Str::slug($request->name) . '-' . time(),
+                'category_id' => $request->category_id,
+                'brand_id' => $request->brand_id,
+                'description' => $request->description,
+                'base_image_url' => $imageUrl,
+                'is_active' => true,
+            ]);
+
+            // 👇 THÊM ĐOẠN NÀY ĐỂ LƯU ẢNH GALLERY VÀO BẢNG product_images 👇
+            if ($request->hasFile('gallery_images')) {
+                foreach ($request->file('gallery_images') as $index => $image) {
+                    $galleryPath = $image->store('products/gallery', 'public');
                     ProductImage::create([
                         'product_id' => $product->id,
-                        'image_url' => $imageData['image_url'],
-                        'sort_order' => $imageData['sort_order'] ?? 0,
+                        'image_url' => asset('storage/' . $galleryPath),
+                        'sort_order' => $index, // Sắp xếp theo thứ tự up
                     ]);
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Product created successfully',
-                'data' => $product->load(['variants', 'images'])
-            ], 201);
-        });
+            // 4. Giải mã JSON biến thể từ Frontend gửi lên và Lưu
+            $variants = json_decode($request->variants, true);
+            foreach ($variants as $v) {
+                $variant = ProductVariant::create([
+                    'product_id' => $product->id,
+                    'color_id' => $v['color_id'],
+                    'size_id' => $v['size_id'],
+                    'sku' => $v['sku'] ?? strtoupper(Str::random(8)),
+                    'price' => $v['price'],
+                ]);
+
+                // 5. Khởi tạo tồn kho ban đầu cho chi nhánh
+                VariantBranchStock::create([
+                    'variant_id' => $variant->id,
+                    'branch_id' => $request->branch_id,
+                    'stock' => $v['stock'] ?? 0,
+                ]);
+
+                // 6. Ghi log nhập kho (Nghiệp vụ kế toán bắt buộc)
+                if (($v['stock'] ?? 0) > 0) {
+                    \App\Models\InventoryTransaction::create([
+                        'product_variant_id' => $variant->id,
+                        'transaction_type' => 'IMPORT',
+                        'to_branch_id' => $request->branch_id,
+                        'quantity_change' => $v['stock'],
+                        'note' => 'Nhập kho khởi tạo sản phẩm mới.',
+                        'created_at' => now(),
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Thêm sản phẩm thành công!', 'data' => $product]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -109,42 +133,87 @@ class ProductCatalogController extends Controller
         ]);
     }
 
-    /**
-     * Update the specified product
-     */
-    public function update(Request $request, Product $product)
+    // API Sửa (Cập nhật) Sản phẩm
+    public function update(Request $request, $id)
     {
+        $product = Product::findOrFail($id);
+
+        // 1. Validate dữ liệu (Tương tự lúc thêm, nhưng base_image không bắt buộc)
         $request->validate([
-            'name' => 'sometimes|required|string|max:255',
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'brand_id' => 'required|exists:brands,id',
             'description' => 'nullable|string',
-            'brand_id' => 'sometimes|required|exists:brands,id',
-            'category_id' => 'sometimes|required|exists:categories,id',
-            'base_image_url' => 'nullable|url',
-            'is_active' => 'boolean',
-            // For simplicity, update only basic product info. Variants update can be separate endpoint
+            'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
         ]);
 
-        $product->update($request->only([
-            'name', 'description', 'brand_id', 'category_id', 'base_image_url', 'is_active'
-        ]));
+        DB::beginTransaction();
+        try {
+            // 2. Cập nhật thông tin chữ (Text)
+            $product->update([
+                'name' => $request->name,
+                'category_id' => $request->category_id,
+                'brand_id' => $request->brand_id,
+                'description' => $request->description,
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product updated successfully',
-            'data' => $product
-        ]);
+            // 3. Xử lý Ảnh Đại Diện: NẾU có up ảnh mới thì mới đè lên ảnh cũ
+            if ($request->hasFile('base_image')) {
+                $path = $request->file('base_image')->store('products', 'public');
+                $product->base_image_url = asset('storage/' . $path);
+                $product->save();
+            }
+
+            // 4. Cập nhật Giá cho các phân loại (Màu/Size)
+            // Vì tồn kho là nghiệp vụ riêng, ở form Sửa này ta chỉ cho phép sửa Giá.
+            if ($request->has('variants')) {
+                $variants = json_decode($request->variants, true);
+                foreach ($variants as $v) {
+                    if (isset($v['id'])) {
+                        // Tìm và update giá cho từng biến thể
+                        ProductVariant::where('id', $v['id'])->update([
+                            'price' => $v['price']
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'success' => true, 
+                'message' => 'Tuyệt vời! Đã cập nhật sản phẩm thành công.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false, 
+                'message' => 'Lỗi khi cập nhật: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Remove the specified product
-     */
-    public function destroy(Product $product)
+    // API Xóa (Xóa mềm) Sản phẩm
+    public function destroy($id)
     {
-        $product->delete();
+        try {
+            $product = Product::findOrFail($id);
+            
+            // Xóa mềm sản phẩm (Chỉ đánh dấu deleted_at nhờ SoftDeletes)
+            $product->delete();
+            
+            // Xóa mềm luôn các biến thể (variants) của nó để khách không nhặt được vào giỏ
+            ProductVariant::where('product_id', $id)->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product deleted successfully'
-        ]);
+            return response()->json([
+                'success' => true, 
+                'message' => 'Đã đưa sản phẩm vào thùng rác an toàn!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Lỗi khi xóa: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
