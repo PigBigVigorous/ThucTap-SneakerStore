@@ -3,14 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCart } from "../context/CartContext";
+// 🚨 ĐÃ ĐỔI SANG DÙNG ZUSTAND
+import { useCartStore } from "../store/useCartStore"; 
 import { Check, Lock, Package } from "lucide-react";
 import toast from "react-hot-toast";
 import { orderAPI } from "../services/api";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, clearCart } = useCart();
+  
+  // 🚨 HÚT DATA TỪ ZUSTAND STORE
+  const cart = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
+  
   const [activeStep, setActiveStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -85,9 +90,7 @@ export default function CheckoutPage() {
           }
         }, 2000);
       } else {
-        // ÉP ÉP KIỂU CHUỖI ĐỂ TRÌNH DUYỆT KHÔNG THỂ GIẤU LỖI NỮA
         console.error("🚨 CHI TIẾT LỖI TỪ BACKEND:", JSON.stringify(data, null, 2));
-        
         toast.error(data.message || "Có lỗi xảy ra từ máy chủ. Vui lòng bật F12 để xem chi tiết!");
       }
     } catch (error) {
@@ -107,7 +110,7 @@ export default function CheckoutPage() {
     );
   }
 
-  // COMPONENT: Input nổi (Đã sửa để nhận value và onChange)
+  // COMPONENT: Input nổi
   const FloatingInput = ({ label, name, type = "text", value, onChange }: any) => (
     <div className="relative w-full">
       <input
@@ -250,11 +253,12 @@ export default function CheckoutPage() {
                 {cart.map((item) => (
                   <div key={item.variant_id} className="flex gap-4">
                     <div className="w-[80px] h-[80px] bg-[#F5F5F5] rounded-md overflow-hidden shrink-0">
-                      <img src={item.image} alt={item.product_name} className="w-full h-full object-contain mix-blend-multiply p-1" />
+                      {/* 🚨 Sửa lỗi thuộc tính ở đây (từ product_name -> name) */}
+                      <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply p-1" />
                     </div>
                     <div className="flex-1 text-sm font-medium text-gray-900">
-                      <p className="line-clamp-2 leading-tight">{item.product_name}</p>
-                      <p className="text-gray-500 mt-1">Size: {item.size_name.replace('EU-', '')}</p>
+                      <p className="line-clamp-2 leading-tight">{item.name}</p>
+                      <p className="text-gray-500 mt-1">Size: {item.size.replace('EU-', '')}</p>
                       <div className="flex justify-between mt-1 text-gray-500"><p>SL: {item.quantity}</p><p className="text-gray-900">{(item.price * item.quantity).toLocaleString('vi-VN')} ₫</p></div>
                     </div>
                   </div>
