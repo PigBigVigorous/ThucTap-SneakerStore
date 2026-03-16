@@ -18,7 +18,6 @@ type AuthContextType = {
   token: string | null;
   login: (userData: User, authToken: string) => void;
   logout: () => void;
-  // 👇 THÊM 2 HÀM NÀY VÀO TYPE
   hasRole: (roleName: string) => boolean;
   hasPermission: (permissionName: string) => boolean;
 };
@@ -32,9 +31,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
+    
     if (storedUser && storedToken) {
+      // 1. Tải ngay user cũ từ LocalStorage để giao diện hiển thị mượt mà
       setUser(JSON.parse(storedUser));
       setToken(storedToken);
+
+      // 2. 🚨 NÂNG CẤP ENTERPRISE: Gọi ngầm API để đồng bộ Quyền hạn mới nhất
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+      fetch(`${API_URL}/user`, {
+        headers: {
+          "Authorization": `Bearer ${storedToken}`,
+          "Accept": "application/json",
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.data) {
+            // Cập nhật lại State và LocalStorage với dữ liệu mới (có chứa Roles & Permissions)
+            setUser(data.data);
+            localStorage.setItem("user", JSON.stringify(data.data));
+          }
+        })
+        .catch((err) => console.error("Lỗi đồng bộ dữ liệu User:", err));
     }
   }, []);
 
@@ -51,27 +70,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     toast.success("Đã đăng xuất thành công!");
-    window.location.href = "/"; 
+    window.location.href = "/";
   };
 
-  // 🚨 HÀM KIỂM TRA ROLE
+  // Hàm kiểm tra Role
   const hasRole = (roleName: string) => {
     if (!user || !user.roles) return false;
     return user.roles.some((r) => r.name === roleName);
   };
 
-  // 🚨 HÀM KIỂM TRA QUYỀN (PERMISSION)
+  // Hàm kiểm tra Quyền (Permission)
   const hasPermission = (permissionName: string) => {
     if (!user) return false;
-    // Kim bài miễn tử: Nếu là super-admin thì luôn đúng
+    // Kim bài miễn tử cho Sếp tổng
     if (hasRole("super-admin")) return true; 
-    
+
     if (!user.permissions) return false;
     return user.permissions.some((p) => p.name === permissionName);
   };
 
   return (
-    // Đẩy 2 hàm này ra ngoài để các Component khác dùng
     <AuthContext.Provider value={{ user, token, login, logout, hasRole, hasPermission }}>
       {children}
     </AuthContext.Provider>

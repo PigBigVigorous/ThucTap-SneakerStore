@@ -2,15 +2,13 @@
 
 import { AuthProvider } from "./context/AuthContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
-import { CartProvider } from "./context/CartContext";
+// 🚨 ĐÃ XÓA CartProvider VÌ ZUSTAND KHÔNG CẦN BỌC
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <FavoritesProvider>
-        <CartProvider>
-          {children}
-        </CartProvider>
+        {children}
       </FavoritesProvider>
     </AuthProvider>
   );

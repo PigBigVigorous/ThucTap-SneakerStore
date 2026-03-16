@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useCart } from "../../context/CartContext";
+// 🚨 ĐÃ ĐỔI SANG DÙNG ZUSTAND
+import { useCartStore } from "../../store/useCartStore"; 
 import { useFavorites } from "../../context/FavoritesContext";
 import toast from "react-hot-toast";
 import { Star, Heart, Ruler, ChevronDown, X, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 export default function ClientProductInfo({ product }: { product: any }) {
-  const { addToCart } = useCart();
+  // 🚨 GỌI HÀM TỪ ZUSTAND
+  const addToCart = useCartStore((state) => state.addToCart);
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const [selectedColor, setSelectedColor] = useState<any>(null);
   const [selectedSize, setSelectedSize] = useState<any>(null);
-  
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [showFavModal, setShowFavModal] = useState(false);
   
@@ -33,20 +34,15 @@ export default function ClientProductInfo({ product }: { product: any }) {
     setMainImageIndex(0); 
   };
 
-  // 🚨 NÂNG CẤP GALLERY: Đảm bảo cột trái LUÔN LUÔN hiển thị
   let currentGalleryImages = ['/placeholder.png'];
   if (product?.images && product.images.length > 0) {
-    // 1. Thử lọc ảnh theo màu sắc đang chọn
     const filteredImages = product.images.filter((img: any) => selectedColor && img.color_id === selectedColor.id).map((img: any) => img.image_url);
-    
     if (filteredImages.length > 0) {
       currentGalleryImages = filteredImages;
     } else {
-      // 2. Nếu màu này chưa có bộ ảnh riêng -> Lấy TOÀN BỘ ảnh của sản phẩm để cột trái không bao giờ bị trống
       currentGalleryImages = product.images.map((img: any) => img.image_url);
     }
   } else if (product?.base_image_url) {
-    // 3. Fallback cuối cùng
     currentGalleryImages = [product.base_image_url];
   }
 
@@ -80,16 +76,18 @@ export default function ClientProductInfo({ product }: { product: any }) {
       return;
     }
 
+    // 🚨 FORMAT DỮ LIỆU ĐẨY VÀO ZUSTAND
     addToCart({
       variant_id: selectedVariant.id,
-      product_name: product?.name || 'Sản phẩm', 
+      product_id: product?.id,
+      name: product?.name || 'Sản phẩm', 
       price: selectedVariant.price,
       image: currentGalleryImages[0],
-      color_name: selectedColor?.name || '', 
-      size_name: selectedSize?.name || '',   
-      quantity: 1
+      color: selectedColor?.name || '', 
+      size: selectedSize?.name || '',   
+      quantity: 1,
+      stock: selectedVariant.current_stock // Gửi luôn tồn kho vào để check vượt quá
     });
-    toast.success("Đã thêm vào giỏ hàng");
   };
 
   const handleToggleFavorite = () => {
@@ -110,19 +108,15 @@ export default function ClientProductInfo({ product }: { product: any }) {
     }
   };
 
-  // Bảo vệ không sập trang khi rớt API
   if (!product) {
     return <div className="min-h-[60vh] flex items-center justify-center font-medium text-lg">Đang tải dữ liệu sản phẩm...</div>;
   }
 
   return (
     <div suppressHydrationWarning className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-white">
-      
-      {/* 🌟 CỘT TRÁI: GALLERY ẢNH CHUẨN NIKE (LUÔN HIỂN THỊ) 🌟 */}
+      {/* 🌟 CỘT TRÁI: GALLERY ẢNH */}
       <div className="lg:col-span-7 lg:pr-10 pt-10 lg:pt-0">
         <div className="flex flex-row gap-4 sticky top-24">
-          
-          {/* CỘT THUMBNAILS DỌC BÊN TRÁI */}
           <div className="w-[60px] shrink-0 flex flex-col gap-2.5 h-[580px] overflow-y-auto [&::-webkit-scrollbar]:hidden pr-1 pb-4">
             {currentGalleryImages.map((img: string, idx: number) => (
               <button 
@@ -136,14 +130,8 @@ export default function ClientProductInfo({ product }: { product: any }) {
               </button>
             ))}
           </div>
-
-          {/* KHUNG ẢNH CHÍNH (HERO IMAGE) */}
           <div className="flex-1 bg-[#F6F6F6] rounded-xl relative h-[580px] flex items-center justify-center overflow-hidden group">
-            <img 
-              src={currentGalleryImages[mainImageIndex] || '/placeholder.png'} 
-              alt={product?.name || 'Sản phẩm'} 
-              className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300 ease-in-out" 
-            />
+            <img src={currentGalleryImages[mainImageIndex] || '/placeholder.png'} alt={product?.name || 'Sản phẩm'} className="w-full h-full object-contain mix-blend-multiply transition-opacity duration-300 ease-in-out" />
             <div className="absolute bottom-6 right-6 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
               <button onClick={prevImage} className="bg-white p-3.5 rounded-full shadow-md hover:bg-gray-100 transition-colors flex items-center justify-center">
                 <ChevronLeft size={20} strokeWidth={1.5} className="text-gray-900" />
@@ -156,10 +144,9 @@ export default function ClientProductInfo({ product }: { product: any }) {
         </div>
       </div>
 
-      {/* 🌟 CỘT PHẢI: PRODUCT INFO 🌟 */}
+      {/* 🌟 CỘT PHẢI: PRODUCT INFO */}
       <div className="lg:col-span-5 pt-10 lg:pt-0 lg:px-10 pb-20">
         <div className="sticky top-28 space-y-8">
-          
           <div className="pb-4">
             <h1 className="text-[32px] font-medium text-gray-900 leading-tight tracking-tight">{product?.name || 'Sản phẩm'}</h1>
             <p className="text-gray-900 font-medium text-lg mt-1">Giày Nam</p>
@@ -174,7 +161,6 @@ export default function ClientProductInfo({ product }: { product: any }) {
 
           {uniqueColors.length > 1 && (
             <div className="py-2">
-              
               <div className="flex flex-wrap gap-2.5">
                 {uniqueColors.map((color: any) => {
                   const isSelected = selectedColor?.id === color.id;
@@ -212,13 +198,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
                     disabled={isOutOfStock}
                     onClick={() => setSelectedSize(variant.size)}
                     className={`py-4 rounded-md font-medium text-base transition-all flex items-center justify-center border text-center
-                      ${isOutOfStock 
-                        ? 'bg-gray-50 text-gray-300 cursor-not-allowed border-gray-200' 
-                        : isSelected 
-                          ? 'border-gray-900 ring-1 ring-gray-900 text-gray-900' 
-                          : 'border-gray-200 text-gray-900 hover:border-gray-900'
-                      }
-                    `}
+                      ${isOutOfStock ? 'bg-gray-50 text-gray-300 cursor-not-allowed border-gray-200' : isSelected ? 'border-gray-900 ring-1 ring-gray-900 text-gray-900' : 'border-gray-200 text-gray-900 hover:border-gray-900'}`}
                   >
                     {variant?.size?.name?.replace(/[^\d.-]/g, '') || ''}
                   </button>
@@ -243,52 +223,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
               <li>Mã sản phẩm: <span className="uppercase text-gray-600">{selectedVariant?.sku || 'Đang cập nhật'}</span></li>
             </ul>
           </div>
-
-          <div className="border-t border-gray-100 divide-y divide-gray-100">
-            <details className="group [&_summary::-webkit-details-marker]:hidden">
-              <summary className="flex items-center justify-between cursor-pointer py-7 font-medium text-[20px] text-gray-900 list-none hover:opacity-70 transition-opacity">
-                Giao hàng & Hoàn trả
-                <span className="transition duration-300 group-open:-rotate-180"><ChevronDown size={24} strokeWidth={1.5} /></span>
-              </summary>
-              <div className="pb-8 text-gray-700 text-base font-medium space-y-4 pr-4 leading-relaxed animate-in fade-in slide-in-from-top-1">
-                <p>Đơn hàng từ 5.000.000₫ trở lên sẽ được giao hàng tiêu chuẩn miễn phí.</p>
-                <ul className="list-disc pl-5 space-y-1.5">
-                  <li>Giao hàng tiêu chuẩn: 4-5 ngày làm việc</li>
-                  <li>Giao hàng hỏa tốc: 2-4 ngày làm việc</li>
-                </ul>
-              </div>
-            </details>
-          </div>
         </div>
-      </div>
-
-      {/* 🚨 MODAL THÔNG BÁO "ADDED TO FAVOURITES" */}
-      <div 
-        className={`fixed top-28 right-4 sm:right-10 z-50 w-[380px] bg-white rounded-2xl shadow-2xl border border-gray-100 p-7 transition-all duration-500 ease-out transform
-          ${showFavModal ? 'translate-x-0 opacity-100 visible' : 'translate-x-12 opacity-0 invisible'}`}
-      >
-        <button onClick={() => setShowFavModal(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-900 transition-colors">
-          <X size={22} />
-        </button>
-        <div className="flex items-center gap-2.5 mb-5">
-          <CheckCircle size={22} className="text-green-500" />
-          <h2 className="font-bold text-gray-900 text-lg tracking-tight">Đã thêm vào Yêu thích</h2>
-        </div>
-        <div className="flex gap-4 mb-7">
-          <div className="w-[90px] h-[90px] bg-[#F6F6F6] rounded-xl overflow-hidden shrink-0">
-            <img src={currentGalleryImages[0] || '/placeholder.png'} alt={product?.name || 'Sản phẩm'} className="w-full h-full object-contain mix-blend-multiply p-2" />
-          </div>
-          <div className="flex-1 text-sm font-medium">
-            <p className="text-gray-900 leading-tight text-base">{product?.name || 'Sản phẩm'}</p>
-            <p className="text-gray-500 mt-1">Giày Nam</p>
-            <p className="text-gray-900 mt-2.5 font-bold text-base">
-                {Number(selectedVariant ? selectedVariant.price : (product?.variants?.[0]?.price || 0)).toLocaleString('vi-VN')} ₫
-            </p>
-          </div>
-        </div>
-        <Link href="/favorites" onClick={() => setShowFavModal(false)} className="w-full block text-center bg-white text-gray-900 border border-gray-300 hover:border-gray-900 font-bold py-4 rounded-full transition-colors text-base">
-          Xem danh sách Yêu thích
-        </Link>
       </div>
     </div>
   );
