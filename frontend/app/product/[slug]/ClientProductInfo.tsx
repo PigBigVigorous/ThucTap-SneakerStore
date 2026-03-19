@@ -3,23 +3,23 @@
 import { useState, useEffect } from "react";
 // 🚨 ĐÃ ĐỔI SANG DÙNG ZUSTAND
 import { useCartStore } from "../../store/useCartStore"; 
-import { useFavorites } from "../../context/FavoritesContext";
 import toast from "react-hot-toast";
 import { Star, Heart, Ruler, ChevronDown, X, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { useFavoritesStore } from "../../store/useFavoritesStore"; // Nhúng mới
 
 export default function ClientProductInfo({ product }: { product: any }) {
   // 🚨 GỌI HÀM TỪ ZUSTAND
   const addToCart = useCartStore((state) => state.addToCart);
-  const { toggleFavorite, isFavorite } = useFavorites();
+  const favorites = useFavoritesStore((state) => state.favorites);
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
   const [selectedColor, setSelectedColor] = useState<any>(null);
   const [selectedSize, setSelectedSize] = useState<any>(null);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [showFavModal, setShowFavModal] = useState(false);
   
-  const isFav = isFavorite(product?.id);
-
+  const isFav = favorites.some((f) => f.product_id === product?.id);
   useEffect(() => {
     if (product?.variants && product.variants.length > 0) {
       const defaultVariant = product.variants[0];

@@ -2,10 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Heart } from "lucide-react"; // 🚨 Import icon trái tim
+import toast from "react-hot-toast";
+import { useFavoritesStore } from "./store/useFavoritesStore";
 
 export default function ClientHome({ initialProducts }: { initialProducts: any[] }) {
-  // State lưu trữ từ khóa tìm kiếm của người dùng
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // 🚨 Hút hàm xử lý Yêu thích từ Context
+  const favorites = useFavoritesStore((state) => state.favorites);
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
   // Tự động lọc sản phẩm mỗi khi gõ phím
   const filteredProducts = initialProducts.filter((product) =>
@@ -13,12 +19,36 @@ export default function ClientHome({ initialProducts }: { initialProducts: any[]
     product.brand?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 🚨 HÀM XỬ LÝ KHI BẤM VÀO TRÁI TIM
+  const handleToggleFavorite = (e: React.MouseEvent, product: any) => {
+    e.preventDefault(); // Ngăn trình duyệt nhảy lên đầu trang
+    e.stopPropagation(); // Ngăn thẻ Link bên dưới kích hoạt chuyển trang
+
+    const price = product.variants?.[0]?.price || 0;
+    
+    // Gửi data sang Context
+    const isAdded = toggleFavorite({
+      product_id: product.id,
+      product_name: product.name,
+      category_name: product.brand?.name || "Giày Thể Thao",
+      price: price,
+      image: product.base_image_url,
+      slug: product.slug,
+    });
+
+    // Thông báo cho User
+    if (isAdded) {
+      toast.success("Đã thêm vào Yêu thích!");
+    } else {
+      toast("Đã xóa khỏi Yêu thích", { icon: "🗑️" });
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gray-50 pb-12">
       
-      {/* --- HERO BANNER (Khu vực quảng cáo khổng lồ) --- */}
+      {/* --- HERO BANNER (Khu vực quảng cáo) --- */}
       <div className="relative bg-black text-white py-24 px-8 mb-12 flex flex-col items-center justify-center text-center overflow-hidden">
-        {/* Ảnh nền mờ (Background Image) */}
         <div 
           className="absolute inset-0 opacity-40 bg-cover bg-center"
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1552346154-21d32810baa3?q=80&w=2000&auto=format&fit=crop')" }}
@@ -32,7 +62,6 @@ export default function ClientHome({ initialProducts }: { initialProducts: any[]
             Khám phá bộ sưu tập những đôi giày giới hạn, độc quyền và mới nhất từ các thương hiệu hàng đầu thế giới.
           </p>
           
-          {/* Thanh tìm kiếm */}
           <div className="relative max-w-xl mx-auto">
             <input 
               type="text" 
@@ -69,40 +98,55 @@ export default function ClientHome({ initialProducts }: { initialProducts: any[]
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {filteredProducts.map((product: any) => (
-              <Link
-                href={`/product/${product.slug}`}
-                key={product.id}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 block cursor-pointer overflow-hidden group border border-gray-100"
-              >
-                {/* Khung ảnh có hiệu ứng Zoom khi di chuột */}
-                <div className="relative h-72 w-full bg-gray-100 overflow-hidden">
-                  <img
-                    src={product.base_image_url}
-                    alt={product.name}
-                    className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
-                  />
-                  {/* Nhãn Tag "Mới" */}
-                  <span className="absolute top-4 right-4 bg-black text-white text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-md">
-                    HOT
-                  </span>
-                </div>
+            {filteredProducts.map((product: any) => {
+              // Kiểm tra xem sản phẩm này đã được thả tim chưa
+              const isFav = favorites.some((f) => f.product_id === product.id);
+              
+              return (
+                <div
+                  key={product.id}
+                  className="relative bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 block overflow-hidden group border border-gray-100"
+                >
+                  {/* 🚨 NÚT THẢ TIM: Phải đặt ngoài thẻ Link để tránh lỗi click nhầm */}
+                  <button 
+                    onClick={(e) => handleToggleFavorite(e, product)}
+                    className="absolute top-4 right-4 z-20 bg-white p-2.5 rounded-full shadow-md hover:scale-110 transition-transform"
+                    title={isFav ? "Xóa khỏi Yêu thích" : "Thêm vào Yêu thích"}
+                  >
+                    <Heart size={20} className={isFav ? "fill-black text-black" : "text-gray-400"} strokeWidth={isFav ? 1 : 2} />
+                  </button>
 
-                <div className="p-5">
-                  <p className="text-xs text-gray-500 font-black mb-1 uppercase tracking-widest">
-                    {product.brand?.name}
-                  </p>
-                  <h2 className="text-lg font-bold text-gray-900 mb-2 truncate group-hover:text-red-600 transition-colors">
-                    {product.name}
-                  </h2>
-                  <p className="text-xl text-red-600 font-black">
-                    {product.variants[0]?.price 
-                      ? Number(product.variants[0].price).toLocaleString('vi-VN') + ' đ'
-                      : 'Liên hệ'}
-                  </p>
+                  {/* 🚨 PHẦN CÒN LẠI LÀ THẺ CHUYỂN TRANG */}
+                  <Link href={`/product/${product.slug}`} className="block">
+                    <div className="relative h-72 w-full bg-gray-100 overflow-hidden">
+                      <img
+                        src={product.base_image_url}
+                        alt={product.name}
+                        className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500"
+                      />
+                      {/* Dời nhãn HOT sang trái */}
+                      <span className="absolute top-4 left-4 bg-black text-white text-xs font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-md z-10">
+                        HOT
+                      </span>
+                    </div>
+
+                    <div className="p-5">
+                      <p className="text-xs text-gray-500 font-black mb-1 uppercase tracking-widest">
+                        {product.brand?.name}
+                      </p>
+                      <h2 className="text-lg font-bold text-gray-900 mb-2 truncate group-hover:text-red-600 transition-colors">
+                        {product.name}
+                      </h2>
+                      <p className="text-xl text-red-600 font-black">
+                        {product.variants[0]?.price 
+                          ? Number(product.variants[0].price).toLocaleString('vi-VN') + ' ₫'
+                          : 'Liên hệ'}
+                      </p>
+                    </div>
+                  </Link>
                 </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

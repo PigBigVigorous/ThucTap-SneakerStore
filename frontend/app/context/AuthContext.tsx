@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import toast from "react-hot-toast";
+import { useCartStore } from "../store/useCartStore"; // 🚨 Đã móc nối với Giỏ hàng
+import { useFavoritesStore } from "../store/useFavoritesStore";
 
-// Khai báo kiểu dữ liệu cho User
 export type User = {
   id: number;
   name: string;
@@ -31,13 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
-    
+
     if (storedUser && storedToken) {
-      // 1. Tải ngay user cũ từ LocalStorage để giao diện hiển thị mượt mà
       setUser(JSON.parse(storedUser));
       setToken(storedToken);
 
-      // 2. 🚨 NÂNG CẤP ENTERPRISE: Gọi ngầm API để đồng bộ Quyền hạn mới nhất
       const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
       fetch(`${API_URL}/user`, {
         headers: {
@@ -48,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.data) {
-            // Cập nhật lại State và LocalStorage với dữ liệu mới (có chứa Roles & Permissions)
             setUser(data.data);
             localStorage.setItem("user", JSON.stringify(data.data));
           }
@@ -57,33 +55,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // 🚨 KHI ĐĂNG NHẬP: TÌM LẠI GIỎ HÀNG CŨ CỦA NGƯỜI NÀY VÀ LẤY RA
+  // 🚨 NÂNG CẤP LOGIN: Gộp cả Giỏ Hàng lẫn Yêu Thích
   const login = (userData: User, authToken: string) => {
     setUser(userData);
     setToken(authToken);
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", authToken);
+
+    // --- 1. XỬ LÝ GIỎ HÀNG (GIỮ NGUYÊN) ---
+    const savedCartStr = localStorage.getItem(`saved_cart_user_${userData.id}`);
+    if (savedCartStr) {
+      const oldCart = JSON.parse(savedCartStr);
+      // Gộp thông minh nếu muốn, hoặc đơn giản là đập đè lên (ở đây tôi viết logic đập đè lại két sắt cũ)
+      // Nếu ngài muốn giữ nguyên code trộn giỏ hàng cũ thì cứ giữ nhé.
+      useCartStore.setState({ items: oldCart }); 
+    }
+
+    // --- 2. XỬ LÝ YÊU THÍCH (MỚI) ---
+    const currentGuestFavs = useFavoritesStore.getState().favorites;
+    const savedFavsStr = localStorage.getItem(`saved_favs_user_${userData.id}`);
+    let mergedFavs = savedFavsStr ? JSON.parse(savedFavsStr) : [];
+
+    // Trộn đồ khách vãng lai vừa thả tim vào két sắt cũ
+    currentGuestFavs.forEach((guestItem: any) => {
+      if (!mergedFavs.find((i: any) => i.product_id === guestItem.product_id)) {
+        mergedFavs.push(guestItem);
+      }
+    });
+
+    // Bơm lại vào Zustand
+    useFavoritesStore.setState({ favorites: mergedFavs });
   };
 
+  // 🚨 NÂNG CẤP LOGOUT: Cất cả Giỏ Hàng lẫn Yêu Thích vào két
   const logout = () => {
+    if (user) {
+      // 1. Cất Giỏ Hàng
+      const currentCart = useCartStore.getState().items;
+      localStorage.setItem(`saved_cart_user_${user.id}`, JSON.stringify(currentCart));
+
+      // 2. Cất Yêu Thích (MỚI)
+      const currentFavs = useFavoritesStore.getState().favorites;
+      localStorage.setItem(`saved_favs_user_${user.id}`, JSON.stringify(currentFavs));
+    }
+
     setUser(null);
     setToken(null);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
+
+    // Xóa trắng trên màn hình
+    useCartStore.getState().clearCart();
+    useFavoritesStore.getState().clearFavorites(); // Xóa trắng tim
+
     toast.success("Đã đăng xuất thành công!");
     window.location.href = "/";
   };
 
-  // Hàm kiểm tra Role
   const hasRole = (roleName: string) => {
     if (!user || !user.roles) return false;
     return user.roles.some((r) => r.name === roleName);
   };
 
-  // Hàm kiểm tra Quyền (Permission)
   const hasPermission = (permissionName: string) => {
     if (!user) return false;
-    // Kim bài miễn tử cho Sếp tổng
-    if (hasRole("super-admin")) return true; 
+    if (hasRole("super-admin")) return true;
 
     if (!user.permissions) return false;
     return user.permissions.some((p) => p.name === permissionName);
