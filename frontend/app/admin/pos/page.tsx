@@ -37,12 +37,10 @@ export default function PosPage() {
   const [processing, setProcessing] = useState(false);
   const [branchId, setBranchId] = useState(1);
 
-  // Fetch products on mount
   useEffect(() => {
     fetchProducts();
   }, [token, branchId]);
 
-  // Filter products based on search
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredProducts(products);
@@ -126,8 +124,9 @@ export default function PosPage() {
     );
   };
 
+  // 🚨 ĐÃ FIX: Bọc Number() để tránh lỗi phép cộng chuỗi
   const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    return cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
   };
 
   const handleCheckout = async () => {
@@ -151,7 +150,6 @@ export default function PosPage() {
       if (response.success) {
         toast.success("Thanh toán thành công!");
         setCart([]);
-        // Refresh products to update stock
         fetchProducts();
       } else {
         toast.error(response.message || "Lỗi thanh toán!");
@@ -175,11 +173,9 @@ export default function PosPage() {
         <p className="text-gray-600 mt-2">Chi nhánh: Branch {branchId}</p>
       </div>
 
-      {/* Main Container */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Products (70%) */}
         <div className="lg:col-span-2">
-          {/* Search Bar */}
           <div className="mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
@@ -193,7 +189,6 @@ export default function PosPage() {
             </div>
           </div>
 
-          {/* Products Grid */}
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
@@ -210,7 +205,6 @@ export default function PosPage() {
                   key={product.id}
                   className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                 >
-                  {/* Product Image */}
                   <div className="relative bg-gray-200 h-40 md:h-48 overflow-hidden">
                     {product.image_url ? (
                       <img
@@ -225,23 +219,20 @@ export default function PosPage() {
                     )}
                   </div>
 
-                  {/* Product Info */}
                   <div className="p-3 md:p-4">
                     <h3 className="font-semibold text-sm md:text-base text-gray-900 truncate">
                       {product.product.name}
                     </h3>
                     <p className="text-xs text-gray-500 truncate">SKU: {product.sku}</p>
 
-                    {/* Color & Size */}
                     <div className="flex gap-2 mt-2 text-xs text-gray-600">
                       {product.color && <span>Color: {product.color.name}</span>}
                       {product.size && <span>Size: {product.size.name}</span>}
                     </div>
 
-                    {/* Price & Stock */}
                     <div className="mt-3 flex justify-between items-center">
                       <span className="font-bold text-blue-600">
-                        ₫{product.price.toLocaleString('vi-VN')}
+                        {Number(product.price).toLocaleString('vi-VN')} ₫
                       </span>
                       <span
                         className={`text-xs px-2 py-1 rounded ${
@@ -254,7 +245,6 @@ export default function PosPage() {
                       </span>
                     </div>
 
-                    {/* Add to Cart Button */}
                     <button
                       onClick={() => addToCart(product)}
                       disabled={product.stock <= 0}
@@ -282,7 +272,6 @@ export default function PosPage() {
               Giỏ Hàng
             </h2>
 
-            {/* Cart Items */}
             <div className="space-y-3 max-h-96 overflow-y-auto mb-6">
               {cart.length === 0 ? (
                 <p className="text-center text-gray-500 py-8">Giỏ hàng trống</p>
@@ -309,7 +298,6 @@ export default function PosPage() {
                       </button>
                     </div>
 
-                    {/* Quantity Controls */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 bg-white border border-gray-300 rounded">
                         <button
@@ -327,7 +315,7 @@ export default function PosPage() {
                         </button>
                       </div>
                       <span className="font-semibold text-sm text-blue-600">
-                        ₫{(item.product.price * item.quantity).toLocaleString('vi-VN')}
+                        {(Number(item.product.price) * item.quantity).toLocaleString('vi-VN')} ₫
                       </span>
                     </div>
                   </div>
@@ -335,20 +323,17 @@ export default function PosPage() {
               )}
             </div>
 
-            {/* Divider */}
             <div className="border-t border-gray-200 mb-4"></div>
 
-            {/* Total */}
             <div className="bg-blue-50 p-4 rounded-lg mb-6">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-600 font-medium">Tên thành tiền:</span>
                 <span className="text-2xl font-bold text-blue-600">
-                  ₫{calculateTotal().toLocaleString('vi-VN')}
+                  {Number(calculateTotal()).toLocaleString('vi-VN')} ₫
                 </span>
               </div>
             </div>
 
-            {/* Checkout Button */}
             <button
               onClick={handleCheckout}
               disabled={cart.length === 0 || processing}
@@ -361,7 +346,6 @@ export default function PosPage() {
               {processing ? 'Đang xử lý...' : 'Thanh Toán'}
             </button>
 
-            {/* Refresh Button */}
             <button
               onClick={fetchProducts}
               className="w-full mt-2 py-2 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"

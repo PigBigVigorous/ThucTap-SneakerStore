@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class InventoryTransaction extends Model
 {
-    // Bảng này ta thiết kế chỉ dùng created_at, không cần updated_at
+    
     public $timestamps = false; 
 
     protected $fillable = [
@@ -20,7 +20,7 @@ class InventoryTransaction extends Model
         'quantity_change' => 'integer',
     ];
 
-    // Quan hệ: Thuộc về 1 biến thể (SKU) cụ thể
+
     public function variant()
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');

@@ -68,7 +68,6 @@ class ProductCatalogController extends Controller
                 'is_active' => true,
             ]);
 
-            // 👇 THÊM ĐOẠN NÀY ĐỂ LƯU ẢNH GALLERY VÀO BẢNG product_images 👇
             if ($request->hasFile('gallery_images')) {
                 foreach ($request->file('gallery_images') as $index => $image) {
                     $galleryPath = $image->store('products/gallery', 'public');

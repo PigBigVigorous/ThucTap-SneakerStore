@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 
-// 🚨 Dữ liệu giả lập cho Mega Menu (Bạn có thể tùy chỉnh lại link và tên sau)
 const MENU_DATA = [
   {
     id: "brands",

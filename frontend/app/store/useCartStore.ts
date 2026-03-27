@@ -97,7 +97,7 @@ export const useCartStore = create<CartState>()(
       },
     }),
     {
-      name: 'sneaker-cart-storage', // 🚨 Tên key lưu trong LocalStorage
+      name: 'sneaker-cart-storage', 
     }
   )
 );

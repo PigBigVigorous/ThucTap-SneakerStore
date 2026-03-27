@@ -4,12 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Cviebrock\EloquentSluggable\Sluggable;
-use Illuminate\Database\Eloquent\SoftDeletes; // 🚨 Thêm dòng này
+use Illuminate\Database\Eloquent\SoftDeletes; 
 
 class Product extends Model
 {
     use Sluggable;
-    use SoftDeletes; // 🚨 Thêm dòng này
+    use SoftDeletes; 
     protected $fillable = [
         'name', 'slug', 'description', 'brand_id', 
         'category_id', 'base_image_url', 'is_active'

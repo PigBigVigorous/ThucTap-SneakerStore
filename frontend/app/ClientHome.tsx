@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Heart } from "lucide-react"; // 🚨 Import icon trái tim
+import { Heart } from "lucide-react";
 import toast from "react-hot-toast";
 import { useFavoritesStore } from "./store/useFavoritesStore";
 
 export default function ClientHome({ initialProducts }: { initialProducts: any[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   
-  // 🚨 Hút hàm xử lý Yêu thích từ Context
+  //  Hút hàm xử lý Yêu thích từ Context
   const favorites = useFavoritesStore((state) => state.favorites);
   const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
@@ -19,7 +19,7 @@ export default function ClientHome({ initialProducts }: { initialProducts: any[]
     product.brand?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 🚨 HÀM XỬ LÝ KHI BẤM VÀO TRÁI TIM
+  //  HÀM XỬ LÝ KHI BẤM VÀO TRÁI TIM
   const handleToggleFavorite = (e: React.MouseEvent, product: any) => {
     e.preventDefault(); // Ngăn trình duyệt nhảy lên đầu trang
     e.stopPropagation(); // Ngăn thẻ Link bên dưới kích hoạt chuyển trang
@@ -107,7 +107,6 @@ export default function ClientHome({ initialProducts }: { initialProducts: any[]
                   key={product.id}
                   className="relative bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 block overflow-hidden group border border-gray-100"
                 >
-                  {/* 🚨 NÚT THẢ TIM: Phải đặt ngoài thẻ Link để tránh lỗi click nhầm */}
                   <button 
                     onClick={(e) => handleToggleFavorite(e, product)}
                     className="absolute top-4 right-4 z-20 bg-white p-2.5 rounded-full shadow-md hover:scale-110 transition-transform"
@@ -116,7 +115,6 @@ export default function ClientHome({ initialProducts }: { initialProducts: any[]
                     <Heart size={20} className={isFav ? "fill-black text-black" : "text-gray-400"} strokeWidth={isFav ? 1 : 2} />
                   </button>
 
-                  {/* 🚨 PHẦN CÒN LẠI LÀ THẺ CHUYỂN TRANG */}
                   <Link href={`/product/${product.slug}`} className="block">
                     <div className="relative h-72 w-full bg-gray-100 overflow-hidden">
                       <img

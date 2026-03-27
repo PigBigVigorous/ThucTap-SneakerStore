@@ -69,7 +69,7 @@ export default function AdminDashboard() {
           </h1>
         </div>
 
-        {/* 🌟 KHU VỰC 1: CÁC THẺ BÁO CÁO NHANH */}
+        {/*  KHU VỰC 1: CÁC THẺ BÁO CÁO NHANH */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Thẻ Doanh thu */}
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow">
@@ -99,7 +99,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 🌟 KHU VỰC 2: BIỂU ĐỒ DOANH THU */}
+        {/*  KHU VỰC 2: BIỂU ĐỒ DOANH THU */}
         <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
           <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide mb-6">Biểu đồ doanh thu (7 ngày qua)</h2>
           <div className="h-80 w-full">
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* 🌟 KHU VỰC 3: BẢNG LỊCH SỬ KHO (Giữ nguyên như cũ) */}
+        {/*  KHU VỰC 3: BẢNG LỊCH SỬ KHO (Giữ nguyên như cũ) */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-100 bg-gray-50/50">
             <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide">Biến động kho hàng gần đây</h2>

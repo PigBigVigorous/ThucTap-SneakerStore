@@ -33,12 +33,11 @@ class PosController extends Controller
             'limit' => 'nullable|integer|min:1|max:100',
         ]);
 
-        $branchId = $request->input('branch_id', 1); // Default to Branch 1 (main POS store)
+        $branchId = $request->input('branch_id', 1); 
         $search = $request->input('search');
         $limit = $request->input('limit', 50);
 
         try {
-            // Fetch ProductVariants with eager loading and filter by branch stock > 0
             $query = ProductVariant::with([
                 'product.images',
                 'color',
@@ -52,7 +51,6 @@ class PosController extends Controller
                   ->where('stock', '>', 0);
             });
 
-            // Optional: Filter by SKU or product name
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('sku', 'like', '%' . $search . '%')
@@ -62,12 +60,10 @@ class PosController extends Controller
                 });
             }
 
-            // Get results (paginated or limited)
             $products = $query->limit($limit)
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($variant) {
-                    // Extract branch stock for cleaner response
                     $branchStock = $variant->branchStocks->first();
                     return [
                         'id' => $variant->id,
@@ -99,15 +95,7 @@ class PosController extends Controller
         }
     }
 
-    /**
-     * Place a POS order (walk-in customer)
-     * API: POST /api/admin/pos/orders
-     * Body:
-     * {
-     *   "items": [{"variant_id": 1, "quantity": 2}, ...],
-     *   "branch_id": 1
-     * }
-     */
+    
     public function placeOrder(Request $request)
     {
         $validatedData = $request->validate([

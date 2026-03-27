@@ -18,7 +18,6 @@ use App\Models\PurchaseOrderDetail;
 use App\Models\InventoryTransaction;
 use App\Models\Branch;
 use App\Models\VariantBranchStock;
-// 🚨 IMPORT MODEL KÊNH BÁN HÀNG (PHASE 2)
 use App\Models\SalesChannel;
 
 class DatabaseSeeder extends Seeder
@@ -46,7 +45,7 @@ class DatabaseSeeder extends Seeder
             'is_active' => true
         ]);
 
-        // 🌟 3. TẠO KÊNH BÁN HÀNG (PHASE 2 - OMNICHANNEL)
+        //  3. TẠO KÊNH BÁN HÀNG (PHASE 2 - OMNICHANNEL)
         $webChannel = SalesChannel::create([
             'name' => 'Website Chính Thức',
             'type' => 'online',

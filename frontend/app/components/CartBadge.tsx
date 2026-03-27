@@ -8,7 +8,7 @@ import { useCartStore } from "../store/useCartStore";
 export default function CartBadge() {
   const [isMounted, setIsMounted] = useState(false);
   
-  // 🚨 SỬA LỖI Ở ĐÂY: Theo dõi trực tiếp mảng 'items' thay vì lấy hàm
+  // Lấy mảng 'items' từ Zustand store
   const items = useCartStore((state) => state.items);
   
   // Tự động tính toán lại mỗi khi mảng 'items' có biến động

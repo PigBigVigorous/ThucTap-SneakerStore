@@ -72,7 +72,7 @@ export default function SizeGuidePage() {
           </div>
         </div>
 
-        {/* 🌟 BẢNG SIZE TRÀN VIỀN (SCROLL NGANG) */}
+        {/*  BẢNG SIZE TRÀN VIỀN (SCROLL NGANG) */}
         <div className="relative border border-gray-200 rounded-2xl overflow-hidden mb-16 shadow-sm">
           <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden">
             <table className="w-full text-left border-collapse min-w-[700px]">
@@ -102,8 +102,6 @@ export default function SizeGuidePage() {
             </table>
           </div>
         </div>
-
-        {/* 🌟 HƯỚNG DẪN ĐO CHÂN (Dịch chuẩn từ Nike) */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Cách đo chiều dài bàn chân</h2>
           <ol className="space-y-5 text-gray-700 font-medium list-decimal list-inside marker:font-black marker:text-black pl-2">

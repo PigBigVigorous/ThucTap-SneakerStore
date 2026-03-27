@@ -5,14 +5,12 @@ import { useAuth } from "../context/AuthContext";
 import { orderAPI } from "../services/api";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import OrderDetailModal from "../components/OrderDetailModal"; // 👈 Nhúng Modal vào đây
+import OrderDetailModal from "../components/OrderDetailModal";
 
 export default function MyOrdersPage() {
   const { user, token } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // 🚨 State để lưu trữ đơn hàng nào đang được click vào
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
 
   useEffect(() => {
@@ -69,7 +67,6 @@ export default function MyOrdersPage() {
                 
                 <div className="flex-1 space-y-3 w-full">
                   <div className="flex items-center gap-4">
-                    {/* 🚨 BIẾN MÃ ĐƠN THÀNH NÚT BẤM (Kích hoạt Modal) */}
                     <button 
                       onClick={() => setSelectedOrder(order)}
                       className="font-black text-blue-600 text-xl tracking-wider hover:text-blue-800 hover:underline cursor-pointer transition-all"
@@ -113,8 +110,6 @@ export default function MyOrdersPage() {
             ))}
           </div>
         )}
-
-        {/* 🚨 TRIỆU HỒI MODAL Ở CUỐI TRANG */}
         <OrderDetailModal 
           isOpen={!!selectedOrder} 
           onClose={() => setSelectedOrder(null)} 

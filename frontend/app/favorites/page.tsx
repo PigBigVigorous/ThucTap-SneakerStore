@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-// 🚨 Lưu ý: Đang dùng Zustand Store mới
 import { useFavoritesStore } from "../store/useFavoritesStore"; 
 import { Heart } from "lucide-react";
 
@@ -64,8 +63,6 @@ export default function FavoritesPage() {
                   <Link href={`/product/${item.slug}`} className="hover:text-gray-600 transition-colors pr-2">
                     <h3 className="text-base font-medium text-gray-900 line-clamp-1">{item.product_name}</h3>
                   </Link>
-
-                  {/* 🚨 ĐÃ FIX: Bọc Number() để đảm bảo format tiền chuẩn VND */}
                   <span className="text-base font-medium text-gray-900 whitespace-nowrap">
                     {Number(item.price).toLocaleString('vi-VN')} ₫
                   </span>

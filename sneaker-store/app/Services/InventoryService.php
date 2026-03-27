@@ -25,14 +25,14 @@ class InventoryService
      */
     public function placeOrder($userId, $shippingAddress, $items, $saleschannelId = null, $branchId = null)
     {
-        // Bắt đầu Transaction: Nếu có bất kỳ lỗi nào (throw Exception), tự động Rollback toàn bộ DB.
+        
         return DB::transaction(function () use ($userId, $shippingAddress, $items, $saleschannelId, $branchId) {
             
             $totalAmount = 0;
 
             // 1. Khởi tạo đơn hàng (trạng thái Pending, tiền tính sau)
             $order = Order::create([
-                'order_tracking_code' => '#ORD-' . strtoupper(Str::random(6)), // VD: #ORD-A9X2B1
+                'order_tracking_code' => '#ORD-' . strtoupper(Str::random(6)), 
                 'user_id' => $userId,
                 'shipping_address' => $shippingAddress,
                 'total_amount' => 0, 
@@ -85,9 +85,9 @@ class InventoryService
                 InventoryTransaction::create([
                     'product_variant_id' => $variant->id,
                     'transaction_type' => 'SALE',
-                    'from_branch_id' => $branchId, // Xuất từ chi nhánh này
-                    'reference_id' => $order->id, // Trỏ về ID đơn hàng
-                    'quantity_change' => -$item['quantity'], // Số âm vì là bán ra
+                    'from_branch_id' => $branchId, 
+                    'reference_id' => $order->id, 
+                    'quantity_change' => -$item['quantity'], 
                     'note' => "Xuất bán cho đơn hàng: " . $order->order_tracking_code,
                     'created_at' => now(),
                 ]);
@@ -97,7 +97,6 @@ class InventoryService
             $order->total_amount = $totalAmount;
             $order->save();
 
-            // Nếu chạy đến đây mà không có lỗi gì, tự động Commit vào DB.
             return $order;
         });
     }
@@ -128,9 +127,9 @@ class InventoryService
                 InventoryTransaction::create([
                     'product_variant_id' => $item->product_variant_id,
                     'transaction_type' => 'RETURN',
-                    'to_branch_id' => $order->branch_id, // Nhập lại vào chi nhánh này
+                    'to_branch_id' => $order->branch_id,
                     'reference_id' => $order->id,
-                    'quantity_change' => $item->quantity, // Số dương vì nhập lại
+                    'quantity_change' => $item->quantity, 
                     'note' => "Hoàn kho do hủy đơn hàng: " . $order->order_tracking_code,
                     'created_at' => now(),
                 ]);
@@ -141,7 +140,7 @@ class InventoryService
     }
 
     /**
-     * Transfer stock between branches
+     * 
      *
      * @param int $variantId
      * @param int $fromBranchId
@@ -154,7 +153,7 @@ class InventoryService
     public function transferStock($variantId, $fromBranchId, $toBranchId, $quantity, $note)
     {
         return DB::transaction(function () use ($variantId, $fromBranchId, $toBranchId, $quantity, $note) {
-            // Find and lock the source branch stock
+            
             $fromStock = VariantBranchStock::where('variant_id', $variantId)
                 ->where('branch_id', $fromBranchId)
                 ->lockForUpdate()
@@ -164,11 +163,9 @@ class InventoryService
                 throw new Exception("Insufficient stock in source branch. Available: " . ($fromStock ? $fromStock->stock : 0));
             }
 
-            // Decrement stock from source branch
             $fromStock->stock -= $quantity;
             $fromStock->save();
 
-            // Find or create and lock the destination branch stock
             $toStock = VariantBranchStock::where('variant_id', $variantId)
                 ->where('branch_id', $toBranchId)
                 ->lockForUpdate()
@@ -186,11 +183,9 @@ class InventoryService
                     ->first();
             }
 
-            // Increment stock in destination branch
             $toStock->stock += $quantity;
             $toStock->save();
 
-            // Log the transaction
             InventoryTransaction::create([
                 'product_variant_id' => $variantId,
                 'transaction_type' => 'TRANSFER',
@@ -204,7 +199,7 @@ class InventoryService
     }
 
     /**
-     * Adjust stock (positive for found items, negative for damaged/lost)
+     *
      *
      * @param int $variantId
      * @param int $branchId
@@ -255,11 +250,11 @@ class InventoryService
         });
     }
     /**
-     * Nghiệp vụ Trả Hàng (Hoàn lại kho và ghi log RETURN)
+     * Nghiệp vụ Trả Hàng
      */
     public function returnOrder($order)
     {
-        // Bọc trong transaction và lock table để an toàn tuyệt đối
+        
         DB::transaction(function () use ($order) {
             foreach ($order->items as $item) {
                 // 1. Tìm tồn kho của biến thể tại chi nhánh đã mua (có lock)
@@ -276,7 +271,7 @@ class InventoryService
                     // 3. Ghi lịch sử biến động là RETURN để kế toán kiểm tra
                     InventoryTransaction::create([
                         'product_variant_id' => $item->variant_id,
-                        'transaction_type' => 'RETURN', // 🚨 Khác với CANCEL hoặc SALE
+                        'transaction_type' => 'RETURN', 
                         'reference_id' => $order->id,
                         'quantity_change' => $item->quantity, // Số dương (cộng vào)
                         'note' => 'Khách trả hàng (Mã đơn: ' . $order->order_tracking_code . ')',

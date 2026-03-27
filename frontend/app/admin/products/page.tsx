@@ -25,7 +25,7 @@ export default function ProductsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
-  // 👇 THÊM STATE CHO GALLERY 👇
+  //THÊM STATE CHO GALLERY
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
 
@@ -70,7 +70,7 @@ export default function ProductsPage() {
     // 3. Đổ danh sách Biến thể (Màu/Size/Giá) cũ ra
     if (product.variants && product.variants.length > 0) {
       setVariants(product.variants.map((v: any) => ({
-        id: v.id, // 🚨 Cực kỳ quan trọng: Phải có ID để Backend biết sửa dòng nào
+        id: v.id, //Phải có ID để Backend biết sửa dòng nào
         color_id: v.color_id.toString(),
         size_id: v.size_id.toString(),
         price: Number(v.price).toString(),
@@ -136,7 +136,7 @@ export default function ProductsPage() {
       // Biến mảng Biến thể thành chuỗi JSON để gửi
       formData.append("variants", JSON.stringify(variants));
 
-      // 🚨 RẼ NHÁNH: SỬA HOẶC THÊM MỚI
+      // SỬA HOẶC THÊM MỚI
       let res;
       if (editingId) {
         res = await adminProductAPI.update(editingId, formData, token);
@@ -144,7 +144,7 @@ export default function ProductsPage() {
         res = await adminProductAPI.create(formData, token);
       }
       
-      // 🚨 XỬ LÝ KẾT QUẢ TRẢ VỀ CHUNG LÀM 1 LẦN
+      // XỬ LÝ KẾT QUẢ TRẢ VỀ CHUNG LÀM 1 LẦN
       if (res.success) {
         toast.success(editingId ? "Đã cập nhật thành công!" : "Đã thêm sản phẩm thành công!");
         setShowModal(false);
@@ -341,12 +341,12 @@ export default function ProductsPage() {
                     </div>
                   </div>
                   
-{/* 👇 THÊM HTML CHO ẢNH GALLERY Ở ĐÂY 👇 */}
+{/*  THÊM HTML CHO ẢNH GALLERY Ở ĐÂY  */}
                   <div className="pt-4 border-t border-gray-100">
                     <label className="block text-sm font-bold text-gray-700 mb-2">Ảnh Gallery (Nhiều góc độ)</label>
                     <input 
                       type="file" 
-                      multiple // 🚨 Thuộc tính cho phép chọn nhiều file
+                      multiple //  Thuộc tính cho phép chọn nhiều file
                       accept="image/*" 
                       onChange={handleGalleryChange} 
                       className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-black hover:file:bg-gray-200 transition-colors mb-3" 

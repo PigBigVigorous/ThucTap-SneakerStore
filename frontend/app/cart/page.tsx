@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-// 🚨 ĐÃ ĐỔI SANG DÙNG ZUSTAND
+
 import { useCartStore } from "../store/useCartStore"; 
 import { Trash2, Heart, ChevronDown, HelpCircle } from "lucide-react";
 
 export default function CartPage() {
-  // 🚨 HÚT DATA TỪ ZUSTAND STORE
+  
   const items = useCartStore((state) => state.items);
   const removeFromCart = useCartStore((state) => state.removeFromCart);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -36,7 +36,7 @@ export default function CartPage() {
       <div className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10">
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
           
-          {/* 🌟 CỘT TRÁI: DANH SÁCH SẢN PHẨM */}
+          {/* CỘT TRÁI: DANH SÁCH SẢN PHẨM */}
           <div className="w-full lg:w-[65%]">
             <div className="bg-[#F5F5F5] p-5 rounded-2xl mb-8">
               <h2 className="text-[#FA5400] font-medium text-base mb-1">
@@ -76,7 +76,7 @@ export default function CartPage() {
                               onChange={(e) => updateQuantity(item.variant_id, Number(e.target.value))}
                               className="bg-transparent text-gray-900 font-medium outline-none cursor-pointer"
                             >
-                              {/* 🚨 ZUSTAND: Chặn số lượng tối đa dựa vào stock */}
+                              {/* Chặn số lượng tối đa dựa vào stock */}
                               {Array.from({ length: Math.min(10, item.stock) }, (_, i) => i + 1).map(num => (
                                 <option key={num} value={num}>{num}</option>
                               ))}
@@ -103,7 +103,7 @@ export default function CartPage() {
             </div>
           </div>
 
-          {/* 🌟 CỘT PHẢI: SUMMARY */}
+          {/* CỘT PHẢI: SUMMARY */}
           <div className="w-full lg:w-[35%]">
             <div className="sticky top-24">
               <h2 className="text-[28px] font-medium text-gray-900 mb-6 tracking-tight">Summary</h2>

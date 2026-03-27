@@ -168,7 +168,6 @@ export const orderAPI = {
 
     const result = await res.json();
 
-    // 🚨 NẾU LARAVEL TRẢ VỀ LỖI (Ví dụ 422 Validation, 500, v.v.), chuẩn hóa lại response
     if (!res.ok) {
       return {
         success: false,
@@ -302,8 +301,6 @@ export const adminProductAPI = {
         headers: { 
           "Authorization": `Bearer ${token}`,
           "Accept": "application/json"
-          // 🚨 LƯU Ý: Tuyệt đối KHÔNG set "Content-Type": "application/json" ở đây. 
-          // Browser sẽ tự động set "multipart/form-data" khi thấy FormData.
         },
         body: formData, // Gửi nguyên cục FormData chứa cả chữ lẫn file ảnh
       });
@@ -320,7 +317,6 @@ export const adminProductAPI = {
     });
     return res.json();
   },
-  // 👇 THÊM HÀM UPDATE NÀY VÀO 👇
   update: async (id: number, formData: FormData, token: string) => {
     const res = await fetch(`${API_URL}/admin/products/${id}`, {
       method: "POST", // Dùng POST để gửi FormData chứa ảnh

@@ -55,8 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // 🚨 KHI ĐĂNG NHẬP: TÌM LẠI GIỎ HÀNG CŨ CỦA NGƯỜI NÀY VÀ LẤY RA
-  // 🚨 NÂNG CẤP LOGIN: Gộp cả Giỏ Hàng lẫn Yêu Thích
   const login = (userData: User, authToken: string) => {
     setUser(userData);
     setToken(authToken);
@@ -88,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useFavoritesStore.setState({ favorites: mergedFavs });
   };
 
-  // 🚨 NÂNG CẤP LOGOUT: Cất cả Giỏ Hàng lẫn Yêu Thích vào két
+  //Cất cả Giỏ Hàng lẫn Yêu Thích vào két
   const logout = () => {
     if (user) {
       // 1. Cất Giỏ Hàng

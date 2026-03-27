@@ -1,12 +1,11 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
+
 
 class AuthController extends Controller
 {
@@ -29,17 +28,11 @@ class AuthController extends Controller
             'password' => $request->password, 
         ]);
 
-        // 🚨 Tải kèm chức vụ (Mặc định User mới tạo sẽ rỗng, nhưng phải có để Frontend không bị lỗi undefined)
-        //$user->load('roles', 'permissions');
-
         $user->load('roles'); // Tải thông tin Role
-        // Hút TOÀN BỘ quyền (từ Role + trực tiếp) và gắn đè vào chữ 'permissions'
+
         $user->setRelation('permissions', $user->getAllPermissions()); 
         
-        // 3. Cấp Token mới
-        $token = $user->createToken('auth_token')->plainTextToken;
-        
-        // 3. Cấp Token cho User vừa tạo
+        //Cấp Token mới
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -52,18 +45,17 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * ĐĂNG NHẬP (LOGIN)
-     */
+    //ĐĂNG NHẬP (LOGIN)
+     
     public function login(Request $request)
     {
-        // 1. Kiểm tra đầu vào
+        // Kiểm tra đầu vào
         $request->validate([
             'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
 
-        // 2. Kiểm tra thông tin đăng nhập trong CSDL
+        // Kiểm tra thông tin đăng nhập trong CSDL
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -73,17 +65,17 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // 🚨 BƯỚC ĐỘ THÊM: Tải kèm chức vụ (roles) và quyền (permissions) ngay khi Login thành công
+        
         $user->load('roles', 'permissions');
 
-        // 3. Cấp Token mới
+        // Cấp Token mới
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'success' => true,
             'message' => 'Đăng nhập thành công!',
             'data' => [
-                'user' => $user, // Lúc này cục $user đã phình to ra, chứa cả mảng roles bên trong
+                'user' => $user, 
                 'token' => $token
             ]
         ]);
@@ -94,7 +86,6 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Xóa (Thu hồi) cái token hiện tại mà người dùng đang dùng
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([

@@ -17,7 +17,6 @@ class Branch extends Model
         return $this->hasMany(VariantBranchStock::class, 'branch_id');
     }
 
-    // Return transactions where this branch is either source or destination.
     public function inventoryTransactionsFrom()
     {
         return $this->hasMany(InventoryTransaction::class, 'from_branch_id');
@@ -28,14 +27,12 @@ class Branch extends Model
         return $this->hasMany(InventoryTransaction::class, 'to_branch_id');
     }
 
-    // Helpful combined query (not a relation object) — use when fetching collections.
     public function inventoryTransactions()
     {
         return InventoryTransaction::where('from_branch_id', $this->id)
             ->orWhere('to_branch_id', $this->id);
     }
 
-    // Quan hệ: Có nhiều đơn hàng được xử lý/giao hàng từ chi nhánh này
     public function orders()
     {
         return $this->hasMany(Order::class, 'branch_id');

@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // 🚨 THÊM ĐOẠN NÀY ĐỂ ĐĂNG KÝ MIDDLEWARE CỦA SPATIE
+        //ĐĂNG KÝ MIDDLEWARE CỦA SPATIE
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
@@ -56,7 +56,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 // 3. Các lỗi Sập hệ thống / Logic khác (500)
                 return response()->json([
                     'success' => false,
-                    // Trong thực tế, nên đổi $e->getMessage() thành "Lỗi máy chủ" để giấu code
                     'message' => 'Lỗi hệ thống: ' . $e->getMessage(), 
                     'data' => null
                 ], 500);

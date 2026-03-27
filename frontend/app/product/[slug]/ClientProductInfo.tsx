@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// 🚨 ĐÃ ĐỔI SANG DÙNG ZUSTAND
 import { useCartStore } from "../../store/useCartStore"; 
 import toast from "react-hot-toast";
 import { Star, Heart, Ruler, ChevronDown, X, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
@@ -9,7 +8,7 @@ import Link from "next/link";
 import { useFavoritesStore } from "../../store/useFavoritesStore"; // Nhúng mới
 
 export default function ClientProductInfo({ product }: { product: any }) {
-  // 🚨 GỌI HÀM TỪ ZUSTAND
+  //  GỌI HÀM TỪ ZUSTAND
   const addToCart = useCartStore((state) => state.addToCart);
   const favorites = useFavoritesStore((state) => state.favorites);
   const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
@@ -76,7 +75,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
       return;
     }
 
-    // 🚨 FORMAT DỮ LIỆU ĐẨY VÀO ZUSTAND
+    //  FORMAT DỮ LIỆU ĐẨY VÀO ZUSTAND
     addToCart({
       variant_id: selectedVariant.id,
       product_id: product?.id,
@@ -114,7 +113,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
 
   return (
     <div suppressHydrationWarning className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-white">
-      {/* 🌟 CỘT TRÁI: GALLERY ẢNH */}
+      {/*  CỘT TRÁI: GALLERY ẢNH */}
       <div className="lg:col-span-7 lg:pr-10 pt-10 lg:pt-0">
         <div className="flex flex-row gap-4 sticky top-24">
           <div className="w-[60px] shrink-0 flex flex-col gap-2.5 h-[580px] overflow-y-auto [&::-webkit-scrollbar]:hidden pr-1 pb-4">
@@ -144,7 +143,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
         </div>
       </div>
 
-      {/* 🌟 CỘT PHẢI: PRODUCT INFO */}
+      {/*  CỘT PHẢI: PRODUCT INFO */}
       <div className="lg:col-span-5 pt-10 lg:pt-0 lg:px-10 pb-20">
         <div className="sticky top-28 space-y-8">
           <div className="pb-4">

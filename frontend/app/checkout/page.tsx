@@ -3,16 +3,32 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-// 🚨 ĐÃ ĐỔI SANG DÙNG ZUSTAND
 import { useCartStore } from "../store/useCartStore"; 
 import { Check, Lock, Package } from "lucide-react";
 import toast from "react-hot-toast";
 import { orderAPI } from "../services/api";
 
+
+const FloatingInput = ({ label, name, type = "text", value, onChange }: any) => (
+  <div className="relative w-full">
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      className="block px-4 pb-2.5 pt-6 w-full text-base text-gray-900 bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-black focus:border-black peer transition-colors"
+      placeholder=" "
+      required
+    />
+    <label className="absolute text-base text-gray-500 duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3 cursor-text pointer-events-none">
+      {label}
+    </label>
+  </div>
+);
+
 export default function CheckoutPage() {
   const router = useRouter();
   
-  // 🚨 HÚT DATA TỪ ZUSTAND STORE
   const cart = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
   
@@ -43,7 +59,6 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    // Validate cơ bản
     if (!formData.firstName || !formData.address || !formData.phone) {
       toast.error("Vui lòng điền đầy đủ thông tin giao hàng!");
       setActiveStep(1);
@@ -52,17 +67,14 @@ export default function CheckoutPage() {
 
     setIsLoading(true);
 
-    // Gộp địa chỉ theo chuẩn DB hiện tại
     const fullShippingAddress = `Người nhận: ${formData.lastName} ${formData.firstName} - SĐT: ${formData.phone} - Email: ${formData.email || 'Không có'} - Địa chỉ: ${formData.address}`;
 
-    // Lấy thông tin User và Token từ LocalStorage (Nếu có)
     const userString = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     const user = userString ? JSON.parse(userString) : null;
 
-    // TẠO PAYLOAD (Nếu không có user thì user_id sẽ là null)
     const orderPayload = {
-      user_id: user ? user.id : null, // Gửi null nếu là khách vãng lai
+      user_id: user ? user.id : null,
       shipping_address: fullShippingAddress,
       items: cart.map(item => ({
         variant_id: item.variant_id,
@@ -71,22 +83,19 @@ export default function CheckoutPage() {
     };
 
     try {
-      // Gọi API service layer (truyền token nếu có, nếu không truyền rỗng)
       const data = await orderAPI.create(orderPayload, token || "");
 
       if (data.success) {
-        // Hiển thị mã đơn hàng để khách vãng lai có thể lưu lại tra cứu
         const trackingCode = data.data?.order_tracking_code || '';
         toast.success(`Đặt hàng thành công! Mã đơn: ${trackingCode}`, { duration: 4000 });
         
-        clearCart(); // Xóa giỏ hàng
+        clearCart(); 
         
-        // CHUYỂN HƯỚNG THÔNG MINH
         setTimeout(() => {
           if (user) {
-            router.push("/my-orders"); // Có tài khoản -> Đi tới quản lý đơn
+            router.push("/my-orders");
           } else {
-            router.push("/"); // Không có tài khoản -> Về trang chủ
+            router.push("/");
           }
         }, 2000);
       } else {
@@ -109,24 +118,6 @@ export default function CheckoutPage() {
       </div>
     );
   }
-
-  // COMPONENT: Input nổi
-  const FloatingInput = ({ label, name, type = "text", value, onChange }: any) => (
-    <div className="relative w-full">
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="block px-4 pb-2.5 pt-6 w-full text-base text-gray-900 bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-black focus:border-black peer transition-colors"
-        placeholder=" "
-        required
-      />
-      <label className="absolute text-base text-gray-500 duration-300 transform -translate-y-3 scale-75 top-4 z-10 origin-[0] left-4 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-3 cursor-text pointer-events-none">
-        {label}
-      </label>
-    </div>
-  );
 
   return (
     <main className="min-h-screen bg-white">
@@ -253,7 +244,6 @@ export default function CheckoutPage() {
                 {cart.map((item) => (
                   <div key={item.variant_id} className="flex gap-4">
                     <div className="w-[80px] h-[80px] bg-[#F5F5F5] rounded-md overflow-hidden shrink-0">
-                      {/* 🚨 Sửa lỗi thuộc tính ở đây (từ product_name -> name) */}
                       <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply p-1" />
                     </div>
                     <div className="flex-1 text-sm font-medium text-gray-900">
