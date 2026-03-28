@@ -26,7 +26,10 @@ class InventoryController extends Controller
         $transactions = InventoryTransaction::with([
             'variant.product', 
             'variant.color', 
-            'variant.size'
+            'variant.size',
+            'variant.branchStocks',
+            'fromBranch',
+            'toBranch'
         ])
         ->orderBy('created_at', 'desc')
         ->paginate(15);

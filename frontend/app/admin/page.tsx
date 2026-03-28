@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+// 🚨 ĐÃ FIX 1: Import Link chuẩn của Next.js
+import Link from "next/link"; 
 import { useAuth } from "../context/AuthContext";
 import { adminAPI } from "../services/api";
 import toast from "react-hot-toast";
-// 🚨 Nhúng các công cụ vẽ biểu đồ và Icon
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { DollarSign, ShoppingBag, Clock, Activity } from "lucide-react";
+// 🚨 ĐÃ FIX 1: Xóa chữ Link ở thư viện Icon
+import { DollarSign, ShoppingBag, Clock, Activity } from "lucide-react"; 
 
 export default function AdminDashboard() {
   const { token } = useAuth();
@@ -23,16 +25,12 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       if (!token) return;
       try {
-        // Lấy Lịch sử Kho
         const jsonTx = await adminAPI.getInventoryTransactions(token);
-        
-        // Lấy Thống kê Doanh thu
         const jsonStats = await adminAPI.getStatistics(token);
 
         if (jsonTx.success && jsonStats.success) {
           setTransactions(jsonTx.data.data);
           
-          // Format lại dữ liệu ngày tháng cho biểu đồ đẹp hơn
           const formattedChartData = jsonStats.data.revenueByDay.map((item: any) => ({
             name: new Date(item.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
             "Doanh thu": Number(item.total)
@@ -69,9 +67,7 @@ export default function AdminDashboard() {
           </h1>
         </div>
 
-        {/*  KHU VỰC 1: CÁC THẺ BÁO CÁO NHANH */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Thẻ Doanh thu */}
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow">
             <div className="bg-green-100 text-green-600 p-4 rounded-2xl"><DollarSign size={32} /></div>
             <div>
@@ -80,7 +76,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Thẻ Tổng đơn */}
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow">
             <div className="bg-blue-100 text-blue-600 p-4 rounded-2xl"><ShoppingBag size={32} /></div>
             <div>
@@ -89,7 +84,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Thẻ Chờ xử lý */}
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow">
             <div className="bg-yellow-100 text-yellow-600 p-4 rounded-2xl"><Clock size={32} /></div>
             <div>
@@ -99,7 +93,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/*  KHU VỰC 2: BIỂU ĐỒ DOANH THU */}
         <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
           <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide mb-6">Biểu đồ doanh thu (7 ngày qua)</h2>
           <div className="h-80 w-full">
@@ -123,10 +116,13 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/*  KHU VỰC 3: BẢNG LỊCH SỬ KHO (Giữ nguyên như cũ) */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+          {/* 🚨 ĐÃ FIX 2: Thêm flex justify-between items-center để đẩy nút sang phải */}
+          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
             <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide">Biến động kho hàng gần đây</h2>
+            <Link href="/admin/inventory" className="text-sm font-bold text-blue-600 hover:text-blue-800 hover:underline transition-all">
+              Xem tất cả &rarr;
+            </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -136,7 +132,8 @@ export default function AdminDashboard() {
                   <th className="p-5 font-bold">Loại</th>
                   <th className="p-5 font-bold">Sản phẩm</th>
                   <th className="p-5 font-bold text-center">Biến động</th>
-                  <th className="p-5 font-bold text-center">Tồn kho</th>
+                  <th className="p-5 font-bold text-center">Chi nhánh</th>
+                  <th className="p-5 font-bold text-center">Tồn kho HT</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -144,9 +141,22 @@ export default function AdminDashboard() {
                   <tr key={tx.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-5 font-bold text-gray-900">#{tx.id}</td>
                     <td className="p-5">
-                      <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${tx.transaction_type === 'IMPORT' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
-                        {tx.transaction_type === 'IMPORT' ? 'NHẬP' : 'XUẤT'}
-                      </span>
+                      {(() => {
+                        switch (tx.transaction_type) {
+                          case 'IMPORT':
+                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-600">NHẬP KHO</span>;
+                          case 'SALE':
+                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-50 text-red-600">BÁN RA</span>;
+                          case 'RETURN':
+                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-green-50 text-green-600">HOÀN TRẢ</span>;
+                          case 'TRANSFER':
+                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-600">CHUYỂN KHO</span>;
+                          case 'ADJUSTMENT':
+                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-orange-50 text-orange-600">ĐIỀU CHỈNH</span>;
+                          default:
+                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-gray-100 text-gray-600">{tx.transaction_type}</span>;
+                        }
+                      })()}
                     </td>
                     <td className="p-5 font-bold text-gray-700 text-sm">
                       {tx.variant?.product?.name} ({tx.variant?.color?.name} - {tx.variant?.size?.name})
@@ -156,7 +166,34 @@ export default function AdminDashboard() {
                         {tx.quantity_change > 0 ? `+${tx.quantity_change}` : tx.quantity_change}
                       </span>
                     </td>
-                    <td className="p-5 text-center font-black text-gray-900">{tx.variant?.current_stock}</td>
+                    <td className="p-5 text-center font-bold text-gray-900">
+                      {tx.transaction_type === 'TRANSFER' 
+                        ? <span className="text-[11px] whitespace-nowrap bg-gray-100 px-2 py-1 rounded">
+                            {tx.from_branch?.name} &rarr; {tx.to_branch?.name}
+                          </span>
+                        : (tx.to_branch?.name || tx.from_branch?.name || <span className="text-gray-400">Hệ thống</span>)
+                      }
+                    </td>
+                    <td className="p-5 text-center font-black text-gray-900">
+                      {(() => {
+                        if (!tx.variant?.branch_stocks) return <span className="text-gray-400">-</span>;
+                        
+                        if (tx.transaction_type === 'TRANSFER') {
+                          const fromStock = tx.variant.branch_stocks.find((bs: any) => bs.branch_id === tx.from_branch_id)?.stock || 0;
+                          const toStock = tx.variant.branch_stocks.find((bs: any) => bs.branch_id === tx.to_branch_id)?.stock || 0;
+                          return (
+                            <div className="flex flex-col text-[11px] leading-tight">
+                              <span className="text-red-600">Xuất còn: {fromStock}</span>
+                              <span className="text-blue-600">Nhập lên: {toStock}</span>
+                            </div>
+                          );
+                        } else {
+                          const branchId = tx.to_branch_id || tx.from_branch_id;
+                          const currentStock = tx.variant.branch_stocks.find((bs: any) => bs.branch_id === branchId)?.stock || 0;
+                          return <span className="text-base">{currentStock}</span>;
+                        }
+                      })()}
+                    </td>
                   </tr>
                 ))}
               </tbody>

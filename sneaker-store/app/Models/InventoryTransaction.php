@@ -25,4 +25,14 @@ class InventoryTransaction extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
+
+    public function fromBranch()
+    {
+        return $this->belongsTo(Branch::class, 'from_branch_id');
+    }
+
+    public function toBranch()
+    {
+        return $this->belongsTo(Branch::class, 'to_branch_id');
+    }
 }

@@ -52,7 +52,7 @@ export default function TrackOrderPage() {
             placeholder="Nhập mã đơn hàng (VD: #ORD-O6LBPU)"
             value={trackingCode}
             onChange={(e) => setTrackingCode(e.target.value)}
-            className="flex-1 border-2 border-gray-300 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-black transition-colors"
+            className="flex-1 border-2 border-gray-300 rounded-xl px-4 py-3 text-lg  text-gray-900 font-medium focus:outline-none focus:border-black transition-colors"
           />
           <button
             onClick={handleSearch}

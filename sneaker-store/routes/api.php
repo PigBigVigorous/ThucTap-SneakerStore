@@ -34,27 +34,37 @@ Route::middleware('auth:sanctum')->group(function () {
         
         return response()->json(['success' => true, 'data' => $user]);
     });
+
     // Routes for admin
     Route::prefix('admin')->group(function () {
         
         Route::middleware(['permission:view-dashboard,sanctum'])->group(function () {
             Route::get('/statistics', function () {
                 $totalRevenue = Order::where('status', 'delivered')->sum('total_amount');
-                $totalOrders = Order::count();
+                $totalOrders = Order::where('status', 'delivered')->count();
                 $pendingOrders = Order::where('status', 'pending')->count();
-                $revenueByDay = Order::where('status', 'delivered')
-                    ->where('created_at', '>=', now()->subDays(7))
+                // 4. Lấy data từ Database (có thể bị khuyết ngày nếu ko có đơn)
+                $rawRevenueData = Order::where('status', 'delivered')
+                    ->where('created_at', '>=', now()->subDays(6)->startOfDay()) // Lấy tròn 7 ngày tính cả hôm nay
                     ->selectRaw('DATE(created_at) as date, SUM(total_amount) as total')
                     ->groupBy('date')
-                    ->orderBy('date', 'asc')
-                    ->get();
+                    ->pluck('total', 'date');
+                // 5. THUẬT TOÁN TRÁM NGÀY TRỐNG: Chủ động tạo mảng 7 ngày
+                $revenueByDay = [];
+                for ($i = 6; $i >= 0; $i--) {
+                    $dateString = now()->subDays($i)->format('Y-m-d');
+                    $revenueByDay[] = [
+                        'date' => $dateString,
+                        'total' => isset($rawRevenueData[$dateString]) ? (float) $rawRevenueData[$dateString] : 0
+                    ];
+                }
 
                 return response()->json([
                     'success' => true,
                     'data' => [
-                        'totalRevenue' => $totalRevenue,
-                        'totalOrders' => $totalOrders,
-                        'pendingOrders' => $pendingOrders,
+                        'totalRevenue' => (float) $totalRevenue,
+                        'totalOrders' => (int) $totalOrders,
+                        'pendingOrders' => (int) $pendingOrders,
                         'revenueByDay' => $revenueByDay
                     ]
                 ]);
