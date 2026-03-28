@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Branch;
+// 🚨 THÊM 2 MODEL NÀY ĐỂ XỬ LÝ KHO
+use App\Models\ProductVariant;
+use App\Models\VariantBranchStock;
 
 class BranchController extends Controller
 {
@@ -33,11 +36,37 @@ class BranchController extends Controller
             'email' => 'nullable|email|max:255',
         ]);
 
+        // 1. Tạo chi nhánh mới
         $branch = Branch::create($request->all());
+
+        // 2. Kéo tất cả ID của các biến thể sản phẩm hiện có trong hệ thống
+        $variantIds = ProductVariant::pluck('id');
+
+        // 3. Chuẩn bị mảng dữ liệu để insert hàng loạt (tối ưu hiệu suất)
+        $stockData = [];
+        $now = now();
+        
+        foreach ($variantIds as $variantId) {
+            $stockData[] = [
+                'variant_id' => $variantId,
+                'branch_id' => $branch->id,
+                'stock' => 0, // Khởi tạo tồn kho mặc định là 0
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // 4. Insert vào bảng trung gian variant_branch_stocks
+        if (!empty($stockData)) {
+            // Sử dụng chunk(500) để chống lỗi sập DB nếu có quá nhiều sản phẩm
+            foreach (array_chunk($stockData, 500) as $chunk) {
+                VariantBranchStock::insert($chunk);
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Branch created successfully',
+            'message' => 'Tạo chi nhánh mới và khởi tạo mã tồn kho thành công!',
             'data' => $branch
         ], 201);
     }
@@ -79,6 +108,8 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch)
     {
+        // Khi xóa chi nhánh, các bản ghi trong variant_branch_stocks cũng sẽ tự động bị xóa 
+        // nhờ tính năng ON DELETE CASCADE ngài đã cài đặt ở Database.
         $branch->delete();
 
         return response()->json([
