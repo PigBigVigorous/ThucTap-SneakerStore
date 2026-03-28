@@ -2,14 +2,22 @@
 
 import Link from "next/link";
 import { useAuth } from "../context/AuthContext";
-import { LayoutDashboard, ClipboardList, ShoppingCart, Package, ArrowRightLeft, ChevronDown, BarChart3 } from 'lucide-react';
+// 🚨 THÊM useState và useEffect
+import { useState, useEffect } from "react"; 
+import { LayoutDashboard, ClipboardList, ShoppingCart, Package, ArrowRightLeft, ChevronDown, BarChart3, Store } from 'lucide-react'; 
 
 export default function AdminLinks() {
-  // Lấy hàm hasPermission và hasRole từ Context ra
   const { user, hasPermission, hasRole } = useAuth();
+  
+  // 🚨 KỸ THUẬT MOUNTED ĐỂ CHỐNG LỖI HYDRATION
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // Kiểm tra xem User có quyền nhìn thấy thanh Menu Quản trị này không
-  // (Nếu có bất kỳ quyền admin nào, hoặc là super-admin thì cho xem)
+  // Chỉ render sau khi Client đã sẵn sàng
+  if (!mounted) return null;
+
   const canViewAdminPanel = user && (
     hasRole('super-admin') ||
     hasPermission('view-dashboard') ||
@@ -19,7 +27,6 @@ export default function AdminLinks() {
     hasPermission('pos-sale')
   );
 
-  // Nếu là khách hàng bình thường -> Giấu nhẹm đi
   if (!canViewAdminPanel) {
     return null; 
   }
@@ -33,35 +40,36 @@ export default function AdminLinks() {
 
       <div className="absolute top-full left-0 mt-0 w-48 bg-white shadow-xl border-t border-gray-100 rounded-b-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 overflow-hidden">
         
-        {/* Chỉ ai có quyền view-dashboard mới thấy nút Thống Kê */}
         {hasPermission('view-dashboard') && (
           <Link href="/admin" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 font-bold uppercase transition-colors">
             <BarChart3 size={16} /> Thống Kê
           </Link>
         )}
 
-        {/* Chỉ ai có quyền manage-orders mới thấy nút Đơn Hàng */}
         {hasPermission('manage-orders') && (
           <Link href="/admin/orders" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-green-600 font-bold uppercase transition-colors">
             <ClipboardList size={16} /> Đơn Hàng
           </Link>
         )}
 
-        {/* Chỉ ai có quyền manage-products mới thấy nút Sản phẩm */}
         {hasPermission('manage-products') && (
           <Link href="/admin/products" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-orange-600 font-bold uppercase transition-colors">
             <Package size={16} /> Sản phẩm
           </Link>
         )}
 
-        {/* Chỉ ai có quyền manage-inventory mới thấy nút Kho Hàng */}
+        {hasPermission('manage-inventory') && (
+          <Link href="/admin/branches" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-teal-600 font-bold uppercase transition-colors">
+            <Store size={16} /> Chi Nhánh
+          </Link>
+        )}
+
         {hasPermission('manage-inventory') && (
           <Link href="/admin/inventory" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-red-600 font-bold uppercase transition-colors">
             <ArrowRightLeft size={16} /> Kho hàng
           </Link>
         )}
 
-        {/* Chỉ ai có quyền pos-sale mới thấy nút POS */}
         {hasPermission('pos-sale') && (
           <Link href="/admin/pos" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-purple-600 font-bold uppercase transition-colors">
             <ShoppingCart size={16} /> POS

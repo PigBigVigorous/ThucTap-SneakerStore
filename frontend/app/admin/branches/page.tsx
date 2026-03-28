@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+// Đường dẫn lùi 2 cấp chuẩn xác cho vị trí admin/branches/
+import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
 import { Plus, Edit, Trash2, MapPin, Phone, Mail, X } from "lucide-react";
 
@@ -10,7 +11,6 @@ export default function BranchManagementPage() {
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // State cho Form Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingBranch, setEditingBranch] = useState<any>(null);
@@ -24,7 +24,6 @@ export default function BranchManagementPage() {
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
-  // 1. LẤY DANH SÁCH CHI NHÁNH
   const fetchBranches = async () => {
     setLoading(true);
     try {
@@ -32,10 +31,16 @@ export default function BranchManagementPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
+      
       if (data.success) {
-        setBranches(data.data);
+        // Lớp giáp bảo vệ dữ liệu mảng
+        const branchArray = Array.isArray(data.data) 
+                            ? data.data 
+                            : (Array.isArray(data.data?.data) ? data.data.data : []);
+        
+        setBranches(branchArray);
       } else {
-        toast.error("Lỗi lấy dữ liệu chi nhánh");
+        toast.error(data.message || "Lỗi lấy dữ liệu chi nhánh");
       }
     } catch (error) {
       toast.error("Lỗi kết nối máy chủ");
@@ -48,7 +53,6 @@ export default function BranchManagementPage() {
     if (token) fetchBranches();
   }, [token]);
 
-  // 2. MỞ FORM THÊM MỚI HOẶC SỬA
   const openModal = (branch: any = null) => {
     if (branch) {
       setEditingBranch(branch);
@@ -71,7 +75,6 @@ export default function BranchManagementPage() {
     setFormData({ name: "", address: "", phone: "", email: "" });
   };
 
-  // 3. XỬ LÝ SUBMIT FORM (TẠO MỚI / CẬP NHẬT)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -96,7 +99,7 @@ export default function BranchManagementPage() {
       if (data.success) {
         toast.success(editingBranch ? "Cập nhật chi nhánh thành công!" : "Tạo chi nhánh & rải mã tồn kho thành công!");
         closeModal();
-        fetchBranches(); // Tải lại danh sách
+        fetchBranches();
       } else {
         toast.error(data.message || "Có lỗi xảy ra");
       }
@@ -107,7 +110,6 @@ export default function BranchManagementPage() {
     }
   };
 
-  // 4. XÓA CHI NHÁNH
   const handleDelete = async (id: number) => {
     if (!window.confirm("CẢNH BÁO: Xóa chi nhánh sẽ xóa toàn bộ tồn kho tại chi nhánh này! Bạn có chắc chắn không?")) return;
     
@@ -133,7 +135,6 @@ export default function BranchManagementPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* HEADER */}
         <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">
@@ -150,7 +151,6 @@ export default function BranchManagementPage() {
           </button>
         </div>
 
-        {/* BẢNG DANH SÁCH CHI NHÁNH */}
         <div className="bg-white shadow-sm rounded-2xl overflow-hidden border border-gray-200">
           {loading ? (
             <div className="p-8 text-center font-bold text-gray-500">Đang tải dữ liệu chi nhánh...</div>
@@ -166,11 +166,8 @@ export default function BranchManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {branches.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500 font-medium">Chưa có chi nhánh nào trong hệ thống.</td>
-                    </tr>
-                  ) : (
+                  {/* Lớp giáp bảo vệ render giao diện */}
+                  {Array.isArray(branches) && branches.length > 0 ? (
                     branches.map((branch) => (
                       <tr key={branch.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-gray-400">#{branch.id}</td>
@@ -197,6 +194,10 @@ export default function BranchManagementPage() {
                         </td>
                       </tr>
                     ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500 font-medium">Chưa có chi nhánh nào trong hệ thống hoặc không tải được dữ liệu.</td>
+                    </tr>
                   )}
                 </tbody>
               </table>
@@ -206,7 +207,6 @@ export default function BranchManagementPage() {
 
       </div>
 
-      {/* MODAL THÊM / SỬA CHI NHÁNH */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -227,7 +227,6 @@ export default function BranchManagementPage() {
                   value={formData.name} 
                   onChange={(e) => setFormData({...formData, name: e.target.value})} 
                   placeholder="VD: Kho Đà Nẵng, Cửa hàng Quận 1..."
-                  // 🚨 CHỮ ĐEN IN ĐẬM
                   className="w-full border border-gray-300 rounded-lg p-3 text-black font-bold focus:ring-2 focus:ring-black focus:border-black outline-none transition-all placeholder-gray-400" 
                   required 
                 />
