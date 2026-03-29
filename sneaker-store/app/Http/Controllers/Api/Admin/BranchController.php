@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Branch;
-// 🚨 THÊM 2 MODEL NÀY ĐỂ XỬ LÝ KHO
+use Illuminate\Support\Facades\DB;
 use App\Models\ProductVariant;
 use App\Models\VariantBranchStock;
 
@@ -111,6 +111,9 @@ class BranchController extends Controller
         // Khi xóa chi nhánh, các bản ghi trong variant_branch_stocks cũng sẽ tự động bị xóa 
         // nhờ tính năng ON DELETE CASCADE ngài đã cài đặt ở Database.
         $branch->delete();
+
+        $maxId = Branch::max('id') ?? 0; // Lấy ID lớn nhất hiện tại (nếu hết sạch chi nhánh thì là 0)
+        DB::statement("ALTER TABLE branches AUTO_INCREMENT = " . ($maxId + 1));
 
         return response()->json([
             'success' => true,
