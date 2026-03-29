@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// Đường dẫn lùi 2 cấp chuẩn xác cho vị trí admin/branches/
 import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
 import { Plus, Edit, Trash2, MapPin, Phone, Mail, X } from "lucide-react";
@@ -16,10 +15,7 @@ export default function BranchManagementPage() {
   const [editingBranch, setEditingBranch] = useState<any>(null);
   
   const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    phone: "",
-    email: ""
+    name: "", address: "", phone: "", email: "", is_main: false // 🚨 Thêm is_main
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
@@ -27,267 +23,135 @@ export default function BranchManagementPage() {
   const fetchBranches = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${baseUrl}/admin/branches`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(`${baseUrl}/admin/branches`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      
       if (data.success) {
-        // Lớp giáp bảo vệ dữ liệu mảng
-        const branchArray = Array.isArray(data.data) 
-                            ? data.data 
-                            : (Array.isArray(data.data?.data) ? data.data.data : []);
-        
-        setBranches(branchArray);
-      } else {
-        toast.error(data.message || "Lỗi lấy dữ liệu chi nhánh");
+        setBranches(Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.data) ? data.data.data : []));
       }
-    } catch (error) {
-      toast.error("Lỗi kết nối máy chủ");
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) {} finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    if (token) fetchBranches();
-  }, [token]);
+  useEffect(() => { if (token) fetchBranches(); }, [token]);
 
   const openModal = (branch: any = null) => {
     if (branch) {
       setEditingBranch(branch);
       setFormData({
-        name: branch.name || "",
-        address: branch.address || "",
-        phone: branch.phone || "",
-        email: branch.email || ""
+        name: branch.name || "", address: branch.address || "",
+        phone: branch.phone || "", email: branch.email || "", 
+        is_main: branch.is_main ? true : false // 🚨 Load dữ liệu cũ
       });
     } else {
       setEditingBranch(null);
-      setFormData({ name: "", address: "", phone: "", email: "" });
+      setFormData({ name: "", address: "", phone: "", email: "", is_main: false });
     }
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingBranch(null);
-    setFormData({ name: "", address: "", phone: "", email: "" });
-  };
+  const closeModal = () => { setIsModalOpen(false); setEditingBranch(null); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     const method = editingBranch ? "PUT" : "POST";
-    const url = editingBranch 
-      ? `${baseUrl}/admin/branches/${editingBranch.id}` 
-      : `${baseUrl}/admin/branches`;
+    const url = editingBranch ? `${baseUrl}/admin/branches/${editingBranch.id}` : `${baseUrl}/admin/branches`;
 
     try {
       const res = await fetch(url, {
         method: method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(formData)
       });
-      
       const data = await res.json();
-      
       if (data.success) {
-        toast.success(editingBranch ? "Cập nhật chi nhánh thành công!" : "Tạo chi nhánh & rải mã tồn kho thành công!");
-        closeModal();
-        fetchBranches();
-      } else {
-        toast.error(data.message || "Có lỗi xảy ra");
-      }
-    } catch (error) {
-      toast.error("Lỗi kết nối máy chủ");
-    } finally {
-      setIsSubmitting(false);
-    }
+        toast.success(editingBranch ? "Cập nhật thành công!" : "Tạo chi nhánh thành công!");
+        closeModal(); fetchBranches();
+      } else { toast.error("Có lỗi xảy ra"); }
+    } catch (error) { toast.error("Lỗi kết nối"); } finally { setIsSubmitting(false); }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("CẢNH BÁO: Xóa chi nhánh sẽ xóa toàn bộ tồn kho tại chi nhánh này! Bạn có chắc chắn không?")) return;
-    
+    if (!window.confirm("CẢNH BÁO: Bạn có chắc chắn muốn xóa?")) return;
     try {
-      const res = await fetch(`${baseUrl}/admin/branches/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(`${baseUrl}/admin/branches/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      
-      if (data.success) {
-        toast.success("Đã xóa chi nhánh thành công!");
-        fetchBranches();
-      } else {
-        toast.error(data.message || "Lỗi khi xóa chi nhánh");
-      }
-    } catch (error) {
-      toast.error("Lỗi kết nối máy chủ");
-    }
+      if (data.success) { toast.success("Đã xóa!"); fetchBranches(); }
+    } catch (error) { toast.error("Lỗi mạng"); }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
         <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">
-              Quản lý Chi Nhánh
-            </h1>
-            <p className="text-gray-500 mt-1 font-medium">Hệ thống mạng lưới cửa hàng & kho vận</p>
+            <h1 className="text-3xl font-black text-gray-900 uppercase">Quản lý Chi Nhánh</h1>
           </div>
-          <button 
-            onClick={() => openModal()}
-            className="bg-black text-white font-bold px-5 py-3 rounded-lg hover:bg-gray-800 transition-colors shadow-lg flex items-center gap-2 active:scale-95"
-          >
-            <Plus size={20} />
-            Thêm Chi Nhánh Mới
+          <button onClick={() => openModal()} className="bg-black text-white font-bold px-5 py-3 rounded-lg flex items-center gap-2">
+            <Plus size={20} /> Thêm Mới
           </button>
         </div>
 
         <div className="bg-white shadow-sm rounded-2xl overflow-hidden border border-gray-200">
-          {loading ? (
-            <div className="p-8 text-center font-bold text-gray-500">Đang tải dữ liệu chi nhánh...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-left">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tên Chi Nhánh</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Liên hệ</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {/* Lớp giáp bảo vệ render giao diện */}
-                  {Array.isArray(branches) && branches.length > 0 ? (
-                    branches.map((branch) => (
-                      <tr key={branch.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-gray-400">#{branch.id}</td>
-                        <td className="px-6 py-4">
-                          <div className="text-base font-bold text-gray-900">{branch.name}</div>
-                          <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                            <MapPin size={14} /> {branch.address || "Chưa cập nhật địa chỉ"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-                            {branch.phone && <span className="flex items-center gap-2"><Phone size={14} className="text-gray-400"/> {branch.phone}</span>}
-                            {branch.email && <span className="flex items-center gap-2"><Mail size={14} className="text-gray-400"/> {branch.email}</span>}
-                            {!branch.phone && !branch.email && <span className="text-gray-400 italic">Chưa cập nhật</span>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button onClick={() => openModal(branch)} className="text-blue-600 hover:text-blue-900 bg-blue-50 p-2 rounded-md mx-1 transition-colors" title="Sửa">
-                            <Edit size={18} />
-                          </button>
-                          <button onClick={() => handleDelete(branch.id)} className="text-red-600 hover:text-red-900 bg-red-50 p-2 rounded-md mx-1 transition-colors" title="Xóa">
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500 font-medium">Chưa có chi nhánh nào trong hệ thống hoặc không tải được dữ liệu.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <table className="min-w-full divide-y divide-gray-200 text-left">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Chi Nhánh</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-100">
+              {Array.isArray(branches) && branches.length > 0 ? branches.map((branch) => (
+                <tr key={branch.id}>
+                  <td className="px-6 py-4">
+                    <div className="text-base font-bold text-gray-900 flex items-center gap-2">
+                      {branch.name}
+                      {/* 🚨 HUY HIỆU PHÂN BIỆT KHO TỔNG & KHO NHỎ */}
+                      {branch.is_main ? (
+                        <span className="px-2 py-1 text-[10px] font-black uppercase bg-purple-100 text-purple-700 rounded-md shadow-sm">Kho Tổng</span>
+                      ) : (
+                        <span className="px-2 py-1 text-[10px] font-black uppercase bg-gray-100 text-gray-600 rounded-md">Chi Nhánh</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-gray-500 mt-1"><MapPin size={14} /> {branch.address}</div>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => openModal(branch)} className="text-blue-600 bg-blue-50 p-2 rounded-md mx-1"><Edit size={18} /></button>
+                    <button onClick={() => handleDelete(branch.id)} className="text-red-600 bg-red-50 p-2 rounded-md mx-1"><Trash2 size={18} /></button>
+                  </td>
+                </tr>
+              )) : <tr><td colSpan={2} className="text-center py-8">Chưa có dữ liệu</td></tr>}
+            </tbody>
+          </table>
         </div>
-
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50">
-              <h2 className="text-xl font-black text-gray-900 uppercase">
-                {editingBranch ? "Chỉnh sửa Chi Nhánh" : "Thêm Chi Nhánh Mới"}
-              </h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-red-600 transition-colors">
-                <X size={24} />
-              </button>
-            </div>
-
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden">
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Tên Chi Nhánh <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  value={formData.name} 
-                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                  placeholder="VD: Kho Đà Nẵng, Cửa hàng Quận 1..."
-                  className="w-full border border-gray-300 rounded-lg p-3 text-black font-bold focus:ring-2 focus:ring-black focus:border-black outline-none transition-all placeholder-gray-400" 
-                  required 
-                />
+              <h2 className="text-xl font-black uppercase mb-4">{editingBranch ? "Sửa" : "Thêm"} Chi Nhánh</h2>
+              <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Tên chi nhánh..." className="w-full border p-3 rounded text-black font-bold" required />
+              <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="Địa chỉ..." className="w-full border p-3 rounded text-black font-medium" required />
+              
+              {/* 🚨 CHECKBOX KHO TỔNG CỰC ĐẸP */}
+              <div className="pt-2 border-t border-gray-100 mt-2">
+                <label className="flex items-center gap-3 cursor-pointer p-4 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors">
+                  <input type="checkbox" checked={formData.is_main} onChange={(e) => setFormData({...formData, is_main: e.target.checked})} className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500" />
+                  <div>
+                    <span className="text-sm font-black text-purple-900 uppercase">🌟 Đánh dấu là KHO TỔNG</span>
+                    <p className="text-xs text-purple-700 font-medium mt-0.5">Kho tổng được phép nhận hàng trực tiếp từ Xưởng/NCC.</p>
+                  </div>
+                </label>
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Địa chỉ đầy đủ <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  value={formData.address} 
-                  onChange={(e) => setFormData({...formData, address: e.target.value})} 
-                  placeholder="VD: 123 Đường Lê Lợi..."
-                  className="w-full border border-gray-300 rounded-lg p-3 text-black font-medium focus:ring-2 focus:ring-black focus:border-black outline-none transition-all placeholder-gray-400" 
-                  required 
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Số điện thoại</label>
-                  <input 
-                    type="text" 
-                    value={formData.phone} 
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})} 
-                    placeholder="VD: 0909123456"
-                    className="w-full border border-gray-300 rounded-lg p-3 text-black font-medium focus:ring-2 focus:ring-black focus:border-black outline-none transition-all placeholder-gray-400" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={(e) => setFormData({...formData, email: e.target.value})} 
-                    placeholder="VD: kho@sneaker.com"
-                    className="w-full border border-gray-300 rounded-lg p-3 text-black font-medium focus:ring-2 focus:ring-black focus:border-black outline-none transition-all placeholder-gray-400" 
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-gray-100 mt-6 flex justify-end gap-3">
-                <button 
-                  type="button" 
-                  onClick={closeModal}
-                  className="px-6 py-3 font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Hủy bỏ
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className={`px-6 py-3 font-bold text-white rounded-lg transition-all shadow-lg flex items-center gap-2 ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-95'}`}
-                >
-                  {isSubmitting ? "Đang lưu..." : (editingBranch ? "Lưu thay đổi" : "Tạo Chi Nhánh")}
-                </button>
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={closeModal} className="px-6 py-3 font-bold bg-gray-100 rounded">Hủy</button>
+                <button type="submit" disabled={isSubmitting} className="px-6 py-3 font-bold text-white bg-blue-600 rounded">Lưu lại</button>
               </div>
             </form>
           </div>
         </div>
       )}
-
       <Toaster />
     </div>
   );

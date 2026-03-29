@@ -9,7 +9,7 @@ class Branch extends Model
     protected $table = 'branches';
 
     protected $fillable = [
-        'name', 'address', 'phone', 'is_active'
+        'name', 'address', 'phone', 'is_active', 'is_main'
     ];
 
     public function variantStocks()

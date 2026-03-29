@@ -108,4 +108,31 @@ class InventoryController extends Controller
             ], 400);
         }
     }
+    /**
+     * Lấy danh sách Tồn kho theo Chi nhánh
+     */
+    public function getStocks(Request $request)
+    {
+        $branchId = $request->query('branch_id');
+        
+        // Kéo dữ liệu Tồn kho, gộp luôn tên Giày, Màu, Size và Tên Kho để hiển thị
+        $query = \App\Models\VariantBranchStock::with([
+            'variant.product', 
+            'variant.color', 
+            'variant.size', 
+            'branch'
+        ]);
+
+        // Nếu sếp có chọn lọc theo 1 kho cụ thể (VD: Chỉ xem kho Hà Nội)
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $stocks = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $stocks
+        ]);
+    }
 }

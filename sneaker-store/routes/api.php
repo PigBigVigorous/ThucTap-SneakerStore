@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Thủ kho
         Route::middleware(['permission:manage-inventory,sanctum'])->group(function () {
             Route::apiResource('branches', BranchController::class);
+            Route::get('/inventory/stocks', [InventoryController::class, 'getStocks']);
             Route::get('/inventory/transactions', [InventoryController::class, 'index']);
             Route::post('/inventory/transfer', [InventoryController::class, 'transfer']);
             Route::post('/inventory/adjust', [InventoryController::class, 'adjust']);

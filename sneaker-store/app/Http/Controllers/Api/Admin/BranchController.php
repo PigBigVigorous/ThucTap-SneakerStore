@@ -34,6 +34,7 @@ class BranchController extends Controller
             'address' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
+            'is_main' => 'boolean',
         ]);
 
         // 1. Tạo chi nhánh mới
