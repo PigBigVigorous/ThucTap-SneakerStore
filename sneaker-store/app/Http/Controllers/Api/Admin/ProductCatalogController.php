@@ -32,32 +32,26 @@ class ProductCatalogController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validate dữ liệu khắt khe
+        // 1. BỎ validate branch_id vì ta không cần nó nữa
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
             'description' => 'nullable|string',
-            'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',// Cấm up file độc hại, tối đa 2MB
+            'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
             'gallery_images' => 'nullable|array',
             'gallery_images.*' => 'file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
-            'variants' => 'required|string', // Chuỗi JSON chứa danh sách biến thể (Màu, Size, Giá, Tồn kho)
-            'branch_id' => 'required|exists:branches,id' // Chi nhánh nhập kho mặc định
+            'variants' => 'required|string', 
         ]);
 
         DB::beginTransaction();
         try {
-            // 2. Xử lý Upload Ảnh (Lưu vào thư mục ổ cứng server)
             $imageUrl = null;
             if ($request->hasFile('base_image')) {
-                // Lưu vào storage/app/public/products
                 $path = $request->file('base_image')->store('products', 'public');
                 $imageUrl = asset('storage/' . $path);
             }
 
-            
-
-            // 3. Tạo Sản phẩm gốc
             $product = Product::create([
                 'name' => $request->name,
                 'slug' => Str::slug($request->name) . '-' . time(),
@@ -74,13 +68,17 @@ class ProductCatalogController extends Controller
                     ProductImage::create([
                         'product_id' => $product->id,
                         'image_url' => asset('storage/' . $galleryPath),
-                        'sort_order' => $index, // Sắp xếp theo thứ tự up
+                        'sort_order' => $index, 
                     ]);
                 }
             }
 
-            // 4. Giải mã JSON biến thể từ Frontend gửi lên và Lưu
+            // 🚨 LẤY TẤT CẢ CHI NHÁNH ĐỂ RẢI KHO = 0
+            $allBranches = Branch::pluck('id');
             $variants = json_decode($request->variants, true);
+            $stockData = [];
+            $now = now();
+
             foreach ($variants as $v) {
                 $variant = ProductVariant::create([
                     'product_id' => $product->id,
@@ -90,28 +88,25 @@ class ProductCatalogController extends Controller
                     'price' => $v['price'],
                 ]);
 
-                // 5. Khởi tạo tồn kho ban đầu cho chi nhánh
-                VariantBranchStock::create([
-                    'variant_id' => $variant->id,
-                    'branch_id' => $request->branch_id,
-                    'stock' => $v['stock'] ?? 0,
-                ]);
-
-                // 6. Ghi log nhập kho (Nghiệp vụ kế toán bắt buộc)
-                if (($v['stock'] ?? 0) > 0) {
-                    \App\Models\InventoryTransaction::create([
-                        'product_variant_id' => $variant->id,
-                        'transaction_type' => 'IMPORT',
-                        'to_branch_id' => $request->branch_id,
-                        'quantity_change' => $v['stock'],
-                        'note' => 'Nhập kho khởi tạo sản phẩm mới.',
-                        'created_at' => now(),
-                    ]);
+                // Rải kho = 0 cho biến thể này ở TẤT CẢ chi nhánh
+                foreach ($allBranches as $branchId) {
+                    $stockData[] = [
+                        'variant_id' => $variant->id,
+                        'branch_id' => $branchId,
+                        'stock' => 0,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
                 }
             }
 
+            // Chèn hàng loạt tồn kho 1 lần cho tối ưu hiệu suất
+            if (!empty($stockData)) {
+                VariantBranchStock::insert($stockData);
+            }
+
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Thêm sản phẩm thành công!', 'data' => $product]);
+            return response()->json(['success' => true, 'message' => 'Thêm sản phẩm và rải mã kho thành công!', 'data' => $product]);
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -319,13 +319,6 @@ export default function ProductsPage() {
                     <label className="block text-sm font-bold text-gray-700 mb-1">Mô tả chi tiết</label>
                     <textarea rows={4} value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-3 border bg-gray-50" placeholder="Nhập mô tả sản phẩm..." />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Chi nhánh nhập kho mặc định *</label>
-                    <select value={form.branch_id} onChange={e => setForm({...form, branch_id: e.target.value})} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-3 border bg-gray-50">
-                      <option value="1">Kho Tổng TP.HCM (ID: 1)</option>
-                    </select>
-                  </div>
                 </div>
 
                 {/* Cột 2: Ảnh & Biến thể */}
@@ -382,7 +375,7 @@ export default function ProductsPage() {
                     
                     <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                       {variants.map((v, index) => (
-                        <div key={index} className="grid grid-cols-4 gap-2 bg-white p-3 rounded-xl shadow-sm border border-gray-100 relative group">
+                        <div key={index} className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl shadow-sm border border-gray-100 relative group">
                           {variants.length > 1 && (
                             <button type="button" onClick={() => setVariants(variants.filter((_, i) => i !== index))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <X size={12}/>
@@ -403,10 +396,6 @@ export default function ProductsPage() {
                           <div>
                             <span className="text-[10px] font-bold text-gray-400 uppercase">Giá bán</span>
                             <input type="number" value={v.price} onChange={e => {const newV = [...variants]; newV[index].price = e.target.value; setVariants(newV);}} className="w-full text-sm border-gray-300 rounded-md p-1.5 border" />
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">Tồn kho</span>
-                            <input type="number" value={v.stock} onChange={e => {const newV = [...variants]; newV[index].stock = e.target.value; setVariants(newV);}} className="w-full text-sm border-gray-300 rounded-md p-1.5 border bg-yellow-50" />
                           </div>
                         </div>
                       ))}

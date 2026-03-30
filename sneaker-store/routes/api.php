@@ -19,12 +19,21 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{slug}', [ProductController::class, 'show']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{tracking_code}', [OrderController::class, 'show']);
+// 1. Khách vãng lai cũng xem được Đánh giá (Để chung với route xem sản phẩm public)
+Route::get('/products/{slug}/reviews', [ProductController::class, 'getReviews']);
+
+// 2. Phải đăng nhập mới được viết Đánh giá (Bỏ vào trong nhóm auth:sanctum)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/products/{slug}/reviews', [ProductController::class, 'storeReview']);
+});
 
 // Route của khách hang đã đăng nhập
 Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/my-orders', [OrderController::class, 'myOrders']);
+    
+
     
     Route::get('/user', function (Request $request) {
         $user = $request->user();

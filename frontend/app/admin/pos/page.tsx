@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { adminAPI } from "../../services/api";
 import toast from "react-hot-toast";
-import { Search, Plus, Minus, ShoppingCart, X } from "lucide-react";
+import { Search, Plus, Minus, ShoppingCart, X, Store } from "lucide-react";
 
 interface Product {
   id: number;
@@ -35,7 +35,38 @@ export default function PosPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [branchId, setBranchId] = useState(1);
+  
+  // 🚨 THÊM STATE ĐỂ LƯU DANH SÁCH CHI NHÁNH
+  const [branches, setBranches] = useState<any[]>([]);
+  const [branchId, setBranchId] = useState<number | "">("");
+
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+
+  // 1. LẤY DANH SÁCH CHI NHÁNH KHI VÀO TRANG
+  useEffect(() => {
+    if (token) fetchBranches();
+  }, [token]);
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch(`${baseUrl}/admin/branches`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.success) {
+        const branchArray = Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.data) ? data.data.data : []);
+        setBranches(branchArray);
+        // Tự động chọn chi nhánh đầu tiên làm mặc định nếu có
+        if (branchArray.length > 0) setBranchId(branchArray[0].id);
+      }
+    } catch (error) { console.error("Lỗi lấy chi nhánh", error); }
+  };
+
+  // 2. KHI ĐỔI CHI NHÁNH -> LẤY LẠI SẢN PHẨM & XÓA GIỎ HÀNG BÊN CHI NHÁNH CŨ
+  useEffect(() => {
+    if (token && branchId !== "") {
+      fetchProducts();
+      setCart([]); // 🚨 Xóa giỏ hàng để tránh bán nhầm hàng của kho khác
+    }
+  }, [token, branchId]);
 
   useEffect(() => {
     fetchProducts();
@@ -57,10 +88,10 @@ export default function PosPage() {
   }, [searchQuery, products]);
 
   const fetchProducts = async () => {
-    if (!token) return;
+    if (!token || branchId === "") return;
     setLoading(true);
     try {
-      const response = await adminAPI.getPosProducts(token, branchId, 100);
+      const response = await adminAPI.getPosProducts(token, branchId as number, 100);
       if (response.success) {
         setProducts(response.data || []);
       } else {
@@ -135,6 +166,11 @@ export default function PosPage() {
       return;
     }
 
+    if (branchId === "") {
+      toast.error("Vui lòng chọn chi nhánh!");
+      return;
+    }
+
     setProcessing(true);
     try {
       const items = cart.map((item) => ({
@@ -144,7 +180,7 @@ export default function PosPage() {
 
       const response = await adminAPI.posCreateOrder(token!, {
         items,
-        branch_id: branchId,
+        branch_id: branchId as number,
       });
 
       if (response.success) {
@@ -164,14 +200,35 @@ export default function PosPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <ShoppingCart className="w-8 h-8 text-blue-600" />
-          Hệ Thống Bán Hàng Tại Quầy (POS)
-        </h1>
-        <p className="text-gray-600 mt-2">Chi nhánh: Branch {branchId}</p>
+      {/* Header & Nơi chọn chi nhánh */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 flex items-center gap-3 uppercase">
+            <ShoppingCart className="w-8 h-8 text-blue-600" />
+            Máy bán hàng POS
+          </h1>
+          <p className="text-gray-500 mt-1 font-medium">Phần mềm tính tiền tại quầy</p>
+        </div>
+
+        {/* 🚨 DROPDOWN CHỌN CHI NHÁNH */}
+        <div className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+          <Store className="text-gray-400" size={20} />
+          <div className="flex flex-col">
+            <label className="text-xs font-bold text-gray-500 uppercase">Cửa hàng làm việc</label>
+            <select 
+              value={branchId}
+              onChange={(e) => setBranchId(Number(e.target.value))}
+              className="text-base font-black text-blue-700 outline-none cursor-pointer bg-transparent"
+            >
+              <option value="" disabled>-- Chọn cửa hàng --</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name} {b.is_main ? "(Kho Tổng)" : ""}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
+      
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Products (70%) */}
