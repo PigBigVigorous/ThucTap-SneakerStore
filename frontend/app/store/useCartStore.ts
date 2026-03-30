@@ -42,7 +42,7 @@ export const useCartStore = create<CartState>()(
               toast.error("Vượt quá số lượng tồn kho!");
               return state;
             }
-            toast.success("Đã cập nhật số lượng trong giỏ!");
+            toast.success("Đã thêm vào giỏ hàng!");
             return {
               items: state.items.map((i) =>
                 i.variant_id === newItem.variant_id
