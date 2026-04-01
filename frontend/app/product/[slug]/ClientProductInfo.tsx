@@ -5,10 +5,11 @@ import { useCartStore } from "../../store/useCartStore";
 import { useFavoritesStore } from "../../store/useFavoritesStore";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
-import { Star, Heart, ChevronLeft, ChevronRight, Ruler, ChevronDown } from "lucide-react";
+import { Star, Heart, ChevronLeft, ChevronRight, Ruler, ChevronDown, X, ZoomIn } from "lucide-react";
 import Link from "next/link";
 
-export default function ClientProductInfo({ product, relatedProducts = [] }: { product: any, relatedProducts?: any[] }) {  const { token } = useAuth();
+export default function ClientProductInfo({ product }: { product: any }) {
+  const { token } = useAuth();
 
   const addToCart = useCartStore((state) => state.addToCart);
   const favorites = useFavoritesStore((state) => state.favorites);
@@ -17,6 +18,10 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
   const [selectedColor, setSelectedColor] = useState<any>(null);
   const [selectedSize, setSelectedSize] = useState<any>(null);
   const [mainImageIndex, setMainImageIndex] = useState(0);
+
+  // States bổ sung cho các tính năng mới
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
   const [reviews, setReviews] = useState<any[]>([]);
   const [avgRating, setAvgRating] = useState(0);
@@ -32,7 +37,10 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
     if (product?.variants && product.variants.length > 0) {
       setSelectedColor(product.variants[0]?.color || null);
     }
-    if (product?.slug) fetchReviews();
+    if (product?.slug) {
+      fetchReviews();
+      fetchRelatedProducts();
+    }
   }, [product]);
 
   const fetchReviews = async () => {
@@ -45,6 +53,20 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
         setTotalReviews(data.total_reviews);
       }
     } catch (e) {}
+  };
+
+  // Hàm gọi API lấy sản phẩm Cross-Selling
+  const fetchRelatedProducts = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/products`);
+      const data = await res.json();
+      if (data.data) {
+        // Lọc ngẫu nhiên 4 sản phẩm khác sản phẩm hiện tại để gợi ý
+        setRelatedProducts(data.data.filter((p: any) => p.id !== product?.id).slice(0, 4));
+      }
+    } catch (e) {
+      console.log(e);
+    }
   };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
@@ -95,13 +117,14 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
   ) || [];
 
   const selectedVariant = availableVariants.find((v: any) => v?.size?.id === selectedSize?.id);
+  const currentStock = selectedVariant?.total_stock || 0;
 
   const nextImage = () => setMainImageIndex((prev) => (prev + 1) % currentGalleryImages.length);
   const prevImage = () => setMainImageIndex((prev) => (prev - 1 + currentGalleryImages.length) % currentGalleryImages.length);
 
   const handleAddToCart = () => {
     if (!selectedSize) return toast.error("Vui lòng chọn Kích cỡ!");
-    if ((selectedVariant?.total_stock || 0) === 0) return toast.error("Phân loại này đã hết hàng trên toàn hệ thống.");
+    if (currentStock === 0) return toast.error("Phân loại này đã hết hàng trên toàn hệ thống.");
     
     addToCart({
       variant_id: selectedVariant.id, 
@@ -112,7 +135,7 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
       color: selectedColor?.name || '', 
       size: selectedSize?.name || '', 
       quantity: 1, 
-      stock: selectedVariant.total_stock,
+      stock: currentStock,
       slug: product?.slug 
     });
   };
@@ -121,7 +144,7 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
     const isAdded = toggleFavorite({
       product_id: product?.id,
       product_name: product?.name || "Sản phẩm",
-      category_name: "Giày Nam",
+      category_name: product?.category_name || "Giày Nam",
       price: selectedVariant ? selectedVariant.price : product?.variants?.[0]?.price || 0,
       image: currentGalleryImages[0],
       slug: product?.slug,
@@ -142,11 +165,29 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
 
   return (
     <div suppressHydrationWarning className="bg-white font-sans text-gray-900">
+
+      {/* 2. 🔍 Bổ sung: Image Lightbox Modal */}
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-50 bg-white/95 backdrop-blur-sm flex items-center justify-center p-4">
+          <button 
+            onClick={() => setIsLightboxOpen(false)} 
+            className="absolute top-6 right-6 p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-50"
+          >
+            <X size={24} />
+          </button>
+          <img 
+            src={currentGalleryImages[mainImageIndex] || "/placeholder.png"} 
+            alt="Zoomed product" 
+            className="max-w-full max-h-[90vh] object-contain cursor-zoom-out"
+            onClick={() => setIsLightboxOpen(false)}
+          />
+        </div>
+      )}
       
       {/* ── BỐ CỤC CHUẨN GRID 12 CỘT TƯƠNG THÍCH MỌI MÀN HÌNH ── */}
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 md:px-12 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start">
         
-        {/* ── TRÁI: KHUNG ẢNH SẢN PHẨM (CHIẾM 8 CỘT TRÊN DESKTOP) ── */}
+        {/* ── TRÁI: KHUNG ẢNH SẢN PHẨM ── */}
         <div className="lg:col-span-8 lg:sticky lg:top-24">
           <div className="flex flex-col-reverse md:flex-row gap-4">
             
@@ -167,15 +208,23 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
             </div>
 
             {/* Ảnh chính to */}
-            <div className="flex-1 bg-[#f5f5f5] rounded-xl relative h-[400px] md:h-[680px] flex items-center justify-center overflow-hidden cursor-crosshair group">
-              <img src={currentGalleryImages[mainImageIndex] || "/placeholder.png"} alt={product?.name} className="w-full h-full object-contain mix-blend-multiply" />
+            <div 
+              className="flex-1 bg-[#f5f5f5] rounded-xl relative h-[400px] md:h-[680px] flex items-center justify-center overflow-hidden cursor-zoom-in group"
+              onClick={() => setIsLightboxOpen(true)}
+            >
+              <img src={currentGalleryImages[mainImageIndex] || "/placeholder.png"} alt={product?.name} className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105" />
               
+              {/* Icon hướng dẫn Zoom */}
+              <div className="absolute top-4 right-4 bg-white/80 p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                <ZoomIn size={20} className="text-gray-700"/>
+              </div>
+
               {currentGalleryImages.length > 1 && (
                 <>
-                  <button onClick={prevImage} className="absolute left-4 bottom-4 md:bottom-6 w-10 h-10 md:w-11 md:h-11 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-transform active:scale-95 opacity-0 group-hover:opacity-100">
+                  <button onClick={(e) => { e.stopPropagation(); prevImage(); }} className="absolute left-4 bottom-4 md:bottom-6 w-10 h-10 md:w-11 md:h-11 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-transform active:scale-95 opacity-0 group-hover:opacity-100">
                     <ChevronLeft size={20} />
                   </button>
-                  <button onClick={nextImage} className="absolute right-4 bottom-4 md:bottom-6 w-10 h-10 md:w-11 md:h-11 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-transform active:scale-95 opacity-0 group-hover:opacity-100">
+                  <button onClick={(e) => { e.stopPropagation(); nextImage(); }} className="absolute right-4 bottom-4 md:bottom-6 w-10 h-10 md:w-11 md:h-11 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-100 transition-transform active:scale-95 opacity-0 group-hover:opacity-100">
                     <ChevronRight size={20} />
                   </button>
                 </>
@@ -184,9 +233,18 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
           </div>
         </div>
 
-        {/* ── PHẢI: THÔNG TIN SẢN PHẨM & ACCORDION (CHIẾM 4 CỘT) ── */}
+        {/* ── PHẢI: THÔNG TIN SẢN PHẨM ── */}
         <div className="lg:col-span-4 flex flex-col pt-4 md:pt-0">
           
+          {/* 1. 🍞 Bổ sung: Breadcrumbs */}
+          <nav className="flex text-[13px] text-gray-500 mb-4 whitespace-nowrap overflow-x-auto scrollbar-hide">
+            <Link href="/" className="hover:text-black transition-colors">Trang chủ</Link>
+            <span className="mx-2">/</span>
+            <Link href={`/`} className="hover:text-black transition-colors">{product?.category_name || "Danh mục"}</Link>
+            <span className="mx-2">/</span>
+            <span className="text-black font-medium truncate">{product?.name}</span>
+          </nav>
+
           <div className="mb-4">
             <h1 className="text-[24px] md:text-[28px] font-medium leading-tight text-[#111] m-0">{product?.name}</h1>
             <h2 className="text-[16px] font-normal text-[#757575] mt-1">{product?.category_name || "Giày Nam"}</h2>
@@ -218,7 +276,6 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
             </div>
           )}
 
-          {/* Chọn Size */}
           {/* Chọn Size */}
           <div className="mb-8">
             <div className="flex justify-between items-end mb-4 gap-4">
@@ -266,18 +323,21 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
                 );
               })}
             </div>
+
+            {/* 3. 🚨 Bổ sung: FOMO Indicator (Báo động số lượng thấp) */}
+            {selectedSize && currentStock > 0 && currentStock <= 3 && (
+              <p className="mt-3 text-[14px] font-medium text-red-600 animate-pulse flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                Sắp hết hàng! Chỉ còn đúng {currentStock} đôi ở size này.
+              </p>
+            )}
+            {selectedSize && currentStock === 0 && (
+              <p className="mt-3 text-[14px] font-medium text-gray-500">
+                Size này hiện đã hết hàng.
+              </p>
+            )}
           </div>
-              {selectedVariant && selectedVariant.total_stock > 0 && selectedVariant.total_stock <= 5 && (
-            <div className="mb-4 py-3 px-4 bg-[#fff1f0] border border-[#ffccc7] text-[#cf1322] text-[14.5px] font-medium rounded-xl flex items-center gap-3 animate-pulse shadow-sm">
-              <span className="relative flex h-3 w-3 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff4d4f] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f5222d]"></span>
-              </span>
-              <span>
-                Nhanh tay! Chỉ còn đúng <b className="font-bold text-[16px]">{selectedVariant.total_stock} đôi</b> size này trên hệ thống!
-              </span>
-            </div>
-          )}
+
           {/* CTA Buttons */}
           <div className="flex flex-col gap-3 mb-8">
             <button onClick={handleAddToCart} className="w-full py-4 md:py-5 rounded-full bg-[#111] text-white text-[16px] font-medium hover:bg-[#333] transition-colors active:scale-[0.98]">
@@ -293,7 +353,7 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
             {product?.description || "Chưa có mô tả cho sản phẩm này."}
           </p>
 
-          {/* ── BỘ ACCORDIONS ĐÃ ĐƯỢC CHUYỂN SANG TAILWIND (ANIMATION MƯỢT MÀ) ── */}
+          {/* Bộ Accordions */}
           <div className="border-t border-[#e5e5e5]">
             {[
               {
@@ -402,53 +462,34 @@ export default function ClientProductInfo({ product, relatedProducts = [] }: { p
               </div>
             ))}
           </div>
-
         </div>
       </div>
-      {/* ==================================================================== */}
-      {/* 🚨 KHU VỰC CROSS-SELLING: SẢN PHẨM GỢI Ý (YOU MIGHT ALSO LIKE) 🚨 */}
-      {/* ==================================================================== */}
-      {relatedProducts && relatedProducts.length > 0 && (
-        <div className="max-w-[1920px] mx-auto px-4 md:px-12 py-16 border-t border-gray-200 mt-12 overflow-hidden">
-          <h2 className="text-[24px] md:text-[28px] font-medium text-[#111] mb-8 tracking-tight">Có Thể Bạn Cũng Thích</h2>
-          
-          {/* Slider vuốt ngang thuần Tailwind (Snap Scroll) */}
-          <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 gap-4 md:gap-6 pb-8">
-            {relatedProducts.map((item: any) => {
-              // Lấy giá hiển thị
-              const itemPrice = item.variants?.[0]?.price || 0;
-              
-              return (
-                <Link 
-                  href={`/product/${item.slug}`} 
-                  key={item.id} 
-                  className="w-[280px] md:w-[350px] shrink-0 snap-start group block"
-                >
-                  {/* Khung ảnh */}
-                  <div className="bg-[#F6F6F6] aspect-square rounded-xl overflow-hidden mb-4 relative">
-                    <img 
-                      src={item.base_image_url || '/placeholder.png'} 
-                      alt={item.name} 
-                      className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-700 ease-[cubic-bezier(0.87,0,0.13,1)]" 
-                    />
-                  </div>
-                  
-                  {/* Thông tin */}
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-[16px] font-medium text-[#111] leading-tight group-hover:underline underline-offset-4 decoration-2">{item.name}</h3>
-                      <p className="text-[16px] text-[#757575] mt-1">{item.category?.name || "Giày Thể Thao"}</p>
-                    </div>
-                    <p className="text-[16px] font-medium text-[#111] whitespace-nowrap">
-                      {Number(itemPrice).toLocaleString('vi-VN')}₫
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
+
+      {/* 4. 🔗 Bổ sung: Cross-Selling (Có thể bạn cũng thích) */}
+      {relatedProducts.length > 0 && (
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 md:px-12 py-16 border-t border-[#e5e5e5]">
+          <h3 className="text-[24px] font-medium text-[#111] mb-8">Có thể bạn cũng thích</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {relatedProducts.map((item) => (
+              <Link href={`/product/${item.slug}`} key={item.id} className="group flex flex-col cursor-pointer">
+                <div className="bg-[#f5f5f5] rounded-xl aspect-square overflow-hidden mb-4 relative">
+                  <img 
+                    src={item.base_image_url || "/placeholder.png"} 
+                    alt={item.name} 
+                    className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+                <h4 className="text-[15px] font-medium text-[#111] truncate">{item.name}</h4>
+                <p className="text-[14px] text-[#757575] mt-1">{item.category_name}</p>
+                <p className="text-[15px] font-medium text-[#111] mt-2">
+                  {Number(item.base_price || 0).toLocaleString("vi-VN")}₫
+                </p>
+              </Link>
+            ))}
           </div>
         </div>
       )}
+
     </div>
   );
 }

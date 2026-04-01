@@ -1,10 +1,9 @@
 import Link from "next/link";
+import { Metadata } from "next";
 import ClientProductInfo from "./ClientProductInfo";
 import { productAPI } from "../../services/api";
 import { ArrowLeft } from "lucide-react";
-import { Metadata } from "next";
 
-// 1. Hàm lấy chi tiết sản phẩm
 async function getProductDetail(slug: string) {
   try {
     const json = await productAPI.getBySlug(slug);
@@ -14,42 +13,29 @@ async function getProductDetail(slug: string) {
   }
 }
 
-// 🚨 2. HÀM MỚI (FULLSTACK): Lấy danh sách sản phẩm gợi ý
-async function getRelatedProducts() {
-  try {
-    // Gọi API lấy danh sách sản phẩm (Tùy chỉnh số lượng per_page)
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/products?per_page=12`, {
-      next: { revalidate: 60 } // Caching 60s để tăng tốc độ load web
-    });
-    const data = await res.json();
-    return data.data?.data || data.data || [];
-  } catch {
-    return [];
-  }
-}
-
-// 3. Tự động tạo SEO (Dynamic Metadata)
+// Bổ sung: 📈 Dynamic SEO
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductDetail(slug);
 
-  if (!product) return { title: "Không tìm thấy sản phẩm" };
+  if (!product) {
+    return { title: "Không tìm thấy sản phẩm | SneakerStore" };
+  }
 
   return {
-    title: `${product.name} | Sneaker Store`,
-    description: product.description || `Mua ngay ${product.name} chính hãng tại Sneaker Store.`,
+    title: `${product.name} | SneakerStore`,
+    description: product.description?.substring(0, 160) || `Mua ngay ${product.name} chính hãng với giá tốt nhất tại SneakerStore.`,
     openGraph: {
-      images: [product.base_image_url || ''],
+      title: `${product.name} - SneakerStore`,
+      description: product.description?.substring(0, 160) || `Mua ngay ${product.name} chính hãng với giá tốt nhất tại SneakerStore.`,
+      images: [product.base_image_url || "/placeholder.png"],
     },
   };
 }
 
 export default async function ProductDetail({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  
-  // 🚨 Gọi 2 hàm song song (Tối ưu hiệu suất)
   const product = await getProductDetail(slug);
-  const allProducts = await getRelatedProducts();
 
   if (!product) {
     return (
@@ -59,22 +45,17 @@ export default async function ProductDetail({ params }: { params: Promise<{ slug
     );
   }
 
-  // 🚨 Logic Senior: Lọc bỏ sản phẩm đang xem, chỉ lấy 8 sản phẩm hiển thị
-  const relatedProducts = allProducts
-    .filter((p: any) => p.id !== product.id)
-    .slice(0, 8);
-
   return (
     <main className="min-h-screen bg-white">
-      {/* Nút quay lại */}
+      {/* Nút quay lại sang trọng, không giới hạn không gian */}
       <div className="max-w-[1920px] mx-auto px-4 md:px-12 pt-8 pb-2">
         <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-colors">
           <ArrowLeft size={16} /> Quay lại cửa hàng
         </Link>
       </div>
 
-      {/* 🚨 Truyền thêm props relatedProducts vào Client Component */}
-      <ClientProductInfo product={product} relatedProducts={relatedProducts} />
+      {/* Component con giờ đã được tự do tràn viền */}
+      <ClientProductInfo product={product} />
     </main>
   );
 }
