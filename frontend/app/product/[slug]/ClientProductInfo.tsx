@@ -8,8 +8,7 @@ import toast from "react-hot-toast";
 import { Star, Heart, ChevronLeft, ChevronRight, Ruler, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
-export default function ClientProductInfo({ product }: { product: any }) {
-  const { token } = useAuth();
+export default function ClientProductInfo({ product, relatedProducts = [] }: { product: any, relatedProducts?: any[] }) {  const { token } = useAuth();
 
   const addToCart = useCartStore((state) => state.addToCart);
   const favorites = useFavoritesStore((state) => state.favorites);
@@ -268,7 +267,17 @@ export default function ClientProductInfo({ product }: { product: any }) {
               })}
             </div>
           </div>
-
+              {selectedVariant && selectedVariant.total_stock > 0 && selectedVariant.total_stock <= 5 && (
+            <div className="mb-4 py-3 px-4 bg-[#fff1f0] border border-[#ffccc7] text-[#cf1322] text-[14.5px] font-medium rounded-xl flex items-center gap-3 animate-pulse shadow-sm">
+              <span className="relative flex h-3 w-3 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff4d4f] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f5222d]"></span>
+              </span>
+              <span>
+                Nhanh tay! Chỉ còn đúng <b className="font-bold text-[16px]">{selectedVariant.total_stock} đôi</b> size này trên hệ thống!
+              </span>
+            </div>
+          )}
           {/* CTA Buttons */}
           <div className="flex flex-col gap-3 mb-8">
             <button onClick={handleAddToCart} className="w-full py-4 md:py-5 rounded-full bg-[#111] text-white text-[16px] font-medium hover:bg-[#333] transition-colors active:scale-[0.98]">
@@ -396,6 +405,50 @@ export default function ClientProductInfo({ product }: { product: any }) {
 
         </div>
       </div>
+      {/* ==================================================================== */}
+      {/* 🚨 KHU VỰC CROSS-SELLING: SẢN PHẨM GỢI Ý (YOU MIGHT ALSO LIKE) 🚨 */}
+      {/* ==================================================================== */}
+      {relatedProducts && relatedProducts.length > 0 && (
+        <div className="max-w-[1920px] mx-auto px-4 md:px-12 py-16 border-t border-gray-200 mt-12 overflow-hidden">
+          <h2 className="text-[24px] md:text-[28px] font-medium text-[#111] mb-8 tracking-tight">Có Thể Bạn Cũng Thích</h2>
+          
+          {/* Slider vuốt ngang thuần Tailwind (Snap Scroll) */}
+          <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 gap-4 md:gap-6 pb-8">
+            {relatedProducts.map((item: any) => {
+              // Lấy giá hiển thị
+              const itemPrice = item.variants?.[0]?.price || 0;
+              
+              return (
+                <Link 
+                  href={`/product/${item.slug}`} 
+                  key={item.id} 
+                  className="w-[280px] md:w-[350px] shrink-0 snap-start group block"
+                >
+                  {/* Khung ảnh */}
+                  <div className="bg-[#F6F6F6] aspect-square rounded-xl overflow-hidden mb-4 relative">
+                    <img 
+                      src={item.base_image_url || '/placeholder.png'} 
+                      alt={item.name} 
+                      className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-700 ease-[cubic-bezier(0.87,0,0.13,1)]" 
+                    />
+                  </div>
+                  
+                  {/* Thông tin */}
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-[16px] font-medium text-[#111] leading-tight group-hover:underline underline-offset-4 decoration-2">{item.name}</h3>
+                      <p className="text-[16px] text-[#757575] mt-1">{item.category?.name || "Giày Thể Thao"}</p>
+                    </div>
+                    <p className="text-[16px] font-medium text-[#111] whitespace-nowrap">
+                      {Number(itemPrice).toLocaleString('vi-VN')}₫
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
