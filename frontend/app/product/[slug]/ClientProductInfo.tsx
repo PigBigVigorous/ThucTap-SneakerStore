@@ -19,7 +19,6 @@ export default function ClientProductInfo({ product }: { product: any }) {
   const [selectedSize, setSelectedSize] = useState<any>(null);
   const [mainImageIndex, setMainImageIndex] = useState(0);
 
-  // States bổ sung cho các tính năng mới
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
@@ -55,13 +54,11 @@ export default function ClientProductInfo({ product }: { product: any }) {
     } catch (e) {}
   };
 
-  // Hàm gọi API lấy sản phẩm Cross-Selling
   const fetchRelatedProducts = async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/products`);
       const data = await res.json();
       if (data.data) {
-        // Lọc ngẫu nhiên 4 sản phẩm khác sản phẩm hiện tại để gợi ý
         setRelatedProducts(data.data.filter((p: any) => p.id !== product?.id).slice(0, 4));
       }
     } catch (e) {
@@ -97,15 +94,30 @@ export default function ClientProductInfo({ product }: { product: any }) {
     setMainImageIndex(0);
   };
 
-  let currentGalleryImages = ["/placeholder.png"];
-  if (product?.images && product.images.length > 0) {
-    const filteredImages = product.images
-      .filter((img: any) => selectedColor && img.color_id === selectedColor.id)
-      .map((img: any) => img.image_url);
-    currentGalleryImages = filteredImages.length > 0 ? filteredImages : product.images.map((img: any) => img.image_url);
-  } else if (product?.base_image_url) {
-    currentGalleryImages = [product.base_image_url];
+  // ==========================================
+  // 🚀 LOGIC LẤY ẢNH CHUẨN NHẤT (Chống lỗi mất ảnh)
+  // ==========================================
+  let currentGalleryImages: string[] = [];
+
+  // 1. Luôn ưu tiên giữ lại ảnh đại diện (Base Image) nhét lên đầu
+  if (product?.base_image_url) {
+    currentGalleryImages.push(product.base_image_url);
   }
+
+  // 2. Lấy toàn bộ ảnh Gallery phụ đắp vào
+  if (product?.images && product.images.length > 0) {
+    const allExtraImages = product.images.map((img: any) => img.image_url);
+    currentGalleryImages = [...currentGalleryImages, ...allExtraImages];
+  }
+
+  // 3. Xóa các URL bị trùng lặp (nếu vô tình có)
+  currentGalleryImages = Array.from(new Set(currentGalleryImages));
+
+  // 4. Fallback dự phòng cuối cùng
+  if (currentGalleryImages.length === 0) {
+    currentGalleryImages = ["/placeholder.png"];
+  }
+  // ==========================================
 
   const uniqueColors = product?.variants?.reduce((acc: any[], current: any) => {
     if (current?.color && !acc.find((item: any) => item.id === current.color.id)) acc.push(current.color);
@@ -166,7 +178,6 @@ export default function ClientProductInfo({ product }: { product: any }) {
   return (
     <div suppressHydrationWarning className="bg-white font-sans text-gray-900">
 
-      {/* 2. 🔍 Bổ sung: Image Lightbox Modal */}
       {isLightboxOpen && (
         <div className="fixed inset-0 z-50 bg-white/95 backdrop-blur-sm flex items-center justify-center p-4">
           <button 
@@ -184,14 +195,12 @@ export default function ClientProductInfo({ product }: { product: any }) {
         </div>
       )}
       
-      {/* ── BỐ CỤC CHUẨN GRID 12 CỘT TƯƠNG THÍCH MỌI MÀN HÌNH ── */}
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 md:px-12 py-8 lg:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start">
         
-        {/* ── TRÁI: KHUNG ẢNH SẢN PHẨM ── */}
         <div className="lg:col-span-8 lg:sticky lg:top-24">
           <div className="flex flex-col-reverse md:flex-row gap-4">
             
-            {/* Thanh cuộn ảnh Thumbnail */}
+            {/* THUMBNAIL */}
             <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto md:h-[680px] w-full md:w-[72px] shrink-0 scrollbar-hide pb-2 md:pb-4">
               {currentGalleryImages.map((img: string, idx: number) => (
                 <button
@@ -207,14 +216,12 @@ export default function ClientProductInfo({ product }: { product: any }) {
               ))}
             </div>
 
-            {/* Ảnh chính to */}
             <div 
               className="flex-1 bg-[#f5f5f5] rounded-xl relative h-[400px] md:h-[680px] flex items-center justify-center overflow-hidden cursor-zoom-in group"
               onClick={() => setIsLightboxOpen(true)}
             >
               <img src={currentGalleryImages[mainImageIndex] || "/placeholder.png"} alt={product?.name} className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105" />
               
-              {/* Icon hướng dẫn Zoom */}
               <div className="absolute top-4 right-4 bg-white/80 p-2.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                 <ZoomIn size={20} className="text-gray-700"/>
               </div>
@@ -233,10 +240,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
           </div>
         </div>
 
-        {/* ── PHẢI: THÔNG TIN SẢN PHẨM ── */}
         <div className="lg:col-span-4 flex flex-col pt-4 md:pt-0">
-          
-          {/* 1. 🍞 Bổ sung: Breadcrumbs */}
           <nav className="flex text-[13px] text-gray-500 mb-4 whitespace-nowrap overflow-x-auto scrollbar-hide">
             <Link href="/" className="hover:text-black transition-colors">Trang chủ</Link>
             <span className="mx-2">/</span>
@@ -256,7 +260,6 @@ export default function ClientProductInfo({ product }: { product: any }) {
             </span>
           </div>
 
-          {/* Chọn Màu */}
           {uniqueColors.length > 1 && (
             <div className="mb-6">
               <div className="flex flex-wrap gap-2">
@@ -276,20 +279,11 @@ export default function ClientProductInfo({ product }: { product: any }) {
             </div>
           )}
 
-          {/* Chọn Size */}
           <div className="mb-8">
             <div className="flex justify-between items-end mb-4 gap-4">
-              <p className="text-base font-medium text-gray-900 leading-none m-0 whitespace-nowrap">
-                Chọn Kích Cỡ
-              </p>
-              <Link 
-                href="/size-guide" 
-                target="_blank" 
-                className="group flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-gray-900 transition-all uppercase tracking-wide leading-none shrink-0 whitespace-nowrap"
-              >
-                <span className="underline underline-offset-4 decoration-gray-300 group-hover:decoration-gray-900 transition-colors">
-                  Size Guide
-                </span>
+              <p className="text-base font-medium text-gray-900 leading-none m-0 whitespace-nowrap">Chọn Kích Cỡ</p>
+              <Link href="/size-guide" target="_blank" className="group flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-gray-900 transition-all uppercase tracking-wide leading-none shrink-0 whitespace-nowrap">
+                <span className="underline underline-offset-4 decoration-gray-300 group-hover:decoration-gray-900 transition-colors">Size Guide</span>
                 <Ruler size={16} strokeWidth={2} className="text-gray-400 group-hover:text-gray-900 transition-colors mb-[2px]" />
               </Link>
             </div>
@@ -304,18 +298,12 @@ export default function ClientProductInfo({ product }: { product: any }) {
                     disabled={isOutOfStock}
                     onClick={() => setSelectedSize(v.size)}
                     className={`relative py-3.5 rounded-md text-[14px] text-center transition-all ${
-                      isSelected 
-                        ? "border border-[#111] bg-white text-[#111] ring-1 ring-[#111]" 
-                        : isOutOfStock 
-                          ? "border border-[#e5e5e5] bg-[#fafafa] text-[#ccc] cursor-not-allowed" 
-                          : "border border-[#e5e5e5] bg-white text-[#111] hover:border-[#111]"
+                      isSelected ? "border border-[#111] bg-white text-[#111] ring-1 ring-[#111]" : isOutOfStock ? "border border-[#e5e5e5] bg-[#fafafa] text-[#ccc] cursor-not-allowed" : "border border-[#e5e5e5] bg-white text-[#111] hover:border-[#111]"
                     }`}
                   >
                     {isOutOfStock && (
                       <span className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
-                        <svg width="100%" height="100%" className="absolute top-0 left-0">
-                          <line x1="0" y1="100%" x2="100%" y2="0" stroke="#111" strokeWidth="1" />
-                        </svg>
+                        <svg width="100%" height="100%" className="absolute top-0 left-0"><line x1="0" y1="100%" x2="100%" y2="0" stroke="#111" strokeWidth="1" /></svg>
                       </span>
                     )}
                     {v?.size?.name || ""}
@@ -324,7 +312,6 @@ export default function ClientProductInfo({ product }: { product: any }) {
               })}
             </div>
 
-            {/* 3. 🚨 Bổ sung: FOMO Indicator (Báo động số lượng thấp) */}
             {selectedSize && currentStock > 0 && currentStock <= 3 && (
               <p className="mt-3 text-[14px] font-medium text-red-600 animate-pulse flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
@@ -332,13 +319,10 @@ export default function ClientProductInfo({ product }: { product: any }) {
               </p>
             )}
             {selectedSize && currentStock === 0 && (
-              <p className="mt-3 text-[14px] font-medium text-gray-500">
-                Size này hiện đã hết hàng.
-              </p>
+              <p className="mt-3 text-[14px] font-medium text-gray-500">Size này hiện đã hết hàng.</p>
             )}
           </div>
 
-          {/* CTA Buttons */}
           <div className="flex flex-col gap-3 mb-8">
             <button onClick={handleAddToCart} className="w-full py-4 md:py-5 rounded-full bg-[#111] text-white text-[16px] font-medium hover:bg-[#333] transition-colors active:scale-[0.98]">
               Thêm vào Giỏ hàng
@@ -349,37 +333,19 @@ export default function ClientProductInfo({ product }: { product: any }) {
             </button>
           </div>
 
-          <p className="text-[15px] text-[#111] leading-relaxed mb-8">
-            {product?.description || "Chưa có mô tả cho sản phẩm này."}
-          </p>
+          <p className="text-[15px] text-[#111] leading-relaxed mb-8">{product?.description || "Chưa có mô tả cho sản phẩm này."}</p>
 
-          {/* Bộ Accordions */}
           <div className="border-t border-[#e5e5e5]">
             {[
               {
                 key: "size-fit",
                 label: "Kích Cỡ & Độ Vừa Vặn",
-                content: (
-                  <ul className="pl-5 text-[14px] text-[#444] leading-loose list-disc">
-                    <li>Vừa nhỏ; chúng tôi khuyên bạn nên đặt nửa size lớn hơn</li>
-                    <li><Link href="/size-guide" target="_blank" className="text-[#111] underline hover:text-gray-600">Hướng dẫn chọn size</Link></li>
-                  </ul>
-                ),
+                content: (<ul className="pl-5 text-[14px] text-[#444] leading-loose list-disc"><li>Vừa nhỏ; chúng tôi khuyên bạn nên đặt nửa size lớn hơn</li><li><Link href="/size-guide" target="_blank" className="text-[#111] underline hover:text-gray-600">Hướng dẫn chọn size</Link></li></ul>),
               },
               {
                 key: "delivery",
                 label: "Miễn Phí Giao Hàng và Đổi Trả",
-                content: (
-                  <div className="text-[14px] text-[#444] leading-loose">
-                    <p>Đơn hàng từ 5.000.000₫ được miễn phí giao hàng tiêu chuẩn.</p>
-                    <ul className="pl-5 my-2 list-disc">
-                      <li>Giao hàng tiêu chuẩn 4-5 ngày làm việc</li>
-                      <li>Giao hàng nhanh 2-4 ngày làm việc</li>
-                    </ul>
-                    <p>Đơn hàng được xử lý và giao từ Thứ Hai đến Thứ Sáu (không tính ngày lễ)</p>
-                    <p className="mt-2">Thành viên Nike được <Link href="#" className="text-[#111] underline">miễn phí đổi trả</Link>.</p>
-                  </div>
-                ),
+                content: (<div className="text-[14px] text-[#444] leading-loose"><p>Đơn hàng từ 5.000.000₫ được miễn phí giao hàng tiêu chuẩn.</p><ul className="pl-5 my-2 list-disc"><li>Giao hàng tiêu chuẩn 4-5 ngày làm việc</li><li>Giao hàng nhanh 2-4 ngày làm việc</li></ul><p>Đơn hàng được xử lý và giao từ Thứ Hai đến Thứ Sáu (không tính ngày lễ)</p><p className="mt-2">Thành viên Nike được <Link href="#" className="text-[#111] underline">miễn phí đổi trả</Link>.</p></div>),
               },
               {
                 key: "reviews",
@@ -388,9 +354,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
                   <div className="pt-2">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="flex gap-0.5">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} size={16} className={i < Math.round(avgRating) ? "fill-[#111] text-[#111]" : "text-[#111]"} />
-                        ))}
+                        {[...Array(5)].map((_, i) => (<Star key={i} size={16} className={i < Math.round(avgRating) ? "fill-[#111] text-[#111]" : "text-[#111]"} />))}
                       </div>
                       <span className="text-[14px] text-[#757575]">{totalReviews > 0 ? `${avgRating} / 5` : "Chưa có đánh giá"}</span>
                     </div>
@@ -411,10 +375,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
                         </button>
                       </form>
                     ) : (
-                      <div className="mb-5">
-                        <p className="text-[14px] text-[#757575] mb-3">Vui lòng đăng nhập để viết đánh giá.</p>
-                        <Link href="/login" className="inline-block px-5 py-2.5 rounded-full bg-[#111] text-white text-[14px] font-medium hover:bg-[#333] transition-colors">Đăng nhập ngay</Link>
-                      </div>
+                      <div className="mb-5"><p className="text-[14px] text-[#757575] mb-3">Vui lòng đăng nhập để viết đánh giá.</p><Link href="/login" className="inline-block px-5 py-2.5 rounded-full bg-[#111] text-white text-[14px] font-medium hover:bg-[#333] transition-colors">Đăng nhập ngay</Link></div>
                     )}
 
                     {reviews.length === 0 ? (
@@ -423,15 +384,8 @@ export default function ClientProductInfo({ product }: { product: any }) {
                       <div className="flex flex-col gap-4">
                         {reviews.map((review) => (
                           <div key={review.id} className="border-t border-[#f5f5f5] pt-4">
-                            <div className="flex justify-between mb-1.5">
-                              <span className="text-[14px] font-medium text-[#111]">{review.user?.name || "Khách hàng"}</span>
-                              <span className="text-[12px] text-[#757575]">{new Date(review.created_at).toLocaleDateString("vi-VN")}</span>
-                            </div>
-                            <div className="flex gap-0.5 mb-2">
-                              {[...Array(5)].map((_, i) => (
-                                <Star key={i} size={13} className={i < review.rating ? "fill-[#111] text-[#111]" : "text-[#111]"} />
-                              ))}
-                            </div>
+                            <div className="flex justify-between mb-1.5"><span className="text-[14px] font-medium text-[#111]">{review.user?.name || "Khách hàng"}</span><span className="text-[12px] text-[#757575]">{new Date(review.created_at).toLocaleDateString("vi-VN")}</span></div>
+                            <div className="flex gap-0.5 mb-2">{[...Array(5)].map((_, i) => (<Star key={i} size={13} className={i < review.rating ? "fill-[#111] text-[#111]" : "text-[#111]"} />))}</div>
                             <p className="text-[14px] text-[#444] leading-relaxed m-0">{review.comment}</p>
                           </div>
                         ))}
@@ -442,30 +396,16 @@ export default function ClientProductInfo({ product }: { product: any }) {
               },
             ].map(({ key, label, content }) => (
               <div key={key} className="border-b border-[#e5e5e5]">
-                <button
-                  onClick={() => toggleAccordion(key)}
-                  className="w-full flex justify-between items-center py-5 bg-transparent border-none cursor-pointer text-[15px] font-medium text-[#111] text-left hover:text-gray-600 transition-colors"
-                >
-                  {label}
-                  <ChevronDown
-                    size={20}
-                    className={`shrink-0 transition-transform duration-300 ${openAccordion === key ? "rotate-180" : "rotate-0"}`}
-                  />
+                <button onClick={() => toggleAccordion(key)} className="w-full flex justify-between items-center py-5 bg-transparent border-none cursor-pointer text-[15px] font-medium text-[#111] text-left hover:text-gray-600 transition-colors">
+                  {label}<ChevronDown size={20} className={`shrink-0 transition-transform duration-300 ${openAccordion === key ? "rotate-180" : "rotate-0"}`} />
                 </button>
-                <div
-                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                    openAccordion === key ? "max-h-[1500px] opacity-100 pb-5" : "max-h-0 opacity-0"
-                  }`}
-                >
-                  {content}
-                </div>
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openAccordion === key ? "max-h-[1500px] opacity-100 pb-5" : "max-h-0 opacity-0"}`}>{content}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* 4. 🔗 Bổ sung: Cross-Selling (Có thể bạn cũng thích) */}
       {relatedProducts.length > 0 && (
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 md:px-12 py-16 border-t border-[#e5e5e5]">
           <h3 className="text-[24px] font-medium text-[#111] mb-8">Có thể bạn cũng thích</h3>
@@ -473,17 +413,11 @@ export default function ClientProductInfo({ product }: { product: any }) {
             {relatedProducts.map((item) => (
               <Link href={`/product/${item.slug}`} key={item.id} className="group flex flex-col cursor-pointer">
                 <div className="bg-[#f5f5f5] rounded-xl aspect-square overflow-hidden mb-4 relative">
-                  <img 
-                    src={item.base_image_url || "/placeholder.png"} 
-                    alt={item.name} 
-                    className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
-                  />
+                  <img src={item.base_image_url || "/placeholder.png"} alt={item.name} className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105" />
                 </div>
                 <h4 className="text-[15px] font-medium text-[#111] truncate">{item.name}</h4>
                 <p className="text-[14px] text-[#757575] mt-1">{item.category_name}</p>
-                <p className="text-[15px] font-medium text-[#111] mt-2">
-                  {Number(item.base_price || 0).toLocaleString("vi-VN")}₫
-                </p>
+                <p className="text-[15px] font-medium text-[#111] mt-2">{Number(item.base_price || 0).toLocaleString("vi-VN")}₫</p>
               </Link>
             ))}
           </div>
