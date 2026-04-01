@@ -1,8 +1,8 @@
 import Link from "next/link";
-import ClientProductInfo from "./ClientProductInfo"; // Nhúng Component giao diện vào
+import ClientProductInfo from "./ClientProductInfo";
 import { productAPI } from "../../services/api";
+import { ArrowLeft } from "lucide-react";
 
-// Gọi API lấy chi tiết sản phẩm theo slug
 async function getProductDetail(slug: string) {
   try {
     const json = await productAPI.getBySlug(slug);
@@ -18,24 +18,23 @@ export default async function ProductDetail({ params }: { params: Promise<{ slug
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-2xl font-bold">
+      <div className="min-h-screen flex items-center justify-center text-xl font-medium text-gray-500">
         Không tìm thấy sản phẩm!
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-lg">
-        {/* Nút quay lại */}
-        <Link href="/" className="text-blue-500 hover:text-blue-700 font-semibold mb-6 inline-block">
-          &larr; Quay lại cửa hàng
+    <main className="min-h-screen bg-white">
+      {/* Nút quay lại sang trọng, không giới hạn không gian */}
+      <div className="max-w-[1920px] mx-auto px-4 md:px-12 pt-8 pb-2">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition-colors">
+          <ArrowLeft size={16} /> Quay lại cửa hàng
         </Link>
-
-        {/* Toàn bộ giao diện Ảnh, Thông tin, Chọn Size/Màu được nhét vào đây */}
-        <ClientProductInfo product={product} />
-        
       </div>
+
+      {/* Component con giờ đã được tự do tràn viền */}
+      <ClientProductInfo product={product} />
     </main>
   );
 }
