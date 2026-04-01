@@ -136,6 +136,11 @@ class ProductCatalogController extends Controller
     // API Sửa (Cập nhật) Sản phẩm
     public function update(Request $request, $id)
     {
+        // ĐẶT BẪY LOG Ở ĐÂY
+        \Illuminate\Support\Facades\Log::info('--- BẮT ĐẦU TEST UPLOAD ẢNH ---');
+        \Illuminate\Support\Facades\Log::info('Dữ liệu Files nhận được: ', $request->allFiles());
+        \Illuminate\Support\Facades\Log::info('Dữ liệu chữ nhận được: ', $request->all());
+
         $product = Product::findOrFail($id);
 
         // 1. Validate dữ liệu
@@ -145,8 +150,8 @@ class ProductCatalogController extends Controller
             'brand_id' => 'required|exists:brands,id',
             'description' => 'nullable|string',
             'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
-            // Không bắt buộc phải có gallery_images khi update
-            'gallery_images' => 'nullable|array', 
+            // Thêm validate cho mảng gallery
+            'gallery_images' => 'nullable|array',
         ]);
 
         DB::beginTransaction();
@@ -166,21 +171,32 @@ class ProductCatalogController extends Controller
                 $product->save();
             }
 
-            // 4. 🚀 [THÊM MỚI] XỬ LÝ ẢNH GALLERY KHI CẬP NHẬT
+            // 4. 🚀 [VÁ LỖI Ở ĐÂY] - BẮT VÀ LƯU ẢNH GALLERY KHI CẬP NHẬT
             if ($request->hasFile('gallery_images')) {
-                $galleryImagesByColor = $request->file('gallery_images');
-                
-                foreach ($galleryImagesByColor as $colorId => $images) {
-                    
-                    // Tùy chọn: Nếu bạn muốn khi up ảnh mới lên thì XÓA hết ảnh cũ của màu đó đi
-                    // Hãy mở comment dòng dưới đây. Nếu không, hệ thống sẽ giữ ảnh cũ và THÊM ảnh mới vào.
-                    //ProductImage::where('product_id', $product->id)->where('color_id', $colorId)->delete();
+                $galleryFiles = $request->file('gallery_images');
 
-                    foreach ($images as $index => $image) {
+                // Kiểm tra xem frontend đang gửi dạng mảng phân màu hay mảng phẳng chung
+                $isNested = is_array(reset($galleryFiles));
+
+                if ($isNested) {
+                    // Xử lý nếu Frontend gửi ảnh theo từng Color ID (Phương án Tối ưu nhất)
+                    foreach ($galleryFiles as $colorId => $images) {
+                        foreach ($images as $index => $image) {
+                            $galleryPath = $image->store('products/gallery', 'public');
+                            ProductImage::create([
+                                'product_id' => $product->id,
+                                'color_id'   => $colorId,
+                                'image_url'  => asset('storage/' . $galleryPath),
+                                'sort_order' => $index, 
+                            ]);
+                        }
+                    }
+                } else {
+                    // Xử lý nếu Frontend gửi ảnh chung 1 cục (Code cũ của bạn)
+                    foreach ($galleryFiles as $index => $image) {
                         $galleryPath = $image->store('products/gallery', 'public');
                         ProductImage::create([
                             'product_id' => $product->id,
-                            'color_id'   => $colorId, // Map đúng với màu sắc
                             'image_url'  => asset('storage/' . $galleryPath),
                             'sort_order' => $index, 
                         ]);
@@ -203,7 +219,7 @@ class ProductCatalogController extends Controller
             DB::commit();
             return response()->json([
                 'success' => true, 
-                'message' => 'Tuyệt vời! Đã cập nhật sản phẩm và hình ảnh thành công.'
+                'message' => 'Tuyệt vời! Đã cập nhật sản phẩm và ảnh Gallery thành công.'
             ]);
 
         } catch (\Exception $e) {
