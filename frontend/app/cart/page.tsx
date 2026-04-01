@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-
 import { useCartStore } from "../store/useCartStore"; 
 import { Trash2, Heart, ChevronDown, HelpCircle } from "lucide-react";
 
@@ -55,7 +54,8 @@ export default function CartPage() {
               {items.map((item) => (
                 <div key={item.variant_id} className="pt-8 first:pt-0 flex gap-4 sm:gap-6">
                   
-                  <Link href={`/product/${item.name.toLowerCase().replace(/ /g, '-')}`} className="w-[150px] h-[150px] shrink-0 bg-[#F5F5F5] rounded-xl overflow-hidden block">
+                  {/* 🚨 ĐÃ FIX: Sử dụng đúng item.slug và thêm hiệu ứng click mượt mà */}
+                  <Link href={`/product/${item.slug}`} className="w-[150px] h-[150px] shrink-0 bg-[#F5F5F5] rounded-xl overflow-hidden block transition-transform hover:opacity-90 active:scale-95">
                     <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply p-2" />
                   </Link>
 

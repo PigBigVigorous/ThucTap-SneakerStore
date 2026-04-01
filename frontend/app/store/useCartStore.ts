@@ -13,6 +13,7 @@ export type CartItem = {
   size: string;
   quantity: number;
   stock: number;
+  slug: string;
 };
 
 // 2. Định nghĩa các hành động (Actions) của Giỏ hàng
