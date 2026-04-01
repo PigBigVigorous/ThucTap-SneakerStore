@@ -174,32 +174,37 @@ class ProductCatalogController extends Controller
             // 4. 🚀 [VÁ LỖI Ở ĐÂY] - BẮT VÀ LƯU ẢNH GALLERY KHI CẬP NHẬT
             if ($request->hasFile('gallery_images')) {
                 $galleryFiles = $request->file('gallery_images');
+            
+                // Dùng !empty() thay cho hasFile() để trị dứt điểm lỗi mảng nhiều chiều
+                if (!empty($galleryFiles)) {
+                    
+                    // Kiểm tra xem frontend đang gửi dạng mảng phân màu hay mảng phẳng chung
+                    $firstElement = reset($galleryFiles);
+                    $isNested = is_array($firstElement);
 
-                // Kiểm tra xem frontend đang gửi dạng mảng phân màu hay mảng phẳng chung
-                $isNested = is_array(reset($galleryFiles));
-
-                if ($isNested) {
-                    // Xử lý nếu Frontend gửi ảnh theo từng Color ID (Phương án Tối ưu nhất)
-                    foreach ($galleryFiles as $colorId => $images) {
-                        foreach ($images as $index => $image) {
+                    if ($isNested) {
+                        // Xử lý nếu Frontend gửi ảnh theo từng Color ID
+                        foreach ($galleryFiles as $colorId => $images) {
+                            foreach ($images as $index => $image) {
+                                $galleryPath = $image->store('products/gallery', 'public');
+                                ProductImage::create([
+                                    'product_id' => $product->id,
+                                    'color_id'   => $colorId, // Đã có cột này nhờ Migration
+                                    'image_url'  => asset('storage/' . $galleryPath),
+                                    'sort_order' => $index, 
+                                ]);
+                            }
+                        }
+                    } else {
+                        // Xử lý nếu Frontend gửi ảnh chung 1 cục
+                        foreach ($galleryFiles as $index => $image) {
                             $galleryPath = $image->store('products/gallery', 'public');
                             ProductImage::create([
                                 'product_id' => $product->id,
-                                'color_id'   => $colorId,
                                 'image_url'  => asset('storage/' . $galleryPath),
                                 'sort_order' => $index, 
                             ]);
                         }
-                    }
-                } else {
-                    // Xử lý nếu Frontend gửi ảnh chung 1 cục (Code cũ của bạn)
-                    foreach ($galleryFiles as $index => $image) {
-                        $galleryPath = $image->store('products/gallery', 'public');
-                        ProductImage::create([
-                            'product_id' => $product->id,
-                            'image_url'  => asset('storage/' . $galleryPath),
-                            'sort_order' => $index, 
-                        ]);
                     }
                 }
             }
@@ -230,6 +235,7 @@ class ProductCatalogController extends Controller
             ], 500);
         }
     }
+
 
     // API Xóa (Xóa mềm) Sản phẩm
     public function destroy($id)
