@@ -63,13 +63,19 @@ class ProductCatalogController extends Controller
             ]);
 
             if ($request->hasFile('gallery_images')) {
-                foreach ($request->file('gallery_images') as $index => $image) {
-                    $galleryPath = $image->store('products/gallery', 'public');
-                    ProductImage::create([
-                        'product_id' => $product->id,
-                        'image_url' => asset('storage/' . $galleryPath),
-                        'sort_order' => $index, 
-                    ]);
+                // Laravel tự động gom nhóm mảng file thành dạng: [ '1' => [file1, file2], '2' => [file3] ]
+                $galleryImagesByColor = $request->file('gallery_images');
+                
+                foreach ($galleryImagesByColor as $colorId => $images) {
+                    foreach ($images as $index => $image) {
+                        $galleryPath = $image->store('products/gallery', 'public');
+                        ProductImage::create([
+                            'product_id' => $product->id,
+                            'color_id'   => $colorId, // 🔑 Gắn color_id tương ứng vào đây
+                            'image_url'  => asset('storage/' . $galleryPath),
+                            'sort_order' => $index, 
+                        ]);
+                    }
                 }
             }
 
@@ -132,13 +138,15 @@ class ProductCatalogController extends Controller
     {
         $product = Product::findOrFail($id);
 
-        // 1. Validate dữ liệu (Tương tự lúc thêm, nhưng base_image không bắt buộc)
+        // 1. Validate dữ liệu
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
             'description' => 'nullable|string',
             'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
+            // Không bắt buộc phải có gallery_images khi update
+            'gallery_images' => 'nullable|array', 
         ]);
 
         DB::beginTransaction();
@@ -151,20 +159,40 @@ class ProductCatalogController extends Controller
                 'description' => $request->description,
             ]);
 
-            // 3. Xử lý Ảnh Đại Diện: NẾU có up ảnh mới thì mới đè lên ảnh cũ
+            // 3. Xử lý Ảnh Đại Diện
             if ($request->hasFile('base_image')) {
                 $path = $request->file('base_image')->store('products', 'public');
                 $product->base_image_url = asset('storage/' . $path);
                 $product->save();
             }
 
-            // 4. Cập nhật Giá cho các phân loại (Màu/Size)
-            // Vì tồn kho là nghiệp vụ riêng, ở form Sửa này ta chỉ cho phép sửa Giá.
+            // 4. 🚀 [THÊM MỚI] XỬ LÝ ẢNH GALLERY KHI CẬP NHẬT
+            if ($request->hasFile('gallery_images')) {
+                $galleryImagesByColor = $request->file('gallery_images');
+                
+                foreach ($galleryImagesByColor as $colorId => $images) {
+                    
+                    // Tùy chọn: Nếu bạn muốn khi up ảnh mới lên thì XÓA hết ảnh cũ của màu đó đi
+                    // Hãy mở comment dòng dưới đây. Nếu không, hệ thống sẽ giữ ảnh cũ và THÊM ảnh mới vào.
+                    //ProductImage::where('product_id', $product->id)->where('color_id', $colorId)->delete();
+
+                    foreach ($images as $index => $image) {
+                        $galleryPath = $image->store('products/gallery', 'public');
+                        ProductImage::create([
+                            'product_id' => $product->id,
+                            'color_id'   => $colorId, // Map đúng với màu sắc
+                            'image_url'  => asset('storage/' . $galleryPath),
+                            'sort_order' => $index, 
+                        ]);
+                    }
+                }
+            }
+
+            // 5. Cập nhật Giá cho các phân loại (Màu/Size)
             if ($request->has('variants')) {
                 $variants = json_decode($request->variants, true);
                 foreach ($variants as $v) {
                     if (isset($v['id'])) {
-                        // Tìm và update giá cho từng biến thể
                         ProductVariant::where('id', $v['id'])->update([
                             'price' => $v['price']
                         ]);
@@ -175,7 +203,7 @@ class ProductCatalogController extends Controller
             DB::commit();
             return response()->json([
                 'success' => true, 
-                'message' => 'Tuyệt vời! Đã cập nhật sản phẩm thành công.'
+                'message' => 'Tuyệt vời! Đã cập nhật sản phẩm và hình ảnh thành công.'
             ]);
 
         } catch (\Exception $e) {

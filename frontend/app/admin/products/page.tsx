@@ -15,7 +15,7 @@ export default function ProductsPage() {
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Thêm state này vào cụm khai báo State
+  // State đánh dấu đang sửa
   const [editingId, setEditingId] = useState<number | null>(null);
 
   // State Form
@@ -25,14 +25,23 @@ export default function ProductsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
-  //THÊM STATE CHO GALLERY
-  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
-  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
-
   // State Biến thể (Mặc định có 1 dòng)
   const [variants, setVariants] = useState([
     { color_id: "1", size_id: "1", price: "2500000", stock: "50" }
   ]);
+
+  // THÊM STATE QUẢN LÝ GALLERY THEO NHÓM MÀU
+  const [galleryByColor, setGalleryByColor] = useState<Record<string, { files: File[], previews: string[] }>>({});
+
+  // Danh mục màu (tạm thời fix cứng theo DB, nếu sau này bạn có API lấy màu thì thay bằng mảng từ API)
+  const colorOptions = [
+    { id: "1", name: "Trắng" }, 
+    { id: "2", name: "Đen" }, 
+    { id: "3", name: "Đỏ" }
+  ];
+
+  // Lọc ra các ID màu sắc độc nhất mà người dùng đang chọn ở phần Biến thể
+  const uniqueSelectedColors = Array.from(new Set(variants.map(v => v.color_id)));
 
   useEffect(() => {
     if (token) fetchProducts();
@@ -51,62 +60,79 @@ export default function ProductsPage() {
 
   // Khi bấm nút Sửa trên từng dòng sản phẩm
   const handleEditClick = (product: any) => {
-    setEditingId(product.id); // Đánh dấu là đang sửa sản phẩm này
+    setEditingId(product.id);
     
-    // 1. Đổ dữ liệu chữ vào Form
     setForm({
       name: product.name,
-      category_id: product.category_id.toString(),
-      brand_id: product.brand_id.toString(),
+      category_id: product.category_id?.toString() || "1",
+      brand_id: product.brand_id?.toString() || "1",
       description: product.description || "",
       branch_id: "1"
     });
     
-    // 2. Load lại ảnh cũ cho xem trước (nhưng không nhét vào File để tránh gửi nhầm)
     setPreviewUrl(product.base_image_url);
     setImageFile(null); 
-    setGalleryFiles([]); setGalleryPreviews([]);
+    
+    // Reset lại gallery
+    setGalleryByColor({});
 
-    // 3. Đổ danh sách Biến thể (Màu/Size/Giá) cũ ra
+    // Đổ danh sách Biến thể ra
     if (product.variants && product.variants.length > 0) {
       setVariants(product.variants.map((v: any) => ({
-        id: v.id, //Phải có ID để Backend biết sửa dòng nào
-        color_id: v.color_id.toString(),
-        size_id: v.size_id.toString(),
+        id: v.id,
+        color_id: v.color_id?.toString() || "1",
+        size_id: v.size_id?.toString() || "1",
         price: Number(v.price).toString(),
-        stock: "0" // Khi sửa không cho phép sửa tồn kho ở đây
+        stock: "0" 
       })));
     } else {
       setVariants([{ color_id: "1", size_id: "1", price: "0", stock: "0" }]);
     }
 
-    setShowModal(true); // Mở form lên
+    setShowModal(true);
   };
 
-  // Xử lý chọn ảnh
+  // Xử lý chọn ảnh đại diện
   const handleImageChange = (e: any) => {
     const file = e.target.files[0];
     if (file) {
       setImageFile(file);
-      setPreviewUrl(URL.createObjectURL(file)); // Tạo link ảo để xem trước ảnh
+      setPreviewUrl(URL.createObjectURL(file));
     }
   };
 
-  // Xử lý chọn nhiều ảnh Gallery
-  const handleGalleryChange = (e: any) => {
+  // Hàm xử lý Upload Gallery cho TỪNG MÀU SẮC
+  const handleGalleryByColorChange = (colorId: string, e: any) => {
     if (e.target.files) {
       const files = Array.from(e.target.files) as File[];
-      setGalleryFiles((prev) => [...prev, ...files]); // Thêm vào mảng file
-      
-      const newPreviews = files.map(file => URL.createObjectURL(file));
-      setGalleryPreviews((prev) => [...prev, ...newPreviews]); // Thêm vào mảng preview
+      const previews = files.map(file => URL.createObjectURL(file));
+
+      setGalleryByColor(prev => {
+        const existing = prev[colorId] || { files: [], previews: [] };
+        return {
+          ...prev,
+          [colorId]: {
+            files: [...existing.files, ...files],
+            previews: [...existing.previews, ...previews]
+          }
+        };
+      });
     }
   };
 
-  // Hàm xóa bớt ảnh gallery đã chọn
-  const removeGalleryImage = (index: number) => {
-    setGalleryFiles(prev => prev.filter((_, i) => i !== index));
-    setGalleryPreviews(prev => prev.filter((_, i) => i !== index));
+  // Xóa bớt ảnh gallery của một màu
+  const removeColorGalleryImage = (colorId: string, indexToRemove: number) => {
+    setGalleryByColor(prev => {
+      const existing = prev[colorId];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [colorId]: {
+          files: existing.files.filter((_, idx) => idx !== indexToRemove),
+          previews: existing.previews.filter((_, idx) => idx !== indexToRemove)
+        }
+      };
+    });
   };
 
   // Xử lý Submit Form
@@ -116,27 +142,26 @@ export default function ProductsPage() {
     setIsSubmitting(true);
 
     try {
-      // Dùng FormData để chứa cả text và File
       const formData = new FormData();
       formData.append("name", form.name);
       formData.append("category_id", form.category_id);
       formData.append("brand_id", form.brand_id);
       formData.append("description", form.description);
-      formData.append("branch_id", form.branch_id); // Kho nhập hàng mặc định
+      formData.append("branch_id", form.branch_id);
       
       if (imageFile) {
         formData.append("base_image", imageFile);
       }
       
-      // Nhét nhiều ảnh phụ vào FormData
-      galleryFiles.forEach((file) => {
-        formData.append("gallery_images[]", file); 
+      // NHÉT ẢNH PHỤ THEO TỪNG NHÓM MÀU VÀO FORMDATA
+      Object.entries(galleryByColor).forEach(([colorId, data]) => {
+        data.files.forEach((file) => {
+          formData.append(`gallery_images[${colorId}][]`, file); 
+        });
       });
 
-      // Biến mảng Biến thể thành chuỗi JSON để gửi
       formData.append("variants", JSON.stringify(variants));
 
-      // SỬA HOẶC THÊM MỚI
       let res;
       if (editingId) {
         res = await adminProductAPI.update(editingId, formData, token);
@@ -144,19 +169,17 @@ export default function ProductsPage() {
         res = await adminProductAPI.create(formData, token);
       }
       
-      // XỬ LÝ KẾT QUẢ TRẢ VỀ CHUNG LÀM 1 LẦN
       if (res.success) {
         toast.success(editingId ? "Đã cập nhật thành công!" : "Đã thêm sản phẩm thành công!");
         setShowModal(false);
         fetchProducts(); 
         
-        // Reset sạch sẽ toàn bộ form và state sau khi làm xong
+        // Reset sạch sẽ form
         setEditingId(null);
         setForm({ name: "", category_id: "1", brand_id: "1", description: "", branch_id: "1" });
         setImageFile(null); 
         setPreviewUrl(null); 
-        setGalleryFiles([]);      // Xóa mảng file gallery
-        setGalleryPreviews([]);   // Xóa mảng hình xem trước gallery
+        setGalleryByColor({}); // Reset state gallery
         setVariants([{ color_id: "1", size_id: "1", price: "2500000", stock: "50" }]);
       } else {
         toast.error(res.message || (editingId ? "Lỗi khi cập nhật sản phẩm" : "Lỗi khi thêm sản phẩm"));
@@ -176,7 +199,7 @@ export default function ProductsPage() {
       const res = await adminProductAPI.delete(id, token);
       if (res.success) {
         toast.success(res.message);
-        fetchProducts(); // Tải lại bảng dữ liệu
+        fetchProducts();
       } else {
         toast.error(res.message);
       }
@@ -195,7 +218,13 @@ export default function ProductsPage() {
             <Package size={32} className="text-orange-600" /> Quản lý Sản phẩm
           </h1>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingId(null);
+              setForm({ name: "", category_id: "1", brand_id: "1", description: "", branch_id: "1" });
+              setImageFile(null); setPreviewUrl(null); setGalleryByColor({});
+              setVariants([{ color_id: "1", size_id: "1", price: "2500000", stock: "50" }]);
+              setShowModal(true);
+            }}
             className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl"
           >
             <Plus size={20} /> Thêm Sản Phẩm Mới
@@ -244,7 +273,6 @@ export default function ProductsPage() {
                             ? `${Number(product.variants[0].price).toLocaleString('vi-VN')} ₫` 
                             : "N/A"}
                         </td>
-                        {/* 👇 THÊM 2 NÚT BẤM VÀO ĐÂY 👇 */}
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-3">
                             <button 
@@ -273,13 +301,13 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* --- MODAL THÊM SẢN PHẨM --- */}
+      {/* --- MODAL THÊM/SỬA SẢN PHẨM --- */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]">
             
             <div className="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
-              <h2 className="text-2xl font-black text-gray-900">TẠO SẢN PHẨM MỚI</h2>
+              <h2 className="text-2xl font-black text-gray-900">{editingId ? "CẬP NHẬT SẢN PHẨM" : "TẠO SẢN PHẨM MỚI"}</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 hover:bg-red-50 p-2 rounded-full">
                 <X size={24} />
               </button>
@@ -323,7 +351,7 @@ export default function ProductsPage() {
 
                 {/* Cột 2: Ảnh & Biến thể */}
                 <div className="space-y-6">
-                  {/* Upload Ảnh */}
+                  {/* Upload Ảnh Đại Diện */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Ảnh Đại Diện</label>
                     <div className="flex items-center gap-4">
@@ -334,34 +362,39 @@ export default function ProductsPage() {
                     </div>
                   </div>
                   
-{/*  THÊM HTML CHO ẢNH GALLERY Ở ĐÂY  */}
+                  {/* TÍCH HỢP GALLERY THEO MÀU SẮC */}
                   <div className="pt-4 border-t border-gray-100">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Ảnh Gallery (Nhiều góc độ)</label>
-                    <input 
-                      type="file" 
-                      multiple //  Thuộc tính cho phép chọn nhiều file
-                      accept="image/*" 
-                      onChange={handleGalleryChange} 
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-100 file:text-black hover:file:bg-gray-200 transition-colors mb-3" 
-                    />
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Ảnh Gallery theo màu sắc</label>
                     
-                    {/* Hiển thị danh sách ảnh xem trước */}
-                    {galleryPreviews.length > 0 && (
-                      <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                        {galleryPreviews.map((preview, index) => (
-                          <div key={index} className="relative shrink-0 w-20 h-20 border border-gray-200 rounded-xl overflow-hidden group">
-                            <img src={preview} alt="Gallery Preview" className="w-full h-full object-cover" />
-                            <button 
-                              type="button" 
-                              onClick={() => removeGalleryImage(index)}
-                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {uniqueSelectedColors.map((colorId) => {
+                      const colorName = colorOptions.find(c => c.id === colorId)?.name || "Màu chưa rõ";
+                      const colorData = galleryByColor[colorId] || { files: [], previews: [] };
+
+                      return (
+                        <div key={colorId} className="mb-4 p-4 border border-dashed border-gray-300 rounded-xl bg-gray-50/50">
+                          <p className="text-sm font-bold text-gray-800 mb-2">📸 Tải ảnh cho màu: <span className="text-orange-600">{colorName}</span></p>
+                          <input 
+                            type="file" multiple accept="image/*" 
+                            onChange={(e) => handleGalleryByColorChange(colorId, e)} 
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-black hover:file:bg-gray-300 transition-colors mb-3" 
+                          />
+                          
+                          {colorData.previews.length > 0 && (
+                            <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                              {colorData.previews.map((preview, index) => (
+                                <div key={index} className="relative shrink-0 w-20 h-20 border border-gray-200 rounded-xl overflow-hidden group">
+                                  <img src={preview} alt="Gallery Preview" className="w-full h-full object-cover" />
+                                  <button type="button" onClick={() => removeColorGalleryImage(colorId, index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <X size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {uniqueSelectedColors.length === 0 && <p className="text-xs text-gray-400 italic">Vui lòng chọn biến thể màu sắc ở bên dưới trước để tải ảnh lên.</p>}
                   </div>
 
                   {/* Quản lý Biến thể (Màu / Size) */}
@@ -411,7 +444,7 @@ export default function ProductsPage() {
                   Hủy bỏ
                 </button>
                 <button type="submit" disabled={isSubmitting} className="px-8 py-3 rounded-xl font-black text-white bg-black hover:bg-orange-600 transition-colors shadow-lg disabled:opacity-50 flex items-center gap-2">
-                  {isSubmitting ? "Đang xử lý..." : "LƯU SẢN PHẨM MỚI"}
+                  {isSubmitting ? "Đang xử lý..." : (editingId ? "CẬP NHẬT" : "LƯU SẢN PHẨM MỚI")}
                 </button>
               </div>
             </form>
