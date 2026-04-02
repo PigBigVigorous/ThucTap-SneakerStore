@@ -7,45 +7,41 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductVariant extends Model
 {
-    protected $table = 'product_variants';
     use SoftDeletes;
+
+    protected $table = 'product_variants';
+    
+    // Đã bỏ variant_image_url để tránh lỗi Column not found
     protected $fillable = [
-        'product_id', 'sku', 'size_id', 'color_id',
-        'price', 'variant_image_url'
+        'product_id', 'sku', 'size_id', 'color_id', 'price'
     ];
 
-    // Ép kiểu dữ liệu để đảm bảo an toàn khi tính toán
     protected $casts = [
         'price' => 'decimal:2',
     ];
 
     protected $appends = ['total_stock'];
 
-    // Quan hệ: Thuộc về 1 Sản phẩm cha
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
 
-    // Quan hệ: Thuộc về 1 Size
     public function size()
     {
         return $this->belongsTo(Size::class);
     }
 
-    // Quan hệ: Thuộc về 1 Màu sắc
     public function color()
     {
         return $this->belongsTo(Color::class);
     }
 
-    // Quan hệ: Có nhiều lịch sử biến động kho
     public function inventoryTransactions()
     {
         return $this->hasMany(InventoryTransaction::class);
     }
 
-    // Quan hệ: Có nhiều chi tiết đơn nhập hàng
     public function purchaseOrderDetails()
     {
         return $this->hasMany(PurchaseOrderDetail::class, 'variant_id');
@@ -56,9 +52,12 @@ class ProductVariant extends Model
         return $this->hasMany(VariantBranchStock::class, 'variant_id');
     }
 
+    // Tối ưu hóa tính tổng tồn kho để chống lỗi N+1 Query
     public function getTotalStockAttribute()
     {
-        // Sum stock across all branch stocks. Use DB-side aggregation for efficiency.
+        if ($this->relationLoaded('branchStocks')) {
+            return (int) $this->branchStocks->sum('stock');
+        }
         return (int) $this->branchStocks()->sum('stock');
     }
 }

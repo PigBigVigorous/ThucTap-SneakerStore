@@ -14,25 +14,14 @@ use Illuminate\Support\Str;
 
 class ProductCatalogController extends Controller
 {
-    /**
-     * Display a listing of products
-     */
     public function index()
     {
         $products = Product::with(['brand', 'category', 'variants', 'images'])->paginate(15);
-
-        return response()->json([
-            'success' => true,
-            'data' => $products
-        ]);
+        return response()->json(['success' => true, 'data' => $products]);
     }
 
-    /**
-     * Store a newly created product
-     */
     public function store(Request $request)
     {
-        // 1. BỎ validate branch_id vì ta không cần nó nữa
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
@@ -40,7 +29,6 @@ class ProductCatalogController extends Controller
             'description' => 'nullable|string',
             'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
             'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
             'variants' => 'required|string', 
         ]);
 
@@ -52,6 +40,7 @@ class ProductCatalogController extends Controller
                 $imageUrl = asset('storage/' . $path);
             }
 
+            // Tạo sản phẩm cha
             $product = Product::create([
                 'name' => $request->name,
                 'slug' => Str::slug($request->name) . '-' . time(),
@@ -62,24 +51,30 @@ class ProductCatalogController extends Controller
                 'is_active' => true,
             ]);
 
-            if ($request->hasFile('gallery_images')) {
-                // Laravel tự động gom nhóm mảng file thành dạng: [ '1' => [file1, file2], '2' => [file3] ]
-                $galleryImagesByColor = $request->file('gallery_images');
-                
-                foreach ($galleryImagesByColor as $colorId => $images) {
+            // Xử lý ảnh Gallery lồng theo màu
+            $galleryFiles = $request->file('gallery_images');
+            if (!empty($galleryFiles)) {
+                foreach ($galleryFiles as $colorId => $images) {
+                    $validColorId = is_numeric($colorId) ? (int)$colorId : null;
+
+                    // 🧹 THÊM DÒNG NÀY: Quét sạch ảnh cũ của màu này trước khi up ảnh mới để chống lặp 3 lần!
+                        ProductImage::where('product_id', $product->id)
+                                            ->where('color_id', $validColorId)
+                                            ->delete();
+
                     foreach ($images as $index => $image) {
                         $galleryPath = $image->store('products/gallery', 'public');
                         ProductImage::create([
                             'product_id' => $product->id,
-                            'color_id'   => $colorId, // 🔑 Gắn color_id tương ứng vào đây
+                            'color_id'   => $validColorId,
                             'image_url'  => asset('storage/' . $galleryPath),
-                            'sort_order' => $index, 
+                            'sort_order' => $index,
                         ]);
                     }
                 }
             }
 
-            // 🚨 LẤY TẤT CẢ CHI NHÁNH ĐỂ RẢI KHO = 0
+            // Rải kho cho TẤT CẢ chi nhánh
             $allBranches = Branch::pluck('id');
             $variants = json_decode($request->variants, true);
             $stockData = [];
@@ -94,7 +89,6 @@ class ProductCatalogController extends Controller
                     'price' => $v['price'],
                 ]);
 
-                // Rải kho = 0 cho biến thể này ở TẤT CẢ chi nhánh
                 foreach ($allBranches as $branchId) {
                     $stockData[] = [
                         'variant_id' => $variant->id,
@@ -106,13 +100,13 @@ class ProductCatalogController extends Controller
                 }
             }
 
-            // Chèn hàng loạt tồn kho 1 lần cho tối ưu hiệu suất
+            // Bulk insert tối ưu DB
             if (!empty($stockData)) {
                 VariantBranchStock::insert($stockData);
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Thêm sản phẩm và rải mã kho thành công!', 'data' => $product]);
+            return response()->json(['success' => true, 'message' => 'Thêm sản phẩm thành công!', 'data' => $product]);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -120,43 +114,28 @@ class ProductCatalogController extends Controller
         }
     }
 
-    /**
-     * Display the specified product
-     */
     public function show(Product $product)
     {
         $product->load(['brand', 'category', 'variants.color', 'variants.size', 'variants.branchStocks.branch', 'images']);
-
-        return response()->json([
-            'success' => true,
-            'data' => $product
-        ]);
+        return response()->json(['success' => true, 'data' => $product]);
     }
 
-    // API Sửa (Cập nhật) Sản phẩm
     public function update(Request $request, $id)
     {
-        // ĐẶT BẪY LOG Ở ĐÂY
-        \Illuminate\Support\Facades\Log::info('--- BẮT ĐẦU TEST UPLOAD ẢNH ---');
-        \Illuminate\Support\Facades\Log::info('Dữ liệu Files nhận được: ', $request->allFiles());
-        \Illuminate\Support\Facades\Log::info('Dữ liệu chữ nhận được: ', $request->all());
-
         $product = Product::findOrFail($id);
 
-        // 1. Validate dữ liệu
         $request->validate([
             'name' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
             'description' => 'nullable|string',
             'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,avif|max:5120',
-            // Thêm validate cho mảng gallery
             'gallery_images' => 'nullable|array',
         ]);
 
         DB::beginTransaction();
         try {
-            // 2. Cập nhật thông tin chữ (Text)
+            // Cập nhật text
             $product->update([
                 'name' => $request->name,
                 'category_id' => $request->category_id,
@@ -164,100 +143,102 @@ class ProductCatalogController extends Controller
                 'description' => $request->description,
             ]);
 
-            // 3. Xử lý Ảnh Đại Diện
+            // Cập nhật ảnh đại diện
             if ($request->hasFile('base_image')) {
                 $path = $request->file('base_image')->store('products', 'public');
                 $product->base_image_url = asset('storage/' . $path);
                 $product->save();
             }
 
-            // 4. 🚀 [VÁ LỖI Ở ĐÂY] - BẮT VÀ LƯU ẢNH GALLERY KHI CẬP NHẬT
-            if ($request->hasFile('gallery_images')) {
-                $galleryFiles = $request->file('gallery_images');
-            
-                // Dùng !empty() thay cho hasFile() để trị dứt điểm lỗi mảng nhiều chiều
-                if (!empty($galleryFiles)) {
-                    
-                    // Kiểm tra xem frontend đang gửi dạng mảng phân màu hay mảng phẳng chung
-                    $firstElement = reset($galleryFiles);
-                    $isNested = is_array($firstElement);
-
-                    if ($isNested) {
-                        // Xử lý nếu Frontend gửi ảnh theo từng Color ID
-                        foreach ($galleryFiles as $colorId => $images) {
-                            foreach ($images as $index => $image) {
-                                $galleryPath = $image->store('products/gallery', 'public');
-                                ProductImage::create([
-                                    'product_id' => $product->id,
-                                    'color_id'   => $colorId, // Đã có cột này nhờ Migration
-                                    'image_url'  => asset('storage/' . $galleryPath),
-                                    'sort_order' => $index, 
-                                ]);
-                            }
-                        }
-                    } else {
-                        // Xử lý nếu Frontend gửi ảnh chung 1 cục
-                        foreach ($galleryFiles as $index => $image) {
-                            $galleryPath = $image->store('products/gallery', 'public');
-                            ProductImage::create([
-                                'product_id' => $product->id,
-                                'image_url'  => asset('storage/' . $galleryPath),
-                                'sort_order' => $index, 
-                            ]);
-                        }
-                    }
-                }
-            }
-
-            // 5. Cập nhật Giá cho các phân loại (Màu/Size)
-            if ($request->has('variants')) {
-                $variants = json_decode($request->variants, true);
-                foreach ($variants as $v) {
-                    if (isset($v['id'])) {
-                        ProductVariant::where('id', $v['id'])->update([
-                            'price' => $v['price']
+            // Cập nhật ảnh Gallery (Hỗ trợ chia theo màu)
+            $galleryFiles = $request->file('gallery_images');
+            if (!empty($galleryFiles)) {
+                foreach ($galleryFiles as $colorId => $images) {
+                    foreach ($images as $index => $image) {
+                        $galleryPath = $image->store('products/gallery', 'public');
+                        ProductImage::create([
+                            'product_id' => $product->id,
+                            'color_id'   => is_numeric($colorId) ? (int)$colorId : null,
+                            'image_url'  => asset('storage/' . $galleryPath),
+                            'sort_order' => $index,
                         ]);
                     }
                 }
             }
 
+            // Cập nhật giá biến thể
+            if ($request->has('variants')) {
+                $variants = json_decode($request->variants, true);
+                
+                // Lấy danh sách ID các biến thể cũ đang có trong DB
+                $existingVariantIds = $product->variants()->pluck('id')->toArray();
+                $receivedVariantIds = []; // Mảng chứa các ID gửi lên từ Client
+
+                $allBranches = Branch::pluck('id');
+                $now = now();
+
+                foreach ($variants as $v) {
+                    if (isset($v['id'])) {
+                        // 1. Nếu là biến thể CŨ -> Cập nhật thông tin
+                        ProductVariant::where('id', $v['id'])->update([
+                            'color_id' => $v['color_id'],
+                            'size_id'  => $v['size_id'],
+                            'price'    => $v['price']
+                        ]);
+                        $receivedVariantIds[] = $v['id'];
+                    } else {
+                        // 2. Nếu là biến thể MỚI (Ngài vừa bấm "Thêm màu Đỏ") -> Tạo mới
+                        $newVariant = ProductVariant::create([
+                            'product_id' => $product->id,
+                            'color_id'   => $v['color_id'],
+                            'size_id'    => $v['size_id'],
+                            'sku'        => $v['sku'] ?? strtoupper(Str::random(8)),
+                            'price'      => $v['price'],
+                        ]);
+                        $receivedVariantIds[] = $newVariant->id;
+
+                        // Rải kho = 0 cho biến thể mới để không bị lỗi màn hình Tồn Kho
+                        $stockData = [];
+                        foreach ($allBranches as $branchId) {
+                            $stockData[] = [
+                                'variant_id' => $newVariant->id,
+                                'branch_id'  => $branchId,
+                                'stock'      => 0,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
+                        }
+                        if (!empty($stockData)) {
+                            VariantBranchStock::insert($stockData);
+                        }
+                    }
+                }
+
+                // 3. Xóa những biến thể mà ngài đã bấm nút (X) trên giao diện Admin
+                $variantsToDelete = array_diff($existingVariantIds, $receivedVariantIds);
+                if (!empty($variantsToDelete)) {
+                    ProductVariant::whereIn('id', $variantsToDelete)->delete();
+                }
+            }
+
             DB::commit();
-            return response()->json([
-                'success' => true, 
-                'message' => 'Tuyệt vời! Đã cập nhật sản phẩm và ảnh Gallery thành công.'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Đã cập nhật sản phẩm thành công.']);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false, 
-                'message' => 'Lỗi khi cập nhật: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Lỗi khi cập nhật: ' . $e->getMessage()], 500);
         }
     }
 
-
-    // API Xóa (Xóa mềm) Sản phẩm
     public function destroy($id)
     {
         try {
             $product = Product::findOrFail($id);
-            
-            // Xóa mềm sản phẩm (Chỉ đánh dấu deleted_at nhờ SoftDeletes)
             $product->delete();
-            
-            // Xóa mềm luôn các biến thể (variants) của nó để khách không nhặt được vào giỏ
             ProductVariant::where('product_id', $id)->delete();
-
-            return response()->json([
-                'success' => true, 
-                'message' => 'Đã đưa sản phẩm vào thùng rác an toàn!'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Đã đưa sản phẩm vào thùng rác!']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Lỗi khi xóa: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Lỗi khi xóa: ' . $e->getMessage()], 500);
         }
     }
 }

@@ -9,12 +9,10 @@ class ProductImage extends Model
 {
     use HasFactory;
 
-    // Bắt buộc phải có 'color_id' trong mảng này
     protected $fillable = [
         'product_id', 
         'color_id', 
         'image_url', 
-        'alt_text', 
         'sort_order'
     ];
 
