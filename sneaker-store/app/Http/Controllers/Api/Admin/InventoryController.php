@@ -42,6 +42,39 @@ class InventoryController extends Controller
     }
 
     /**
+     * Nhập hàng mới từ nhà cung cấp
+     * API: POST /api/admin/inventory/import
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'variant_id' => 'required|exists:product_variants,id',
+            'branch_id' => 'required|exists:branches,id',
+            'quantity' => 'required|integer|min:1',
+            'note' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $this->inventoryService->importStock(
+                $request->variant_id,
+                $request->branch_id,
+                $request->quantity,
+                $request->note ?? 'Nhập lô hàng mới'
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã nhập hàng thành công vào hệ thống'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
      * Transfer stock between branches
      * API: POST /api/admin/inventory/transfer
      */

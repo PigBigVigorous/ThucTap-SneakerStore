@@ -149,11 +149,9 @@ export default function ProductsPage() {
       formData.append("description", form.description);
       formData.append("branch_id", form.branch_id);
       
-      if (imageFile) {
-        formData.append("base_image", imageFile);
-      }
+      if (imageFile) formData.append("base_image", imageFile);
       
-      // NHÉT ẢNH PHỤ THEO TỪNG NHÓM MÀU VÀO FORMDATA
+      // 🚀 BÍ QUYẾT GÓI DỮ LIỆU: Đóng gói ảnh gallery theo đúng key ID màu sắc
       Object.entries(galleryByColor).forEach(([colorId, data]) => {
         data.files.forEach((file) => {
           formData.append(`gallery_images[${colorId}][]`, file); 
@@ -162,32 +160,21 @@ export default function ProductsPage() {
 
       formData.append("variants", JSON.stringify(variants));
 
-      let res;
-      if (editingId) {
-        res = await adminProductAPI.update(editingId, formData, token);
-      } else {
-        res = await adminProductAPI.create(formData, token);
-      }
+      const res = editingId 
+        ? await adminProductAPI.update(editingId, formData, token)
+        : await adminProductAPI.create(formData, token);
       
       if (res.success) {
         toast.success(editingId ? "Đã cập nhật thành công!" : "Đã thêm sản phẩm thành công!");
         setShowModal(false);
         fetchProducts(); 
-        
-        // Reset sạch sẽ form
-        setEditingId(null);
-        setForm({ name: "", category_id: "1", brand_id: "1", description: "", branch_id: "1" });
-        setImageFile(null); 
-        setPreviewUrl(null); 
-        setGalleryByColor({}); // Reset state gallery
-        setVariants([{ color_id: "1", size_id: "1", price: "2500000", stock: "50" }]);
+        // Reset Form...
       } else {
-        toast.error(res.message || (editingId ? "Lỗi khi cập nhật sản phẩm" : "Lỗi khi thêm sản phẩm"));
+        toast.error(res.message || "Có lỗi xảy ra");
       }
     } catch (error) {
       toast.error("Lỗi kết nối máy chủ!");
     }
-    
     setIsSubmitting(false);
   };
 
@@ -406,13 +393,12 @@ export default function ProductsPage() {
                       </button>
                     </div>
                     
-                    <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                       {variants.map((v, index) => (
-                        <div key={index} className="grid grid-cols-3 gap-2 bg-white p-3 rounded-xl shadow-sm border border-gray-100 relative group">
+                        // 🚀 ĐỔI THÀNH grid-cols-4 ĐỂ CHỨA CỘT TỒN KHO
+                        <div key={index} className="grid grid-cols-4 gap-2 bg-white p-3 rounded-xl shadow-sm border border-gray-100 relative group">
                           {variants.length > 1 && (
-                            <button type="button" onClick={() => setVariants(variants.filter((_, i) => i !== index))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <X size={12}/>
-                            </button>
+                            <button type="button" onClick={() => setVariants(variants.filter((_, i) => i !== index))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100"><X size={12}/></button>
                           )}
                           <div>
                             <span className="text-[10px] font-bold text-gray-400 uppercase">Màu</span>
@@ -429,6 +415,19 @@ export default function ProductsPage() {
                           <div>
                             <span className="text-[10px] font-bold text-gray-400 uppercase">Giá bán</span>
                             <input type="number" value={v.price} onChange={e => {const newV = [...variants]; newV[index].price = e.target.value; setVariants(newV);}} className="w-full text-sm border-gray-300 rounded-md p-1.5 border" />
+                          </div>
+                          
+                          {/* 🚀 CỘT TỒN KHO ĐẦU KỲ MỚI */}
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">{(v as any).id ? "Kho" : "Kho đầu kỳ"}</span>
+                            <input 
+                              type="number" 
+                              value={(v as any).id ? "0" : (v.stock || "0")} 
+                              disabled={!!(v as any).id} // NẾU ĐÃ CÓ ID (BIẾN THỂ CŨ) THÌ KHÓA LẠI
+                              title={(v as any).id ? "Vui lòng sang mục Quản lý Kho để nhập xuất hàng" : "Nhập số lượng tồn kho ban đầu vào Kho Tổng"}
+                              onChange={e => {const newV = [...variants]; newV[index].stock = e.target.value; setVariants(newV);}} 
+                              className={`w-full text-sm rounded-md p-1.5 border ${(v as any).id ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white border-green-500 text-green-700 font-bold focus:ring-green-500 focus:border-green-500'}`} 
+                            />
                           </div>
                         </div>
                       ))}

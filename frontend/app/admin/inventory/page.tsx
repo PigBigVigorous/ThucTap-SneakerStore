@@ -112,16 +112,33 @@ export default function InventoryPage() {
       const payload = {
         variant_id: Number(importForm.variant_id),
         branch_id: Number(importForm.branch_id),
-        quantity_change: Math.abs(Number(importForm.quantity)),
+        quantity: Math.abs(Number(importForm.quantity)),
         note: `[NHẬP LÔ HÀNG MỚI] ${importForm.note}`
       };
-      const res = await adminInventoryAPI.adjustStock(payload, token || "");
-      if (res.success) {
+      
+      // Chuyển hướng gọi tới endpoint /import chuyên dụng
+      const res = await fetch(`${baseUrl}/admin/inventory/import`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (data.success) {
         toast.success("Đã nhập hàng thành công vào Kho Tổng!");
         setImportForm({ variant_id: "", branch_id: "", quantity: "", note: "" });
-        fetchTransactions();
-      } else { toast.error(res.message || "Lỗi khi nhập kho"); }
-    } catch (error) { toast.error("Lỗi kết nối"); } finally { setIsSubmitting(false); }
+        
+        // 🔄 TỰ ĐỘNG ĐỒNG BỘ GIAO DIỆN (LIÊN KẾT REAL-TIME)
+        fetchTransactions(); // 1. Cập nhật dòng lịch sử Nhập kho mới
+        fetchStocks(selectedBranchFilter); // 2. Bơm lại số lượng ở Tab Tồn kho
+      } else { 
+        toast.error(data.message || "Lỗi khi nhập kho"); 
+      }
+    } catch (error) { 
+      toast.error("Lỗi kết nối máy chủ"); 
+    } finally { 
+      setIsSubmitting(false); 
+    }
   };
 
   const handleTransfer = async (e: React.FormEvent) => {

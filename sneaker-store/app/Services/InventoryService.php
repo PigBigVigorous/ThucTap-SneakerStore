@@ -249,6 +249,41 @@ class InventoryService
             ]);
         });
     }
+
+    public function importStock($variantId, $branchId, $quantity, $note)
+    {
+        return DB::transaction(function () use ($variantId, $branchId, $quantity, $note) {
+            // 1. Tìm tồn kho chi nhánh, khóa dòng (lockForUpdate) để tránh ghi đè dữ liệu
+            $stock = VariantBranchStock::where('variant_id', $variantId)
+                ->where('branch_id', $branchId)
+                ->lockForUpdate()
+                ->first();
+
+            // Nếu biến thể này chưa từng có ở chi nhánh này thì tạo mới dòng tồn kho
+            if (!$stock) {
+                $stock = VariantBranchStock::create([
+                    'variant_id' => $variantId,
+                    'branch_id' => $branchId,
+                    'stock' => 0,
+                ]);
+            }
+
+            // 2. Cộng số lượng lô hàng mới vào kho
+            $stock->stock += $quantity;
+            $stock->save();
+
+            // 3. Ghi Lịch sử biến động chuẩn quy trình Kế toán
+            InventoryTransaction::create([
+                'product_variant_id' => $variantId,
+                'transaction_type' => 'IMPORT', // 🛑 Gắn nhãn chuẩn là IMPORT
+                'to_branch_id' => $branchId,    // 🛑 Ghi rõ hàng chạy VÀO kho nào
+                'quantity_change' => $quantity,
+                'note' => $note,
+                'created_at' => now(),
+            ]);
+        });
+    }
+    
     /**
      * Nghiệp vụ Trả Hàng
      */

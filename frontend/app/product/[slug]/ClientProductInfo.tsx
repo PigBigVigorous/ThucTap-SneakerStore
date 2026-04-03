@@ -78,33 +78,38 @@ export default function ClientProductInfo({ product }: { product: any }) {
   };
 
   const handleColorChange = (color: any) => {
-    setSelectedColor(color); setSelectedSize(null); setMainImageIndex(0);
+    setSelectedColor(color);
+    setSelectedSize(null);
+    setMainImageIndex(0); // Reset ảnh về tấm đầu tiên khi đổi màu
   };
 
-  // LOGIC LẤY ẢNH CHUẨN: Gom ảnh chính và ảnh phụ theo màu, lọc trùng lặp
   // ==========================================
-  // 🚀 LOGIC LẤY ẢNH CHUẨN (CÁCH LY TUYỆT ĐỐI MÀU SẮC)
+  // 🚀 LOGIC RENDER ẢNH THÔNG MINH (CÁCH LY MÀU SẮC)
   // ==========================================
   let currentGalleryImages: string[] = [];
 
-  // 1. Lọc lấy ảnh ĐỘC QUYỀN của màu đang chọn
-  const colorSpecificImages = product?.images
-    ?.filter((img: any) => selectedColor && Number(img.color_id) === Number(selectedColor.id))
-    .map((img: any) => img.image_url) || [];
+  if (selectedColor) {
+    // 1. Lọc lấy NHỮNG ẢNH CỦA RIÊNG MÀU ĐÓ
+    const colorSpecificImages = product?.images
+      ?.filter((img: any) => Number(img.color_id) === Number(selectedColor.id))
+      .map((img: any) => img.image_url) || [];
 
-  if (colorSpecificImages.length > 0) {
-    // Tình huống A: Màu Đỏ có ảnh -> CHỈ HIỆN ẢNH ĐỎ
-    currentGalleryImages = [...colorSpecificImages];
-  } else {
-    // Tình huống B: Màu Đỏ KHÔNG có ảnh -> CHỈ DÙNG ẢNH ĐẠI DIỆN CHUNG, cấm lôi ảnh Gallery màu khác sang!
-    if (product?.base_image_url) {
-      currentGalleryImages = [product.base_image_url];
+    if (colorSpecificImages.length > 0) {
+      // Nếu màu này có ảnh Gallery -> CHỈ HIỂN THỊ ẢNH CỦA MÀU NÀY
+      currentGalleryImages = [...colorSpecificImages];
+    } else {
+      // Nếu admin chưa upload ảnh cho màu này -> Lấy ảnh đại diện (Base Image) xài tạm
+      if (product?.base_image_url) currentGalleryImages = [product.base_image_url];
     }
+  } else {
+    // Trạng thái load ban đầu chưa chọn màu -> Hiện ảnh đại diện
+    if (product?.base_image_url) currentGalleryImages = [product.base_image_url];
   }
 
-  // Lọc trùng lặp URL (Phòng hờ)
+  // 2. Bộ lọc rác cuối cùng: Xóa sạch các URL bị trùng lặp để slider không bị x2, x3
   currentGalleryImages = Array.from(new Set(currentGalleryImages));
 
+  // 3. Fallback chống vỡ giao diện nếu mất toàn bộ ảnh
   if (currentGalleryImages.length === 0) {
     currentGalleryImages = ["/placeholder.png"];
   }
