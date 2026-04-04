@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "../store/useCartStore"; 
 import { Check, Lock, Package } from "lucide-react";
 import toast from "react-hot-toast";
 import { orderAPI } from "../services/api";
+
+// URL trỏ đến backend Laravel của bạn (Đổi lại port nếu cần)
+const API_BASE_URL = "http://localhost:8000/api"; 
+
+type LocationItem = {
+  code: string;
+  name: string;
+};
 
 const FloatingInput = ({ label, name, type = "text", value, onChange }: any) => (
   <div className="relative w-full">
@@ -25,6 +33,35 @@ const FloatingInput = ({ label, name, type = "text", value, onChange }: any) => 
   </div>
 );
 
+// Giao diện Select Box đồng bộ với FloatingInput
+const CustomSelect = ({ label, value, onChange, options, disabled, defaultOption }: any) => (
+  <div className="relative w-full">
+    <select
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      className={`block px-4 pb-2.5 pt-6 w-full text-base text-gray-900 bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-1 focus:ring-black focus:border-black transition-colors ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'cursor-pointer'}`}
+      required
+    >
+      <option value="" disabled hidden></option>
+      {defaultOption && <option value="" disabled>{defaultOption}</option>}
+      
+      {/* THÊM ĐOẠN KIỂM TRA MẢNG NÀY */}
+      {Array.isArray(options) && options.map((opt: any) => (
+        <option key={opt.code} value={opt.code}>
+          {opt.name}
+        </option>
+      ))}
+    </select>
+    <label className={`absolute text-base duration-300 transform top-4 z-10 origin-[0] left-4 pointer-events-none ${value ? 'text-gray-500 scale-75 -translate-y-3' : 'text-gray-500'}`}>
+      {label}
+    </label>
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-700">
+      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+    </div>
+  </div>
+);
+
 export default function CheckoutPage() {
   const router = useRouter();
   
@@ -34,33 +71,112 @@ export default function CheckoutPage() {
   const [activeStep, setActiveStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   
-  // 1. STATE LƯU THÔNG TIN KHÁCH NHẬP (Đã tách trường)
+  // STATE LƯU DỮ LIỆU ĐỊA CHỈ TỪ API
+  const [provinces, setProvinces] = useState<LocationItem[]>([]);
+  const [districts, setDistricts] = useState<LocationItem[]>([]);
+  const [wards, setWards] = useState<LocationItem[]>([]);
+
+  // STATE LƯU MÃ (CODE) ĐỂ GỌI API TIẾP THEO
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState("");
+  const [selectedWardCode, setSelectedWardCode] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
-    province: "",
-    district: "",
-    ward: "",
+    province: "", // Lưu TÊN Tỉnh
+    district: "", // Lưu TÊN Huyện
+    ward: "",     // Lưu TÊN Xã
     addressDetail: ""
   });
 
   const [shippingMethod, setShippingMethod] = useState("standard");
   const [paymentMethod, setPaymentMethod] = useState("cod");
 
-  // Tính toán tiền nong
   const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
   const isFreeship = subtotal >= 5000000;
   const shippingCost = shippingMethod === "express" ? 250000 : (isFreeship ? 0 : 250000);
   const total = subtotal + shippingCost;
 
-  // Cập nhật dữ liệu form
+  // --- LẤY DỮ LIỆU TỈNH KHI VÀO TRANG ---
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/provinces`)
+      .then(res => res.json())
+      .then(data => {
+        console.log("Dữ liệu Tỉnh trả về:", data); // <--- IN RA XEM NÓ LÀ GÌ
+        
+        // NẾU data LÀ MẢNG THÌ SET, NẾU NẰM TRONG data.data THÌ SET data.data
+        if (Array.isArray(data)) {
+            setProvinces(data);
+        } else if (data && Array.isArray(data.data)) {
+            setProvinces(data.data);
+        } else {
+            console.error("Dữ liệu Tỉnh không hợp lệ!");
+        }
+      })
+      .catch(err => console.error("Lỗi lấy Tỉnh:", err));
+  }, []);
+
+  // --- XỬ LÝ KHI CHỌN TỈNH ---
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = e.target.value;
+    const name = e.target.options[e.target.selectedIndex].text;
+    
+    setSelectedProvinceCode(code);
+    setSelectedDistrictCode("");
+    setSelectedWardCode("");
+    
+    setFormData({ ...formData, province: name, district: "", ward: "" });
+    setDistricts([]);
+    setWards([]);
+
+    if (code) {
+      fetch(`${API_BASE_URL}/districts/${code}`)
+        .then(res => res.json())
+        .then(data => {
+            if (Array.isArray(data)) setDistricts(data);
+            else if (data && Array.isArray(data.data)) setDistricts(data.data);
+        })
+        .catch(err => console.error("Lỗi lấy Huyện:", err));
+    }
+  };
+
+  // --- XỬ LÝ KHI CHỌN HUYỆN ---
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = e.target.value;
+    const name = e.target.options[e.target.selectedIndex].text;
+
+    setSelectedDistrictCode(code);
+    setSelectedWardCode("");
+
+    setFormData({ ...formData, district: name, ward: "" });
+    setWards([]);
+
+    if (code) {
+      fetch(`${API_BASE_URL}/wards/${code}`)
+        .then(res => res.json())
+        .then(data => {
+            if (Array.isArray(data)) setWards(data);
+            else if (data && Array.isArray(data.data)) setWards(data.data);
+        })
+        .catch(err => console.error("Lỗi lấy Xã:", err));
+    }
+  };
+
+  // --- XỬ LÝ KHI CHỌN XÃ ---
+  const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const code = e.target.value;
+    const name = e.target.options[e.target.selectedIndex].text;
+    setSelectedWardCode(code);
+    setFormData({ ...formData, ward: name });
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handlePlaceOrder = async () => {
-    // Validate kiểm tra xem nhập đủ các trường mới chưa
     if (!formData.name || !formData.phone || !formData.province || !formData.district || !formData.ward || !formData.addressDetail) {
       toast.error("Vui lòng điền đầy đủ thông tin giao hàng!");
       setActiveStep(1);
@@ -73,17 +189,16 @@ export default function CheckoutPage() {
     const token = localStorage.getItem("token");
     const user = userString ? JSON.parse(userString) : null;
 
-    // 2. PAYLOAD MỚI GỬI LÊN API (Không nối chuỗi nữa)
     const orderPayload = {
       user_id: user ? user.id : null,
       customer_name: formData.name,
       customer_phone: formData.phone,
       customer_email: formData.email,
-      province: formData.province,
-      district: formData.district,
-      ward: formData.ward,
+      province: formData.province, // Gửi TÊN Tỉnh lên DB
+      district: formData.district, // Gửi TÊN Huyện lên DB
+      ward: formData.ward,         // Gửi TÊN Xã lên DB
       address_detail: formData.addressDetail,
-      total_amount: total, // Đẩy tổng tiền lên backend
+      total_amount: total,
       payment_method: paymentMethod,
       items: cart.map(item => ({
         variant_id: item.variant_id,
@@ -95,10 +210,9 @@ export default function CheckoutPage() {
       const data = await orderAPI.create(orderPayload, token || "");
 
       if (data.success) {
-        // NẾU BACKEND TRẢ VỀ URL VNPAY -> REDIRECT CHỨ KHÔNG PUSH ROUTER NỮA
         if (data.data?.payment_url) {
             window.location.href = data.data.payment_url;
-            return; // Dừng tại đây, không xoá giỏ hàng vội (chỉ xoá khi thanh toán xong)
+            return; 
         }
 
         const trackingCode = data.data?.order_tracking_code || '';
@@ -114,11 +228,9 @@ export default function CheckoutPage() {
           }
         }, 2000);
       } else {
-        console.error("🚨 CHI TIẾT LỖI TỪ BACKEND:", JSON.stringify(data, null, 2));
-        toast.error(data.message || "Có lỗi xảy ra từ máy chủ. Vui lòng bật F12 để xem chi tiết!");
+        toast.error(data.message || "Có lỗi xảy ra từ máy chủ.");
       }
     } catch (error) {
-      console.error("Lỗi Network/CORS:", error);
       toast.error("Không thể kết nối đến máy chủ.");
     } finally {
       setIsLoading(false);
@@ -136,6 +248,7 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-white">
+      {/* ... (Header giữ nguyên) ... */}
       <header className="border-b border-gray-200 bg-white">
         <div className="max-w-[1000px] mx-auto px-6 h-[72px] flex items-center justify-between">
           <Link href="/cart" className="font-black text-2xl tracking-tighter text-gray-900">
@@ -167,13 +280,35 @@ export default function CheckoutPage() {
                     <FloatingInput name="phone" label="Số điện thoại" type="tel" value={formData.phone} onChange={handleInputChange} />
                   </div>
 
+                  {/* THAY THẾ BẰNG DROPDOWN TỈNH / HUYỆN */}
                   <div className="grid grid-cols-2 gap-4">
-                    <FloatingInput name="province" label="Tỉnh / Thành phố" value={formData.province} onChange={handleInputChange} />
-                    <FloatingInput name="district" label="Quận / Huyện" value={formData.district} onChange={handleInputChange} />
+                    <CustomSelect 
+                      label="Tỉnh / Thành phố" 
+                      value={selectedProvinceCode} 
+                      onChange={handleProvinceChange} 
+                      options={provinces}
+                      defaultOption="Chọn Tỉnh/Thành phố"
+                    />
+                    <CustomSelect 
+                      label="Quận / Huyện" 
+                      value={selectedDistrictCode} 
+                      onChange={handleDistrictChange} 
+                      options={districts}
+                      disabled={!selectedProvinceCode}
+                      defaultOption="Chọn Quận/Huyện"
+                    />
                   </div>
 
+                  {/* DROPDOWN PHƯỜNG XÃ VÀ ĐỊA CHỈ */}
                   <div className="grid grid-cols-2 gap-4">
-                    <FloatingInput name="ward" label="Phường / Xã" value={formData.ward} onChange={handleInputChange} />
+                    <CustomSelect 
+                      label="Phường / Xã" 
+                      value={selectedWardCode} 
+                      onChange={handleWardChange} 
+                      options={wards}
+                      disabled={!selectedDistrictCode}
+                      defaultOption="Chọn Phường/Xã"
+                    />
                     <FloatingInput name="addressDetail" label="Số nhà, Tên đường" value={formData.addressDetail} onChange={handleInputChange} />
                   </div>
 
@@ -192,6 +327,7 @@ export default function CheckoutPage() {
               )}
             </div>
 
+            {/* ... (BƯỚC 2 VÀ BƯỚC 3 GIỮ NGUYÊN) ... */}
             {/* BƯỚC 2: PHƯƠNG THỨC VẬN CHUYỂN */}
             <div className="border-b border-gray-200 pb-8 mb-8">
               <h2 className={`text-[24px] font-medium tracking-tight mb-6 flex items-center gap-3 ${activeStep < 2 ? 'text-gray-300' : (activeStep > 2 ? 'text-gray-400' : 'text-gray-900')}`}>
@@ -259,7 +395,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* CỘT PHẢI: MINI-BAG SUMMARY */}
+          {/* ... (CỘT PHẢI: MINI-BAG SUMMARY GIỮ NGUYÊN) ... */}
           <div className="w-full lg:w-[40%]">
             <div className="sticky top-10 bg-white">
               <h2 className="text-[24px] font-medium text-gray-900 mb-6 tracking-tight">Tóm tắt Đơn hàng</h2>

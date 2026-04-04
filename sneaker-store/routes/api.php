@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Admin\ProductCatalogController;
 use App\Http\Controllers\Api\Admin\BranchController;
 use App\Models\Order;
 use App\Http\Controllers\Api\PaymentController;
+use Illuminate\Support\Facades\DB;
 
 //Route của khách hàng chưa đăng nhập
 Route::post('/register', [AuthController::class, 'register']);
@@ -24,6 +25,25 @@ Route::get('/payment/vnpay-ipn', [App\Http\Controllers\Api\PaymentController::cl
 Route::get('/payment/vnpay-callback', [PaymentController::class, 'vnpayCallback']);
 // 1. Khách vãng lai cũng xem được Đánh giá (Để chung với route xem sản phẩm public)
 Route::get('/products/{slug}/reviews', [ProductController::class, 'getReviews']);
+
+Route::get('/provinces', function () {
+    $provinces = DB::table('provinces')->select('name', 'code')->get();
+    return response()->json([
+        'success' => true, 
+        'data' => $provinces]);
+});
+Route::get('/districts/{province_code}', function ($province_code) {
+    $districts = DB::table('districts')->where('province_code', $province_code)->select('name', 'code', 'province_code')->get();
+    return response()->json([
+        'success' => true, 
+        'data' => $districts]);
+});
+Route::get('/wards/{district_code}', function ($district_code) {
+    $wards = DB::table('wards')->where('district_code', $district_code)->select('name', 'code', 'district_code')->get();
+    return response()->json([
+        'success' => true, 
+        'data' => $wards]);
+});
 
 // 2. Phải đăng nhập mới được viết Đánh giá (Bỏ vào trong nhóm auth:sanctum)
 Route::middleware('auth:sanctum')->group(function () {
