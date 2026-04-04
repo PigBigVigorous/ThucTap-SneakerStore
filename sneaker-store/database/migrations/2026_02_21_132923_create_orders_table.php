@@ -19,6 +19,7 @@ return new class extends Migration
         $table->decimal('total_amount', 15, 2);
         $table->text('shipping_address');
         $table->timestamps();
+        
     });
 
     Schema::create('order_items', function (Blueprint $table) {

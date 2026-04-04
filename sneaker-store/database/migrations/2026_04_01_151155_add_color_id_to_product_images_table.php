@@ -8,16 +8,20 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::table('product_images', function (Blueprint $table) {
-            // Thêm cột color_id đứng ngay sau cột product_id
-            $table->unsignedBigInteger('color_id')->nullable()->after('product_id');
-        });
+        // Kiểm tra xem cột color_id đã tồn tại chưa
+        if (!Schema::hasColumn('product_images', 'color_id')) {
+            Schema::table('product_images', function (Blueprint $table) {
+                $table->unsignedBigInteger('color_id')->nullable()->after('product_id');
+            });
+        }
     }
 
     public function down()
     {
-        Schema::table('product_images', function (Blueprint $table) {
-            $table->dropColumn('color_id');
-        });
+        if (Schema::hasColumn('product_images', 'color_id')) {
+            Schema::table('product_images', function (Blueprint $table) {
+                $table->dropColumn('color_id');
+            });
+        }
     }
 };
