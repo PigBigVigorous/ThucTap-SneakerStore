@@ -143,20 +143,28 @@ export const productAPI = {
   },
 };
 
+export interface OrderPayload {
+  shipping_address: string;
+  items: {
+    variant_id: number;
+    quantity: number;
+  }[];
+}
+
 // ==========================================
 // 🛒 ORDER ENDPOINTS (Customer)
 // ==========================================
 
 export const orderAPI = {
   // Tạo đơn hàng
-  create: async (data: any, token: string) => {
-    const headers: HeadersInit = {
+  create: async (data: OrderPayload, token?: string) => {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "Accept": "application/json",
     };
 
-    // 🚨 CHỈ GẮN TOKEN NẾU THỰC SỰ CÓ (Tránh gửi chuỗi "Bearer null" làm Laravel sập)
-    if (token && token !== "null" && token !== "") {
+    // Chuẩn hoá logic check token (bỏ đoạn check "null" mùi code)
+    if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
@@ -168,15 +176,12 @@ export const orderAPI = {
 
     const result = await res.json();
 
+    // Thống nhất cách throw lỗi ra UI
     if (!res.ok) {
-      return {
-        success: false,
-        message: result.message || "Lỗi hệ thống từ máy chủ",
-        errors: result.errors || result // Lấy chi tiết lỗi để in ra log
-      };
+        throw new Error(result.message || "Đã xảy ra lỗi khi tạo đơn hàng.");
     }
 
-    return result;
+    return result; // Thành công trả về payload
   },
 
   // Lấy chi tiết đơn hàng theo tracking code
@@ -318,8 +323,11 @@ export const adminProductAPI = {
     return res.json();
   },
   update: async (id: number, formData: FormData, token: string) => {
+    // Thêm dòng này để đánh lừa Laravel rằng đây là phương thức PUT dù gửi bằng POST
+    formData.append("_method", "PUT");
+
     const res = await fetch(`${API_URL}/admin/products/${id}`, {
-      method: "POST", // Dùng POST để gửi FormData chứa ảnh
+      method: "POST", // Vẫn dùng POST để FormData xử lý upload File
       headers: { 
         "Authorization": `Bearer ${token}`,
         "Accept": "application/json"

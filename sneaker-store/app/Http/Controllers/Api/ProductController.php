@@ -11,16 +11,19 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['brand', 'category', 'variants.branchStocks'])
-            ->where('is_active', true)
-            ->paginate(10); 
-
-        $products->getCollection()->transform(function ($product) {
-            foreach ($product->variants as $variant) {
-                $variant->total_stock = $variant->branchStocks->sum('stock');
+        $products = Product::with([
+            'brand', 
+            'category', 
+            // Load các variants và yêu cầu CSDL tự tính tổng sum cột 'stock' của bảng branch_stocks
+            'variants' => function($query) {
+                $query->withSum('branchStocks as total_stock', 'stock');
             }
-            return $product;
-        });
+        ])
+        ->where('is_active', true)
+        ->paginate(10); 
+
+        // Không cần $products->getCollection()->transform(...) nữa.
+        // Laravel sẽ trả về property "total_stock" tự động do query withSum.
 
         return response()->json(['success' => true, 'data' => $products]);
     }
@@ -45,16 +48,22 @@ class ProductController extends Controller
     {
         $product = Product::where('slug', $slug)->firstOrFail();
         
-        $reviews = ProductReview::with('user:id,name') // Kéo theo tên người user
+        // Tránh tải toàn bộ db lên RAM
+        $reviews = ProductReview::with('user:id,name')
             ->where('product_id', $product->id)
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10); // Lấy 10 đánh giá mỗi trang
+
+        // Bắt buộc query độc lập vì paginate() sẽ làm xáo trộn phép tính AVG 
+        $aggregates = ProductReview::where('product_id', $product->id)
+            ->selectRaw('COUNT(id) as total, AVG(rating) as average')
+            ->first();
 
         return response()->json([
             'success' => true,
-            'data' => $reviews,
-            'average_rating' => $reviews->avg('rating') ? round($reviews->avg('rating'), 1) : 0,
-            'total_reviews' => $reviews->count()
+            'data' => $reviews, // Dữ liệu trả về sẽ bao gồm "data", "current_page", "next_page_url"...
+            'average_rating' => $aggregates->average ? round($aggregates->average, 1) : 0,
+            'total_reviews' => $aggregates->total ?? 0
         ]);
     }
 
@@ -69,23 +78,27 @@ class ProductController extends Controller
         $product = Product::where('slug', $slug)->firstOrFail();
         $user = $request->user();
 
-        // Kiểm tra chống spam: Mỗi user chỉ đánh giá 1 lần / 1 sản phẩm
-        $exists = ProductReview::where('product_id', $product->id)->where('user_id', $user->id)->exists();
-        if ($exists) {
-            return response()->json(['success' => false, 'message' => 'Bạn đã đánh giá sản phẩm này rồi!'], 400);
+        try {
+            // Không cần check exists nữa, đẩy thẳng vào DB. Nếu trùng tự quăng Exception
+            $review = ProductReview::create([
+                'product_id' => $product->id,
+                'user_id' => $user->id,
+                'rating' => $request->rating,
+                'comment' => $request->comment,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cảm ơn bạn đã gửi đánh giá!',
+                'data' => $review->load('user:id,name')
+            ]);
+            
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Lỗi 23000 là mã lỗi Integrity constraint violation (trùng duplicate key) của MySQL
+            if ($e->getCode() == 23000) {
+                return response()->json(['success' => false, 'message' => 'Bạn đã đánh giá sản phẩm này rồi!'], 400);
+            }
+            throw $e;
         }
-
-        $review = ProductReview::create([
-            'product_id' => $product->id,
-            'user_id' => $user->id,
-            'rating' => $request->rating,
-            'comment' => $request->comment,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cảm ơn bạn đã gửi đánh giá!',
-            'data' => $review->load('user:id,name')
-        ]);
     }
 }

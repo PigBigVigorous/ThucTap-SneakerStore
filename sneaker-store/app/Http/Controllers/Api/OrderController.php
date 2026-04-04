@@ -32,9 +32,8 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validate dữ liệu đầu vào
+        // Xóa 'user_id' khỏi rule validate
         $validatedData = $request->validate([
-            'user_id' => 'nullable|exists:users,id',
             'shipping_address' => 'required|string',
             'items' => 'required|array|min:1',
             'items.*.variant_id' => 'required|exists:product_variants,id',
@@ -42,33 +41,28 @@ class OrderController extends Controller
         ]);
 
         try {
-            // 2. Fetch the default Web Sales Channel (online)
-            $webChannel = SalesChannel::where('type', 'online')->first();
-            if (!$webChannel) {
-                throw new Exception('Không tìm thấy Sales Channel cho Web. Vui lòng liên hệ Admin.');
+            // Lấy ID người dùng thực sự từ Sanctum Token (Nếu là khách vãng lai thì = null)
+            $userId = auth('sanctum')->check() ? auth('sanctum')->id() : null;
+
+            // Cache lại Sales Channel để đỡ truy vấn DB liên tục
+            $webChannelId = cache()->rememberForever('sales_channel_online', function() {
+                return SalesChannel::where('type', 'online')->value('id');
+            });
+
+            if (!$webChannelId) {
+                throw new Exception('Không tìm thấy Sales Channel cho Web.');
             }
 
-            // 3. Gọi Service xử lý toàn bộ logic phức tạp (Transaction, Locking, Smart Routing)
             $order = $this->inventoryService->placeOnlineOrder(
-                $validatedData['user_id'] ?? null,
+                $userId, // Gửi userId chuẩn xuống Service
                 $validatedData['shipping_address'],
                 $validatedData['items'],
-                $webChannel->id
+                $webChannelId
             );
             
-            // 4. Trả về kết quả thành công
-            return response()->json([
-                'success' => true,
-                'message' => 'Đặt hàng thành công!',
-                'data' => $order->load(['salesChannel', 'items.variant'])
-            ], 201);
-
+            return response()->json(['success' => true, 'message' => 'Đặt hàng thành công!', 'data' => $order], 201);
         } catch (Exception $e) {
-            // Xóa bỏ DB::rollBack() ở đây vì Service đã bao bọc DB::transaction rồi
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
 
@@ -78,31 +72,27 @@ class OrderController extends Controller
      */
     public function show($trackingCode)
     {
-        // Dùng Eager Loading (with) để lấy luôn thông tin chi nhánh, sales channel, sản phẩm
-        $order = Order::with([
-            'salesChannel',
-            'branch',
-            'items.variant.product', 
-            'items.variant.color', 
-            'items.variant.size'
-        ])
-        ->where('order_tracking_code', $trackingCode)
-        ->first();
+        $order = Order::with(['salesChannel', 'branch', 'items.variant.product', 'items.variant.color', 'items.variant.size'])
+            ->where('order_tracking_code', $trackingCode)
+            ->first();
 
-        // Nếu khách nhập sai mã
         if (!$order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy đơn hàng nào với mã này. Vui lòng kiểm tra lại!'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy đơn hàng nào!'], 404);
         }
 
-        // Trả về thông tin đơn hàng
-        return response()->json([
-            'success' => true,
-            'message' => 'Tra cứu đơn hàng thành công!',
-            'data' => $order
-        ]);
+        // BẢO MẬT: Nếu đơn hàng có chủ (user_id != null), chỉ có chủ đơn hoặc Admin mới xem được
+        if ($order->user_id !== null) {
+            $currentUser = auth('sanctum')->user();
+
+            // Giả sử có check role admin (hoặc bỏ qua nếu API này không dùng cho admin)
+            $isAdmin = false; // Temporarily set to false since hasRole method is undefined
+
+            if (!$currentUser || ($currentUser->id !== $order->user_id && !$isAdmin)) {
+                return response()->json(['success' => false, 'message' => 'Bạn không có quyền xem đơn hàng này.'], 403);
+            }
+        }
+
+        return response()->json(['success' => true, 'data' => $order]);
     }
 
     /**
