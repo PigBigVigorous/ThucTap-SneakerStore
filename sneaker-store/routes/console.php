@@ -8,4 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// sneaker-store/routes/console.php
+Schedule::command('orders:release-pending')->everyMinute();
 Schedule::command('orders:release-pending')->everyMinute();

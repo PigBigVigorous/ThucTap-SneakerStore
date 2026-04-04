@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Request as FacadesRequest;
 use Illuminate\Support\Str;
 use App\Services\InventoryService;
 use App\Models\SalesChannel;
@@ -31,40 +32,101 @@ class OrderController extends Controller
      * API: POST /api/orders
      */
     public function store(Request $request)
-    {
-        // Xóa 'user_id' khỏi rule validate
-        $validatedData = $request->validate([
-            'shipping_address' => 'required|string',
-            'items' => 'required|array|min:1',
-            'items.*.variant_id' => 'required|exists:product_variants,id',
-            'items.*.quantity' => 'required|integer|min:1',
-        ]);
+{
+    $validatedData = $request->validate([
+        'shipping_address' => 'required|string',
+        'items' => 'required|array|min:1',
+        'items.*.variant_id' => 'required|exists:product_variants,id',
+        'items.*.quantity' => 'required|integer|min:1',
+        'payment_method' => 'required|in:cod,vnpay', // Validate thêm method
+    ]);
 
-        try {
-            // Lấy ID người dùng thực sự từ Sanctum Token (Nếu là khách vãng lai thì = null)
-            $userId = auth('sanctum')->check() ? auth('sanctum')->id() : null;
+    try {
+        $userId = auth('sanctum')->check() ? auth('sanctum')->id() : null;
+        $webChannelId = cache()->rememberForever('sales_channel_online', fn() => SalesChannel::where('type', 'online')->value('id'));
 
-            // Cache lại Sales Channel để đỡ truy vấn DB liên tục
-            $webChannelId = cache()->rememberForever('sales_channel_online', function() {
-                return SalesChannel::where('type', 'online')->value('id');
-            });
-
-            if (!$webChannelId) {
-                throw new Exception('Không tìm thấy Sales Channel cho Web.');
-            }
-
-            $order = $this->inventoryService->placeOnlineOrder(
-                $userId, // Gửi userId chuẩn xuống Service
-                $validatedData['shipping_address'],
-                $validatedData['items'],
-                $webChannelId
-            );
-            
-            return response()->json(['success' => true, 'message' => 'Đặt hàng thành công!', 'data' => $order], 201);
-        } catch (Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        // Giả sử Service của bạn đã được update để nhận thêm payment_method
+        $order = $this->inventoryService->placeOnlineOrder(
+            $userId, 
+            $validatedData['shipping_address'],
+            $validatedData['items'],
+            $webChannelId,
+            $validatedData['payment_method'] // Cần update InventoryService nhận tham số này
+        );
+        
+        // NẾU LÀ VNPAY -> SINH URL THANH TOÁN
+        if ($validatedData['payment_method'] === 'vnpay') {
+            $paymentUrl = $this->createVnpayUrl($order);
+            return response()->json([
+                'success' => true, 
+                'message' => 'Chuyển hướng đến cổng thanh toán...', 
+                'data' => [
+                    'order_tracking_code' => $order->order_tracking_code,
+                    'payment_url' => $paymentUrl // Gửi URL về cho Frontend
+                ]
+            ], 201);
         }
+        
+        // NẾU LÀ COD -> NHƯ CŨ
+        return response()->json(['success' => true, 'message' => 'Đặt hàng thành công!', 'data' => ['order_tracking_code' => $order->order_tracking_code]], 201);
+        
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
     }
+}
+
+private function createVnpayUrl($order)
+{
+    $vnp_Url = env('VNP_URL');
+    $vnp_Returnurl = env('VNP_RETURN_URL');
+    $vnp_TmnCode = env('VNP_TMN_CODE');
+    $vnp_HashSecret = env('VNP_HASH_SECRET');
+
+    $vnp_TxnRef = $order->order_tracking_code; // Mã đơn hàng
+    $vnp_OrderInfo = "Thanh toan don hang " . $order->order_tracking_code;
+    $vnp_OrderType = 'billpayment';
+    $vnp_Amount = $order->total_amount * 100; // VNPAY yêu cầu nhân 100
+    $vnp_Locale = 'vn';
+    $vnp_BankCode = ''; // Để trống để khách tự chọn ngân hàng
+    $vnp_IpAddr = FacadesRequest::ip();
+
+    $inputData = array(
+        "vnp_Version" => "2.1.0",
+        "vnp_TmnCode" => $vnp_TmnCode,
+        "vnp_Amount" => $vnp_Amount,
+        "vnp_Command" => "pay",
+        "vnp_CreateDate" => date('YmdHis'),
+        "vnp_CurrCode" => "VND",
+        "vnp_IpAddr" => $vnp_IpAddr,
+        "vnp_Locale" => $vnp_Locale,
+        "vnp_OrderInfo" => $vnp_OrderInfo,
+        "vnp_OrderType" => $vnp_OrderType,
+        "vnp_ReturnUrl" => $vnp_Returnurl,
+        "vnp_TxnRef" => $vnp_TxnRef
+    );
+
+    ksort($inputData);
+    $query = "";
+    $i = 0;
+    $hashdata = "";
+    foreach ($inputData as $key => $value) {
+        if ($i == 1) {
+            $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+        } else {
+            $hashdata .= urlencode($key) . "=" . urlencode($value);
+            $i = 1;
+        }
+        $query .= urlencode($key) . "=" . urlencode($value) . '&';
+    }
+
+    $vnp_Url = $vnp_Url . "?" . $query;
+    if (isset($vnp_HashSecret)) {
+        $vnpSecureHash =   hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+        $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
+    }
+
+    return $vnp_Url;
+}
 
     /**
      * Xem chi tiết đơn hàng bằng tracking code

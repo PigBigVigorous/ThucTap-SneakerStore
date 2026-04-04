@@ -6,6 +6,9 @@ use Illuminate\Console\Command;
 use App\Models\Order;
 use App\Services\InventoryService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use App\Models\VariantBranchStock;
+use App\Models\InventoryTransaction;
 
 class ReleasePendingOrders extends Command
 {
@@ -13,8 +16,7 @@ class ReleasePendingOrders extends Command
     protected $signature = 'orders:release-pending';
 
     // Mô tả lệnh
-    protected $description = 'Tự động hủy các đơn hàng pending quá 15 phút và nhả hàng lại kho';
-
+    protected $description = 'Hoàn tồn kho cho các đơn hàng online thanh toán thất bại hoặc quá hạn 15 phút';
     protected $inventoryService;
 
     // Nhúng Service quản lý kho vào
@@ -26,38 +28,51 @@ class ReleasePendingOrders extends Command
 
     public function handle()
     {
-        $this->info("Đang quét các đơn hàng treo (Pending > 15 phút)...");
+        // Lấy đơn hàng Online, trạng thái thanh toán 'failed' hoặc 'pending' quá 15 phút
+        $expiredOrders = Order::with('items')
+            ->where('payment_method', 'vnpay')
+            ->where('status', 'pending')
+            ->where(function($query) {
+                $query->where('payment_status', 'failed')
+                      ->orWhere(function($q) {
+                          $q->where('payment_status', 'pending')
+                            ->where('created_at', '<=', now()->subMinutes(15));
+                      });
+            })
+            ->get();
 
-        // 1. Tìm đơn hàng trạng thái 'pending' được tạo cách đây hơn 15 phút
-        $timeLimit = now()->subMinutes(15);
-        $orders = Order::where('status', 'pending')
-                       ->where('created_at', '<=', $timeLimit)
-                       ->get();
+        foreach ($expiredOrders as $order) {
+            DB::transaction(function () use ($order) {
+                foreach ($order->items as $item) {
+                    // 1. Hoàn lại tồn kho tại đúng chi nhánh đã trừ
+                    $stock = VariantBranchStock::where('product_variant_id', $item->variant_id)
+                        ->where('branch_id', $order->branch_id)
+                        ->first();
 
-        if ($orders->isEmpty()) {
-            $this->info("Không có đơn hàng treo nào cần xử lý.");
-            return;
+                    if ($stock) {
+                        $stock->increment('stock_quantity', $item->quantity);
+
+                        // 2. Ghi log giao dịch kho (Nhập lại do hủy đơn)
+                        InventoryTransaction::create([
+                            'product_variant_id' => $item->variant_id,
+                            'branch_id' => $order->branch_id,
+                            'quantity' => $item->quantity,
+                            'type' => 'in',
+                            'note' => "Hoàn tồn kho từ đơn hàng: {$order->order_tracking_code} (Thanh toán thất bại/Quá hạn)"
+                        ]);
+                    }
+                }
+
+                // 3. Cập nhật trạng thái đơn hàng thành Hủy
+                $order->update([
+                    'status' => 'cancelled',
+                    'payment_status' => $order->payment_status === 'pending' ? 'failed' : $order->payment_status
+                ]);
+            });
+
+            $this->info("Đã giải phóng kho cho đơn hàng: {$order->order_tracking_code}");
         }
 
-        $count = 0;
-        foreach ($orders as $order) {
-            try {
-                // 2. Gọi hàm hủy đơn (đã có sẵn DB::transaction & lockForUpdate bên trong)
-                $this->inventoryService->cancelOrder($order);
-                
-                // 3. Đổi trạng thái đơn thành 'cancelled'
-                $order->update(['status' => 'cancelled']);
-                
-                $count++;
-                $this->info("✅ Đã giải phóng kho đơn hàng: {$order->order_tracking_code}");
-                Log::info("Auto-cancelled pending order: {$order->order_tracking_code}");
-
-            } catch (\Exception $e) {
-                $this->error("❌ Lỗi giải phóng đơn {$order->order_tracking_code}: " . $e->getMessage());
-                Log::error("Auto-cancel failed for order {$order->order_tracking_code}: " . $e->getMessage());
-            }
-        }
-
-        $this->info("🎉 Quét hoàn tất! Đã giải phóng {$count} đơn hàng.");
+        return Command::SUCCESS;
     }
 }

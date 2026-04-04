@@ -145,10 +145,19 @@ export const productAPI = {
 
 export interface OrderPayload {
   shipping_address: string;
-  items: {
-    variant_id: number;
-    quantity: number;
-  }[];
+  payment_method: string; // THÊM DÒNG NÀY
+  items: { variant_id: number; quantity: number; }[];
+}
+
+// Bổ sung thêm API verify
+export const paymentAPI = {
+  verifyVnpay: async (queryString: string) => {
+    const res = await fetch(`${API_URL}/payment/vnpay-callback${queryString}`, {
+      method: 'GET',
+      headers: { "Accept": "application/json" }
+    });
+    return res.json();
+  }
 }
 
 // ==========================================

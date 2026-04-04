@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\ProductCatalogController;
 use App\Http\Controllers\Api\Admin\BranchController;
 use App\Models\Order;
+use App\Http\Controllers\Api\PaymentController;
 
 //Route của khách hàng chưa đăng nhập
 Route::post('/register', [AuthController::class, 'register']);
@@ -19,6 +20,8 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{slug}', [ProductController::class, 'show']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{tracking_code}', [OrderController::class, 'show']);
+Route::get('/payment/vnpay-ipn', [App\Http\Controllers\Api\PaymentController::class, 'vnpayIpn']);
+Route::get('/payment/vnpay-callback', [PaymentController::class, 'vnpayCallback']);
 // 1. Khách vãng lai cũng xem được Đánh giá (Để chung với route xem sản phẩm public)
 Route::get('/products/{slug}/reviews', [ProductController::class, 'getReviews']);
 
@@ -32,9 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/my-orders', [OrderController::class, 'myOrders']);
-    
 
-    
     Route::get('/user', function (Request $request) {
         $user = $request->user();
         
