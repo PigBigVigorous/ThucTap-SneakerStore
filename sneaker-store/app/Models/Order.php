@@ -7,8 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 class Order extends Model
 {
     protected $fillable = [
-        'order_tracking_code', 'user_id', 'status', 
-        'total_amount', 'shipping_address', 'sales_channel_id', 'branch_id', 'cashier_id'
+        'order_tracking_code',
+        'user_id',
+        'status',
+        'total_amount',
+        // Xóa 'shipping_address', thêm các trường bên dưới:
+        'customer_name',
+        'customer_phone',
+        'customer_email',
+        'province',
+        'district',
+        'ward',
+        'address_detail',
+        'sales_channel_id',
+        'branch_id',
+        'cashier_id'
     ];
 
     protected $casts = [

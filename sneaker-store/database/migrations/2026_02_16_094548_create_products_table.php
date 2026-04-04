@@ -31,7 +31,7 @@ return new class extends Migration
         $table->string('sku')->unique(); // Barcode quản lý kho
         $table->foreignId('size_id')->constrained('sizes');
         $table->foreignId('color_id')->constrained('colors');
-        $table->decimal('price', 15, 2); // Giá bán
+        $table->unsignedBigInteger('price');
         $table->integer('current_stock')->default(0); // Cache tồn kho
         
         $table->timestamps();

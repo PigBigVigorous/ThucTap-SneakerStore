@@ -8,7 +8,6 @@ import { Check, Lock, Package } from "lucide-react";
 import toast from "react-hot-toast";
 import { orderAPI } from "../services/api";
 
-
 const FloatingInput = ({ label, name, type = "text", value, onChange }: any) => (
   <div className="relative w-full">
     <input
@@ -35,13 +34,15 @@ export default function CheckoutPage() {
   const [activeStep, setActiveStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   
-  // 1. STATE LƯU THÔNG TIN KHÁCH NHẬP
+  // 1. STATE LƯU THÔNG TIN KHÁCH NHẬP (Đã tách trường)
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    address: "",
+    name: "",
+    phone: "",
     email: "",
-    phone: ""
+    province: "",
+    district: "",
+    ward: "",
+    addressDetail: ""
   });
 
   const [shippingMethod, setShippingMethod] = useState("standard");
@@ -59,7 +60,8 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!formData.firstName || !formData.address || !formData.phone) {
+    // Validate kiểm tra xem nhập đủ các trường mới chưa
+    if (!formData.name || !formData.phone || !formData.province || !formData.district || !formData.ward || !formData.addressDetail) {
       toast.error("Vui lòng điền đầy đủ thông tin giao hàng!");
       setActiveStep(1);
       return;
@@ -67,15 +69,21 @@ export default function CheckoutPage() {
 
     setIsLoading(true);
 
-    const fullShippingAddress = `Người nhận: ${formData.lastName} ${formData.firstName} - SĐT: ${formData.phone} - Email: ${formData.email || 'Không có'} - Địa chỉ: ${formData.address}`;
-
     const userString = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     const user = userString ? JSON.parse(userString) : null;
 
+    // 2. PAYLOAD MỚI GỬI LÊN API (Không nối chuỗi nữa)
     const orderPayload = {
       user_id: user ? user.id : null,
-      shipping_address: fullShippingAddress,
+      customer_name: formData.name,
+      customer_phone: formData.phone,
+      customer_email: formData.email,
+      province: formData.province,
+      district: formData.district,
+      ward: formData.ward,
+      address_detail: formData.addressDetail,
+      total_amount: total, // Đẩy tổng tiền lên backend
       payment_method: paymentMethod,
       items: cart.map(item => ({
         variant_id: item.variant_id,
@@ -87,7 +95,6 @@ export default function CheckoutPage() {
       const data = await orderAPI.create(orderPayload, token || "");
 
       if (data.success) {
-        
         // NẾU BACKEND TRẢ VỀ URL VNPAY -> REDIRECT CHỨ KHÔNG PUSH ROUTER NỮA
         if (data.data?.payment_url) {
             window.location.href = data.data.payment_url;
@@ -153,15 +160,23 @@ export default function CheckoutPage() {
               
               {activeStep === 1 ? (
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FloatingInput name="firstName" label="Tên" value={formData.firstName} onChange={handleInputChange} />
-                    <FloatingInput name="lastName" label="Họ" value={formData.lastName} onChange={handleInputChange} />
-                  </div>
-                  <FloatingInput name="address" label="Địa chỉ nhận hàng (Số nhà, Tên đường)" value={formData.address} onChange={handleInputChange} />
+                  <FloatingInput name="name" label="Họ và Tên" value={formData.name} onChange={handleInputChange} />
+                  
                   <div className="grid grid-cols-2 gap-4">
                     <FloatingInput name="email" label="Email" type="email" value={formData.email} onChange={handleInputChange} />
                     <FloatingInput name="phone" label="Số điện thoại" type="tel" value={formData.phone} onChange={handleInputChange} />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FloatingInput name="province" label="Tỉnh / Thành phố" value={formData.province} onChange={handleInputChange} />
+                    <FloatingInput name="district" label="Quận / Huyện" value={formData.district} onChange={handleInputChange} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FloatingInput name="ward" label="Phường / Xã" value={formData.ward} onChange={handleInputChange} />
+                    <FloatingInput name="addressDetail" label="Số nhà, Tên đường" value={formData.addressDetail} onChange={handleInputChange} />
+                  </div>
+
                   <button 
                     onClick={() => setActiveStep(2)}
                     className="w-full bg-black text-white font-medium py-4.5 rounded-full mt-6 hover:bg-gray-800 transition-colors text-lg"
@@ -171,7 +186,8 @@ export default function CheckoutPage() {
                 </div>
               ) : (
                 <div className="text-base text-gray-900 font-medium cursor-pointer hover:underline" onClick={() => setActiveStep(1)}>
-                  {formData.lastName} {formData.firstName} <br/> {formData.address}
+                  {formData.name} - {formData.phone} <br/> 
+                  {formData.addressDetail}, {formData.ward}, {formData.district}, {formData.province}
                 </div>
               )}
             </div>

@@ -18,6 +18,27 @@ class Product extends Model
     protected $casts = [
         'is_active' => 'boolean', // Ép kiểu về true/false thay vì 1/0
     ];
+    
+    protected static function booted()
+    {
+        // Khi product bị xóa
+        static::deleting(function ($product) {
+            if ($product->isForceDeleting()) {
+                // Xóa cứng: xóa sạch dữ liệu liên quan
+                $product->variants()->forceDelete();
+                $product->images()->forceDelete();
+                $product->reviews()->forceDelete();
+            } else {
+                // Xóa mềm: xóa mềm các variants
+                $product->variants()->delete();
+            }
+        });
+
+        // Khi product được khôi phục
+        static::restoring(function ($product) {
+            $product->variants()->restore();
+        });
+    }
 
     public function sluggable(): array
     {

@@ -34,7 +34,14 @@ class OrderController extends Controller
     public function store(Request $request)
 {
     $validatedData = $request->validate([
-        'shipping_address' => 'required|string',
+        'customer_name' => 'required|string|max:255',
+        'customer_phone' => 'required|string|max:20',
+        'customer_email' => 'required|email|max:255',
+        'province' => 'required|string|max:255',
+        'district' => 'required|string|max:255',
+        'ward' => 'required|string|max:255',
+        'address_detail' => 'required|string|max:255',
+        
         'items' => 'required|array|min:1',
         'items.*.variant_id' => 'required|exists:product_variants,id',
         'items.*.quantity' => 'required|integer|min:1',
@@ -46,13 +53,20 @@ class OrderController extends Controller
         $webChannelId = cache()->rememberForever('sales_channel_online', fn() => SalesChannel::where('type', 'online')->value('id'));
 
         // Giả sử Service của bạn đã được update để nhận thêm payment_method
-        $order = $this->inventoryService->placeOnlineOrder(
-            $userId, 
-            $validatedData['shipping_address'],
-            $validatedData['items'],
-            $webChannelId,
-            $validatedData['payment_method'] // Cần update InventoryService nhận tham số này
-        );
+        $order = Order::create([
+                'order_tracking_code' => '#ORD-' . strtoupper(Str::random(6)),
+                'user_id' => $userId,
+                'status' => 'pending',
+                'total_amount' => 0, // Hoặc giá trị tính toán tổng tiền của bạn
+                'customer_name' => $validatedData['customer_name'],
+                'customer_phone' => $validatedData['customer_phone'],
+                'customer_email' => $validatedData['customer_email'],
+                'province' => $validatedData['province'],
+                'district' => $validatedData['district'],
+                'ward' => $validatedData['ward'],
+                'address_detail' => $validatedData['address_detail'],
+                'sales_channel_id' => $webChannelId,
+            ]);
         
         // NẾU LÀ VNPAY -> SINH URL THANH TOÁN
         if ($validatedData['payment_method'] === 'vnpay') {

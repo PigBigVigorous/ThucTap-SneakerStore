@@ -24,7 +24,7 @@ return new class extends Migration
         $table->string('po_code')->unique();
         $table->date('order_date');
         $table->enum('status', ['Draft', 'Received', 'Cancelled'])->default('Draft');
-        $table->decimal('total_amount', 15, 2)->default(0);
+        $table->unsignedBigInteger('total_amount')->default(0);
         $table->timestamps();
     });
 
@@ -33,7 +33,7 @@ return new class extends Migration
         $table->foreignId('po_id')->constrained('purchase_orders')->onDelete('cascade');
         $table->foreignId('variant_id')->constrained('product_variants');
         $table->integer('quantity_ordered');
-        $table->decimal('unit_cost', 15, 2);
+        $table->unsignedBigInteger('unit_cost');
     });
 }
 

@@ -144,7 +144,14 @@ export const productAPI = {
 };
 
 export interface OrderPayload {
-  shipping_address: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  province: string;
+  district: string;
+  ward: string;
+  address_detail: string;
+  total_amount: number;
   payment_method: string; // THÊM DÒNG NÀY
   items: { variant_id: number; quantity: number; }[];
 }
