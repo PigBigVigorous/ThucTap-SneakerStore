@@ -102,6 +102,93 @@ class InventoryService
     }
 
     /**
+     * Đặt hàng Online có tích hợp SMART ROUTING và Lock Row (Chống đụng độ)
+     *
+     * @param int|null $userId
+     * @param string $shippingAddress
+     * @param array $items
+     * @param int $salesChannelId
+     * @return Order
+     */
+    public function placeOnlineOrder($userId, $shippingAddress, $items, $salesChannelId)
+    {
+        return DB::transaction(function () use ($userId, $shippingAddress, $items, $salesChannelId) {
+            $orderCode = '#ORD-' . strtoupper(Str::random(6));
+            $totalAmount = 0;
+
+            // 1. Khởi tạo Đơn hàng (Pending)
+            $order = Order::create([
+                'order_tracking_code' => $orderCode,
+                'user_id' => $userId,
+                'status' => 'pending',
+                'total_amount' => 0,
+                'shipping_address' => $shippingAddress,
+                'sales_channel_id' => $salesChannelId,
+            ]);
+
+            // 2. Lặp qua từng sản phẩm để áp dụng SMART ROUTING
+            foreach ($items as $item) {
+                $variantId = $item['variant_id'];
+                $qtyNeeded = $item['quantity'];
+
+                // Tìm variant và khóa dòng để tính tiền an toàn
+                $variant = ProductVariant::with(['product', 'size', 'color'])
+                    ->lockForUpdate()
+                    ->findOrFail($variantId);
+                    
+                $price = $variant->price;
+                $totalAmount += ($price * $qtyNeeded);
+
+                // 🚨 THUẬT TOÁN SMART ROUTING (ĐÃ THÊM LOCK FOR UPDATE)
+                $stockRecord = VariantBranchStock::where('variant_id', $variantId)
+                    ->where('stock', '>=', $qtyNeeded)
+                    ->join('branches', 'variant_branch_stocks.branch_id', '=', 'branches.id')
+                    ->where('branches.is_active', true)
+                    ->orderBy('branches.is_main', 'desc') // Ưu tiên Kho Tổng
+                    ->orderBy('variant_branch_stocks.stock', 'desc') // Ưu tiên Kho nhiều hàng
+                    ->select('variant_branch_stocks.*')
+                    ->lockForUpdate() // <--- QUAN TRỌNG: Khóa dòng này lại, kẻo người khác nẫng tay trên
+                    ->first();
+
+                if (!$stockRecord) {
+                    $productName = $variant->product->name ?? 'Sản phẩm';
+                    $colorName = $variant->color->name ?? '';
+                    $sizeName = $variant->size->name ?? '';
+                    throw new Exception("Rất tiếc, '$productName' (Màu $colorName, Size $sizeName) không đủ số lượng tại bất kỳ kho nào để giao hàng!");
+                }
+
+                // 3. Trừ kho
+                $stockRecord->stock -= $qtyNeeded;
+                $stockRecord->save();
+
+                // 4. Lưu chi tiết
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_variant_id' => $variantId,
+                    'quantity' => $qtyNeeded,
+                    'unit_price' => $price
+                ]);
+
+                // 5. Ghi log chuẩn Kế toán
+                InventoryTransaction::create([
+                    'product_variant_id' => $variantId,
+                    'transaction_type' => 'SALE',
+                    'reference_id' => $order->id,
+                    'quantity_change' => -$qtyNeeded,
+                    'from_branch_id' => $stockRecord->branch_id,
+                    'note' => "Khách đặt Online. Hệ thống tự động xuất kho từ: " . ($stockRecord->branch->name ?? 'Kho hệ thống'),
+                    'created_at' => now(),
+                ]);
+            }
+
+            // 6. Cập nhật tiền
+            $order->update(['total_amount' => $totalAmount]);
+
+            return $order;
+        });
+    }
+
+    /**
      * Hàm xử lý hủy đơn hàng và nhập stock lại
      * 
      * @param Order $order
