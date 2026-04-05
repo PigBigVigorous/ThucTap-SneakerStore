@@ -147,13 +147,14 @@ export interface OrderPayload {
   customer_name: string;
   customer_phone: string;
   customer_email: string;
-  province: string;
-  district: string;
-  ward: string;
-  address_detail: string;
+  province: string;        // Lưu tên Tỉnh/Thành phố
+  district: string;        // Lưu tên Quận/Huyện
+  ward: string;            // Lưu tên Phường/Xã
+  address_detail: string;  // Số nhà, tên đường
   total_amount: number;
-  payment_method: string; // THÊM DÒNG NÀY
+  payment_method: string;
   items: { variant_id: number; quantity: number; }[];
+  user_id?: number | null; // Thêm trường này để Backend biết đơn của user nào
 }
 
 // Bổ sung thêm API verify

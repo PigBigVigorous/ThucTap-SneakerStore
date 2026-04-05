@@ -52,12 +52,34 @@ class OrderController extends Controller
         $userId = auth('sanctum')->check() ? auth('sanctum')->id() : null;
         $webChannelId = cache()->rememberForever('sales_channel_online', fn() => SalesChannel::where('type', 'online')->value('id'));
 
+        $subtotal = 0;
+        $orderItemsData = [];
+        foreach ($validatedData['items'] as $item) {
+            $variant = ProductVariant::find($item['variant_id']);
+            if (!$variant) {
+                throw new Exception("Sản phẩm biến thể với ID {$item['variant_id']} không tồn tại.");
+            }
+
+            $lineTotal = $variant->price * $item['quantity'];
+            $subtotal += $lineTotal;
+
+            $orderItemsData[] = [
+                'variant_id' => $item['variant_id'],
+                'quantity' => $item['quantity'],
+                'price' => $variant->price,
+                'line_total' => $lineTotal,
+            ];
+        }
+
+        $shippingFee = ($subtotal >= 5000000) ? 0 : 250000;
+        $finalTotal = $subtotal + $shippingFee;
+
         // Giả sử Service của bạn đã được update để nhận thêm payment_method
         $order = Order::create([
                 'order_tracking_code' => '#ORD-' . strtoupper(Str::random(6)),
                 'user_id' => $userId,
                 'status' => 'pending',
-                'total_amount' => 0, // Hoặc giá trị tính toán tổng tiền của bạn
+                'total_amount' => $finalTotal, // Hoặc giá trị tính toán tổng tiền của bạn
                 'customer_name' => $validatedData['customer_name'],
                 'customer_phone' => $validatedData['customer_phone'],
                 'customer_email' => $validatedData['customer_email'],
@@ -67,7 +89,9 @@ class OrderController extends Controller
                 'address_detail' => $validatedData['address_detail'],
                 'sales_channel_id' => $webChannelId,
             ]);
-        
+        foreach ($orderItemsData as $itemData) {
+            $order->items()->create($itemData);
+        }
         // NẾU LÀ VNPAY -> SINH URL THANH TOÁN
         if ($validatedData['payment_method'] === 'vnpay') {
             $paymentUrl = $this->createVnpayUrl($order);
