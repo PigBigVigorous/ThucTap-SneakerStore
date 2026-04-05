@@ -47,6 +47,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $superAdminRole = Role::findOrCreate('super-admin', 'sanctum');
 
+        $customerRole = Role::findOrCreate('customer', 'sanctum');
+        
         // 4. Tìm Admin và thăng chức Super Admin
         $adminUsers = User::where('role', 'admin')->get();
         foreach ($adminUsers as $admin) {

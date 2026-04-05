@@ -64,10 +64,10 @@ class OrderController extends Controller
             $subtotal += $lineTotal;
 
             $orderItemsData[] = [
-                'variant_id' => $item['variant_id'],
+                'product_variant_id' => $item['variant_id'],
                 'quantity' => $item['quantity'],
                 'price' => $variant->price,
-                'line_total' => $lineTotal,
+                'unit_price' => $variant->price, // Lưu giá gốc vào unit_price
             ];
         }
 

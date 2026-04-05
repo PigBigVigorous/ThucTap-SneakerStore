@@ -23,28 +23,50 @@ use App\Models\SalesChannel;
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
-    {
+    {   
+        // GỌI SEEDER PHÂN QUYỀN TRƯỚC
+        $this->call([
+            RolesAndPermissionsSeeder::class,
+        ]);
+
+        
+
         // 1. TẠO USERS
         $admin = User::create([
             'name' => 'Quản trị viên',
             'email' => 'admin@sneaker.com',
             'password' => Hash::make('password123'),
         ]);
+        $admin->assignRole('super-admin');
 
         $customer = User::create([
             'name' => 'Khách hàng VIP',
             'email' => 'khachhang@gmail.com',
             'password' => Hash::make('password123'),
         ]);
+        $customer->assignRole('customer');
+        
+        $cashier = User::create([
+            'name' => 'Thu ngân',
+            'email' => 'thungan@gmail.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $cashier->assignRole('cashier');
 
+        
         // 2. TẠO CHI NHÁNH / KHO HÀNG
         $mainBranch = Branch::create([
             'name' => 'Kho Tổng TP.HCM',
-            'address' => '123 Đường ABC, Quận 1, TP.HCM',
+            'address' => '35 Lý Văn Phức, Tân Định, Hồ Chí Minh',
             'phone' => '0909123456',
             'is_active' => true
         ]);
-
+        $haNoiBranch = Branch::create([
+            'name' => 'Kho Tổng Ha Nội',
+            'address' => '54 P. Lý Quốc Sư, Hàng Trống, Hoàn Kiếm, Hà Nội',
+            'phone' => '0909123456',
+            'is_active' => true
+        ]);
         //  3. TẠO KÊNH BÁN HÀNG (PHASE 2 - OMNICHANNEL)
         $webChannel = SalesChannel::create([
             'name' => 'Website Chính Thức',

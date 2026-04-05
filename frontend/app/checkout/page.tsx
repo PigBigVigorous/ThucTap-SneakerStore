@@ -230,8 +230,8 @@ export default function CheckoutPage() {
       } else {
         toast.error(data.message || "Có lỗi xảy ra từ máy chủ.");
       }
-    } catch (error) {
-      toast.error("Không thể kết nối đến máy chủ.");
+    } catch (error: any) {
+      toast.error(error.message || "Không thể kết nối đến máy chủ.");
     } finally {
       setIsLoading(false);
     }
