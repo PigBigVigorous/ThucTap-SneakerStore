@@ -67,6 +67,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Routes for admin
     Route::prefix('admin')->group(function () {
+
+        Route::get('/admin/inventory/stocks', [InventoryController::class, 'getStocks']);
         
         Route::middleware(['permission:view-dashboard,sanctum'])->group(function () {
             Route::get('/statistics', function () {

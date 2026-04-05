@@ -59,10 +59,10 @@ export default function InventoryPage() {
       if (data.success) {
         setStocks(data.data || []);
       } else {
-        toast.error("Lỗi khi tải dữ liệu tồn kho");
+        toast.error(data.message || "Lỗi khi tải dữ liệu tồn kho");
       }
-    } catch (error) {
-      toast.error("Lỗi kết nối máy chủ");
+    } catch (error: any) {
+      toast.error(error.message || "Lỗi kết nối máy chủ");
     } finally {
       setLoading(false);
     }
