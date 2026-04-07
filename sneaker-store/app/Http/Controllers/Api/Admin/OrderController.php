@@ -83,7 +83,8 @@ class OrderController extends Controller
         ]);
 
         try {
-            return DB::transaction(function () use ($request, $id) {
+            return DB::transaction(function () use ($id, $request) {
+                // 1. SỬA LỖI CÚ PHÁP Ở ĐÂY: Chỉ dùng find($id)
                 $order = Order::lockForUpdate()->find($id);
                 
                 if (!$order) {
@@ -96,17 +97,26 @@ class OrderController extends Controller
                 $oldStatus = $order->status;
                 $newStatus = $request->status;
 
+                // 2. CHẶN HỒI SINH ĐƠN HÀNG (Tránh thất thoát tồn kho)
+                if (in_array($oldStatus, ['cancelled', 'returned']) && $newStatus !== $oldStatus) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'LỖI KẾ TOÁN: Đơn hàng này đã được hoàn kho (Hủy/Trả). Không thể đổi ngược lại trạng thái khác! Vui lòng tạo đơn mới.'
+                    ], 400);
+                }
+
+                // 3. KHÔI PHỤC LẠI LOGIC CỘNG KHO (Bạn đã lỡ tay xóa mất)
                 // Nếu chuyển sang trạng thái "cancelled" (hủy), hoàn lại kho
                 if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
                     $this->inventoryService->cancelOrder($order);
                 }
 
-                // 🚨 NẾU LÀ TRẢ HÀNG (RETURNED), HOÀN LẠI KHO VỚI LOGIC RETURN
+                // Nếu là TRẢ HÀNG (RETURNED), hoàn lại kho với logic return
                 if ($newStatus === 'returned' && $oldStatus !== 'returned') {
                     $this->inventoryService->returnOrder($order);
                 }
 
-                // Cập nhật trạng thái
+                // 4. Cập nhật trạng thái mới
                 $order->status = $newStatus;
                 $order->save();
 

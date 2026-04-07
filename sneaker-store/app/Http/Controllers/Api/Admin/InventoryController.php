@@ -87,8 +87,22 @@ class InventoryController extends Controller
     public function getStocks(Request $request)
     {
         $branchId = $request->query('branch_id');
-        $query = \App\Models\VariantBranchStock::with(['variant.product', 'variant.color', 'variant.size', 'branch']);
-        if ($branchId) { $query->where('branch_id', $branchId); }
-        return response()->json(['success' => true, 'data' => $query->get()]);
+        
+        // 🚀 SỬA LỖI UI CRASH: Chỉ lấy tồn kho của những Biến thể CHƯA BỊ XÓA (has('variant'))
+        $query = \App\Models\VariantBranchStock::has('variant')->with([
+            'variant.product', 
+            'variant.color', 
+            'variant.size', 
+            'branch'
+        ]);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $query->get()
+        ]);
     }
 }

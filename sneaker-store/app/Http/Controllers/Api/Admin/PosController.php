@@ -108,14 +108,13 @@ class PosController extends Controller
         try {
             return DB::transaction(function () use ($validatedData, $request) {
                 // 1. Fetch the POS Sales Channel (offline)
-                $posChannel = SalesChannel::where('type', 'offline')->first();
+                $posChannel = SalesChannel::where('type', 'pos')->first();
                 if (!$posChannel) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Không tìm thấy Sales Channel cho POS. Vui lòng liên hệ Admin.'
-                    ], 400);
+                $posChannel = SalesChannel::create([
+                    'name' => 'Bán tại quầy (POS)',
+                    'type' => 'pos'
+                    ]);
                 }
-
                 // 2. Set branch ID (default to 1, or from request)
                 $branchId = $validatedData['branch_id'] ?? 1;
 
