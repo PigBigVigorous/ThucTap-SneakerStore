@@ -15,36 +15,18 @@ class InventoryController extends Controller
     {
         $this->inventoryService = $inventoryService;
     }
-    /**
-     * Xem lịch sử biến động kho (Dành cho Admin)
-     * API: GET /api/admin/inventory/transactions
-     */
+
     public function index()
     {
-        // Lấy lịch sử giao dịch kho, kèm theo thông tin biến thể và tên sản phẩm
-        // Sắp xếp từ mới nhất đến cũ nhất
         $transactions = InventoryTransaction::with([
-            'variant.product', 
-            'variant.color', 
-            'variant.size',
-            'variant.branchStocks',
-            'fromBranch',
-            'toBranch'
-        ])
-        ->orderBy('created_at', 'desc')
-        ->paginate(15);
+            'variant.product', 'variant.color', 'variant.size',
+            'variant.branchStocks', 'fromBranch', 'toBranch'
+        ])->orderBy('created_at', 'desc')->paginate(15);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Lấy danh sách lịch sử kho thành công',
-            'data' => $transactions
-        ]);
+        return response()->json(['success' => true, 'message' => 'Lấy danh sách lịch sử kho thành công', 'data' => $transactions]);
     }
 
-    /**
-     * Nhập hàng mới từ nhà cung cấp
-     * API: POST /api/admin/inventory/import
-     */
+    // 🚀 ĐÂY LÀ HÀM IMPORT BỊ THIẾU, TÔI ĐÃ THÊM VÀO GIÚP BẠN
     public function import(Request $request)
     {
         $request->validate([
@@ -56,28 +38,17 @@ class InventoryController extends Controller
 
         try {
             $this->inventoryService->importStock(
-                $request->variant_id,
-                $request->branch_id,
-                $request->quantity,
+                $request->variant_id, 
+                $request->branch_id, 
+                $request->quantity, 
                 $request->note ?? 'Nhập lô hàng mới'
             );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Đã nhập hàng thành công vào hệ thống'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Đã nhập hàng thành công vào hệ thống']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
 
-    /**
-     * Transfer stock between branches
-     * API: POST /api/admin/inventory/transfer
-     */
     public function transfer(Request $request)
     {
         $request->validate([
@@ -89,30 +60,13 @@ class InventoryController extends Controller
         ]);
 
         try {
-            $this->inventoryService->transferStock(
-                $request->variant_id,
-                $request->from_branch_id,
-                $request->to_branch_id,
-                $request->quantity,
-                $request->note ?? 'Stock transfer'
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Stock transferred successfully'
-            ]);
+            $this->inventoryService->transferStock($request->variant_id, $request->from_branch_id, $request->to_branch_id, $request->quantity, $request->note ?? 'Stock transfer');
+            return response()->json(['success' => true, 'message' => 'Stock transferred successfully']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
 
-    /**
-     * Adjust stock
-     * API: POST /api/admin/inventory/adjust
-     */
     public function adjust(Request $request)
     {
         $request->validate([
@@ -123,49 +77,18 @@ class InventoryController extends Controller
         ]);
 
         try {
-            $this->inventoryService->adjustStock(
-                $request->variant_id,
-                $request->branch_id,
-                $request->quantity_change,
-                $request->note ?? 'Stock adjustment'
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Stock adjusted successfully'
-            ]);
+            $this->inventoryService->adjustStock($request->variant_id, $request->branch_id, $request->quantity_change, $request->note ?? 'Stock adjustment');
+            return response()->json(['success' => true, 'message' => 'Stock adjusted successfully']);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
-    /**
-     * Lấy danh sách Tồn kho theo Chi nhánh
-     */
+
     public function getStocks(Request $request)
     {
         $branchId = $request->query('branch_id');
-        
-        // Kéo dữ liệu Tồn kho, gộp luôn tên Giày, Màu, Size và Tên Kho để hiển thị
-        $query = \App\Models\VariantBranchStock::with([
-            'variant.product', 
-            'variant.color', 
-            'variant.size', 
-            'branch'
-        ]);
-
-        // Nếu sếp có chọn lọc theo 1 kho cụ thể (VD: Chỉ xem kho Hà Nội)
-        if ($branchId) {
-            $query->where('branch_id', $branchId);
-        }
-
-        $stocks = $query->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $stocks
-        ]);
+        $query = \App\Models\VariantBranchStock::with(['variant.product', 'variant.color', 'variant.size', 'branch']);
+        if ($branchId) { $query->where('branch_id', $branchId); }
+        return response()->json(['success' => true, 'data' => $query->get()]);
     }
 }

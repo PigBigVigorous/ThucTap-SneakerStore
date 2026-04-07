@@ -11,22 +11,11 @@ use App\Models\VariantBranchStock;
 
 class BranchController extends Controller
 {
-    /**
-     * Display a listing of branches
-     */
     public function index()
     {
-        $branches = Branch::all();
-
-        return response()->json([
-            'success' => true,
-            'data' => $branches
-        ]);
+        return response()->json(['success' => true, 'data' => Branch::all()]);
     }
 
-    /**
-     * Store a newly created branch
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -37,13 +26,13 @@ class BranchController extends Controller
             'is_main' => 'boolean',
         ]);
 
-        // 1. Tạo chi nhánh mới
+        // 🚀 BẢO MẬT: Nếu tạo Kho này là Kho Tổng, hãy hạ bệ các Kho Tổng cũ xuống thành Kho Phụ (Chỉ cho phép 1 Kho Tổng)
+        if ($request->is_main) {
+            Branch::where('is_main', true)->update(['is_main' => false]);
+        }
+
         $branch = Branch::create($request->all());
-
-        // 2. Kéo tất cả ID của các biến thể sản phẩm hiện có trong hệ thống
         $variantIds = ProductVariant::pluck('id');
-
-        // 3. Chuẩn bị mảng dữ liệu để insert hàng loạt (tối ưu hiệu suất)
         $stockData = [];
         $now = now();
         
@@ -51,41 +40,26 @@ class BranchController extends Controller
             $stockData[] = [
                 'variant_id' => $variantId,
                 'branch_id' => $branch->id,
-                'stock' => 0, // Khởi tạo tồn kho mặc định là 0
+                'stock' => 0, 
                 'created_at' => $now,
                 'updated_at' => $now,
             ];
         }
 
-        // 4. Insert vào bảng trung gian variant_branch_stocks
         if (!empty($stockData)) {
-            // Sử dụng chunk(500) để chống lỗi sập DB nếu có quá nhiều sản phẩm
             foreach (array_chunk($stockData, 500) as $chunk) {
                 VariantBranchStock::insert($chunk);
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Tạo chi nhánh mới và khởi tạo mã tồn kho thành công!',
-            'data' => $branch
-        ], 201);
+        return response()->json(['success' => true, 'message' => 'Tạo chi nhánh thành công!', 'data' => $branch], 201);
     }
 
-    /**
-     * Display the specified branch
-     */
     public function show(Branch $branch)
     {
-        return response()->json([
-            'success' => true,
-            'data' => $branch
-        ]);
+        return response()->json(['success' => true, 'data' => $branch]);
     }
 
-    /**
-     * Update the specified branch
-     */
     public function update(Request $request, Branch $branch)
     {
         $request->validate([
@@ -93,32 +67,36 @@ class BranchController extends Controller
             'address' => 'sometimes|required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
+            'is_main' => 'boolean', // 🚀 ĐÃ BỔ SUNG ĐỂ NHẬN is_main
         ]);
+
+        // 🚀 BẢO MẬT: Nếu sửa Kho này thành Kho Tổng, hạ bệ các kho khác
+        if ($request->has('is_main') && $request->is_main) {
+            Branch::where('id', '!=', $branch->id)->update(['is_main' => false]);
+        }
 
         $branch->update($request->all());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Branch updated successfully',
-            'data' => $branch
-        ]);
+        return response()->json(['success' => true, 'message' => 'Cập nhật thành công', 'data' => $branch]);
     }
 
-    /**
-     * Remove the specified branch
-     */
     public function destroy(Branch $branch)
     {
-        // Khi xóa chi nhánh, các bản ghi trong variant_branch_stocks cũng sẽ tự động bị xóa 
-        // nhờ tính năng ON DELETE CASCADE ngài đã cài đặt ở Database.
+        // 🚀 BẢO VỆ CHỐNG THẤT THOÁT TÀI SẢN KẾ TOÁN:
+        $hasStock = VariantBranchStock::where('branch_id', $branch->id)->where('stock', '>', 0)->exists();
+        
+        if ($hasStock) {
+            return response()->json([
+                'success' => false,
+                'message' => 'LỖI KẾ TOÁN: Không thể xóa chi nhánh đang còn tồn kho. Vui lòng CHUYỂN KHO toàn bộ hàng hóa sang chi nhánh khác trước khi xóa!'
+            ], 400); // Trả về mã lỗi 400 (Bad Request) để Frontend hiện Toast Đỏ
+        }
+
         $branch->delete();
 
-        $maxId = Branch::max('id') ?? 0; // Lấy ID lớn nhất hiện tại (nếu hết sạch chi nhánh thì là 0)
+        $maxId = Branch::max('id') ?? 0; 
         DB::statement("ALTER TABLE branches AUTO_INCREMENT = " . ($maxId + 1));
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Branch deleted successfully'
-        ]);
+        return response()->json(['success' => true, 'message' => 'Đã xóa chi nhánh thành công']);
     }
 }

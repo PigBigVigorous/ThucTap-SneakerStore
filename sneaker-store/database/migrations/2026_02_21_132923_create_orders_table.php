@@ -12,19 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-        $table->bigIncrements('id'); // ID nội bộ (Dùng để Join)
-        $table->string('order_tracking_code')->unique(); // Mã đơn khách hàng thấy (#ORD-99X8)
-        $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();        
-        $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
-        $table->unsignedBigInteger('total_amount');
-        $table->string('customer_name')->nullable();
-        $table->string('customer_phone')->nullable();
-        $table->string('customer_email')->nullable();
-        $table->string('province')->nullable();
-        $table->string('district')->nullable();
-        $table->string('ward')->nullable();
-        $table->string('address_detail')->nullable();
-        $table->timestamps();
+            $table->bigIncrements('id');
+            $table->string('order_tracking_code')->unique();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();        
+            $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
+            $table->unsignedBigInteger('total_amount');
+            // 🚀 THÊM CỘT PHÍ SHIP Ở ĐÂY
+            $table->unsignedBigInteger('shipping_fee')->default(0); 
+            $table->string('customer_name')->nullable();
+            $table->string('customer_phone')->nullable();
+            $table->string('customer_email')->nullable();
+            $table->string('province')->nullable();
+            $table->string('district')->nullable();
+            $table->string('ward')->nullable();
+            $table->string('address_detail')->nullable();
+            $table->timestamps();
         
     });
 

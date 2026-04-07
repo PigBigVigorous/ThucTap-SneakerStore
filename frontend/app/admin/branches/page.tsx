@@ -66,7 +66,7 @@ export default function BranchManagementPage() {
       if (data.success) {
         toast.success(editingBranch ? "Cập nhật thành công!" : "Tạo chi nhánh thành công!");
         closeModal(); fetchBranches();
-      } else { toast.error("Có lỗi xảy ra"); }
+      } else { toast.error(data.message || "Có lỗi xảy ra"); }
     } catch (error) { toast.error("Lỗi kết nối"); } finally { setIsSubmitting(false); }
   };
 

@@ -32,139 +32,108 @@ class OrderController extends Controller
      * API: POST /api/orders
      */
     public function store(Request $request)
-{
-    $validatedData = $request->validate([
-        'customer_name' => 'required|string|max:255',
-        'customer_phone' => 'required|string|max:20',
-        'customer_email' => 'required|email|max:255',
-        'province' => 'required|string|max:255',
-        'district' => 'required|string|max:255',
-        'ward' => 'required|string|max:255',
-        'address_detail' => 'required|string|max:255',
-        
-        'items' => 'required|array|min:1',
-        'items.*.variant_id' => 'required|exists:product_variants,id',
-        'items.*.quantity' => 'required|integer|min:1',
-        'payment_method' => 'required|in:cod,vnpay', // Validate thêm method
-    ]);
+    {
+        $validatedData = $request->validate([
+            'customer_name' => 'required|string|max:255',
+            'customer_phone' => 'required|string|max:20',
+            'customer_email' => 'required|email|max:255',
+            'province' => 'required|string|max:255',
+            'district' => 'required|string|max:255',
+            'ward' => 'required|string|max:255',
+            'address_detail' => 'required|string|max:255',
+            'shipping_fee' => 'required|numeric|min:0', // 🚀 ĐÃ BẮT BUỘC NHẬN PHÍ SHIP
+            'payment_method' => 'required|string', // VNPAY hoặc COD
+            'items' => 'required|array|min:1',
+            'items.*.variant_id' => 'required|exists:product_variants,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
 
-    try {
         $userId = auth('sanctum')->check() ? auth('sanctum')->id() : null;
-        $webChannelId = cache()->rememberForever('sales_channel_online', fn() => SalesChannel::where('type', 'online')->value('id'));
 
-        $subtotal = 0;
-        $orderItemsData = [];
-        foreach ($validatedData['items'] as $item) {
-            $variant = ProductVariant::find($item['variant_id']);
-            if (!$variant) {
-                throw new Exception("Sản phẩm biến thể với ID {$item['variant_id']} không tồn tại.");
+        try {
+            // Lấy ID Kênh Web
+            $webChannelId = \App\Models\SalesChannel::where('type', 'online')->value('id') ?? 1;
+
+            // 🚀 CHỈ GỌI 1 SERVICE DUY NHẤT LÀ ĐỦ
+            $order = $this->inventoryService->placeOrder(
+                $userId,
+                $validatedData, // Truyền nguyên mảng để dò tìm khoảng cách
+                $validatedData['items'],
+                $webChannelId
+            );
+
+            // XỬ LÝ THANH TOÁN VNPAY
+            if ($validatedData['payment_method'] === 'vnpay') {
+                $paymentUrl = $this->createVnpayUrl($order);
+                return response()->json([
+                    'success' => true, 
+                    'message' => 'Chuyển hướng đến cổng thanh toán...', 
+                    'data' => [
+                        'order_tracking_code' => $order->order_tracking_code,
+                        'payment_url' => $paymentUrl 
+                    ]
+                ], 201);
             }
-
-            $lineTotal = $variant->price * $item['quantity'];
-            $subtotal += $lineTotal;
-
-            $orderItemsData[] = [
-                'product_variant_id' => $item['variant_id'],
-                'quantity' => $item['quantity'],
-                'price' => $variant->price,
-                'unit_price' => $variant->price, // Lưu giá gốc vào unit_price
-            ];
-        }
-
-        $shippingFee = ($subtotal >= 5000000) ? 0 : 250000;
-        $finalTotal = $subtotal + $shippingFee;
-
-        // Giả sử Service của bạn đã được update để nhận thêm payment_method
-        $order = Order::create([
-                'order_tracking_code' => '#ORD-' . strtoupper(Str::random(6)),
-                'user_id' => $userId,
-                'status' => 'pending',
-                'total_amount' => $finalTotal, // Hoặc giá trị tính toán tổng tiền của bạn
-                'customer_name' => $validatedData['customer_name'],
-                'customer_phone' => $validatedData['customer_phone'],
-                'customer_email' => $validatedData['customer_email'],
-                'province' => $validatedData['province'],
-                'district' => $validatedData['district'],
-                'ward' => $validatedData['ward'],
-                'address_detail' => $validatedData['address_detail'],
-                'sales_channel_id' => $webChannelId,
-            ]);
-        foreach ($orderItemsData as $itemData) {
-            $order->items()->create($itemData);
-        }
-        // NẾU LÀ VNPAY -> SINH URL THANH TOÁN
-        if ($validatedData['payment_method'] === 'vnpay') {
-            $paymentUrl = $this->createVnpayUrl($order);
+            
+            // XỬ LÝ COD
             return response()->json([
                 'success' => true, 
-                'message' => 'Chuyển hướng đến cổng thanh toán...', 
-                'data' => [
-                    'order_tracking_code' => $order->order_tracking_code,
-                    'payment_url' => $paymentUrl // Gửi URL về cho Frontend
-                ]
+                'message' => 'Đặt hàng thành công!', 
+                'data' => ['order_tracking_code' => $order->order_tracking_code]
             ], 201);
+            
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
-        
-        // NẾU LÀ COD -> NHƯ CŨ
-        return response()->json(['success' => true, 'message' => 'Đặt hàng thành công!', 'data' => ['order_tracking_code' => $order->order_tracking_code]], 201);
-        
-    } catch (Exception $e) {
-        return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
     }
-}
 
 private function createVnpayUrl($order)
-{
-    $vnp_Url = env('VNP_URL');
-    $vnp_Returnurl = env('VNP_RETURN_URL');
-    $vnp_TmnCode = env('VNP_TMN_CODE');
-    $vnp_HashSecret = env('VNP_HASH_SECRET');
+    {
+        $vnp_Url = env('VNP_URL');
+        $vnp_Returnurl = env('VNP_RETURN_URL');
+        $vnp_TmnCode = env('VNP_TMN_CODE');
+        $vnp_HashSecret = env('VNP_HASH_SECRET');
 
-    $vnp_TxnRef = $order->order_tracking_code; // Mã đơn hàng
-    $vnp_OrderInfo = "Thanh toan don hang " . $order->order_tracking_code;
-    $vnp_OrderType = 'billpayment';
-    $vnp_Amount = $order->total_amount * 100; // VNPAY yêu cầu nhân 100
-    $vnp_Locale = 'vn';
-    $vnp_BankCode = ''; // Để trống để khách tự chọn ngân hàng
-    $vnp_IpAddr = FacadesRequest::ip();
+        $vnp_TxnRef = $order->order_tracking_code; 
+        $vnp_OrderInfo = "Thanh toan don hang " . $order->order_tracking_code;
+        $vnp_OrderType = 'billpayment';
+        $vnp_Amount = $order->total_amount * 100; 
+        $vnp_Locale = 'vn';
+        $vnp_IpAddr = FacadesRequest::ip();
 
-    $inputData = array(
-        "vnp_Version" => "2.1.0",
-        "vnp_TmnCode" => $vnp_TmnCode,
-        "vnp_Amount" => $vnp_Amount,
-        "vnp_Command" => "pay",
-        "vnp_CreateDate" => date('YmdHis'),
-        "vnp_CurrCode" => "VND",
-        "vnp_IpAddr" => $vnp_IpAddr,
-        "vnp_Locale" => $vnp_Locale,
-        "vnp_OrderInfo" => $vnp_OrderInfo,
-        "vnp_OrderType" => $vnp_OrderType,
-        "vnp_ReturnUrl" => $vnp_Returnurl,
-        "vnp_TxnRef" => $vnp_TxnRef
-    );
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => $vnp_Locale,
+            "vnp_OrderInfo" => $vnp_OrderInfo,
+            "vnp_OrderType" => $vnp_OrderType,
+            "vnp_ReturnUrl" => $vnp_Returnurl,
+            "vnp_TxnRef" => $vnp_TxnRef
+        );
 
-    ksort($inputData);
-    $query = "";
-    $i = 0;
-    $hashdata = "";
-    foreach ($inputData as $key => $value) {
-        if ($i == 1) {
-            $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
-        } else {
-            $hashdata .= urlencode($key) . "=" . urlencode($value);
-            $i = 1;
+        ksort($inputData);
+        $query = "";
+        $i = 0;
+        $hashdata = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) { $hashdata .= '&' . urlencode($key) . "=" . urlencode($value); } 
+            else { $hashdata .= urlencode($key) . "=" . urlencode($value); $i = 1; }
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
         }
-        $query .= urlencode($key) . "=" . urlencode($value) . '&';
-    }
 
-    $vnp_Url = $vnp_Url . "?" . $query;
-    if (isset($vnp_HashSecret)) {
-        $vnpSecureHash =   hash_hmac('sha512', $hashdata, $vnp_HashSecret);
-        $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
-    }
+        $vnp_Url = $vnp_Url . "?" . $query;
+        if (isset($vnp_HashSecret)) {
+            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
+        }
 
-    return $vnp_Url;
-}
+        return $vnp_Url;
+    }
 
     /**
      * Xem chi tiết đơn hàng bằng tracking code
