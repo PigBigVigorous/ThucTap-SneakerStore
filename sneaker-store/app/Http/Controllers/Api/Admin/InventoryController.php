@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\InventoryTransaction;
 use App\Services\InventoryService;
+use App\Http\Requests\InventoryImportRequest;
+use App\Http\Requests\InventoryTransferRequest;
+use App\Http\Requests\InventoryAdjustRequest;
 
 class InventoryController extends Controller
 {
@@ -27,14 +30,8 @@ class InventoryController extends Controller
     }
 
     // 🚀 ĐÂY LÀ HÀM IMPORT BỊ THIẾU, TÔI ĐÃ THÊM VÀO GIÚP BẠN
-    public function import(Request $request)
+    public function import(InventoryImportRequest $request)
     {
-        $request->validate([
-            'variant_id' => 'required|exists:product_variants,id',
-            'branch_id' => 'required|exists:branches,id',
-            'quantity' => 'required|integer|min:1',
-            'note' => 'nullable|string|max:255',
-        ]);
 
         try {
             $this->inventoryService->importStock(
@@ -49,15 +46,8 @@ class InventoryController extends Controller
         }
     }
 
-    public function transfer(Request $request)
+    public function transfer(InventoryTransferRequest $request)
     {
-        $request->validate([
-            'variant_id' => 'required|exists:product_variants,id',
-            'from_branch_id' => 'required|exists:branches,id',
-            'to_branch_id' => 'required|exists:branches,id|different:from_branch_id',
-            'quantity' => 'required|integer|min:1',
-            'note' => 'nullable|string|max:255',
-        ]);
 
         try {
             $this->inventoryService->transferStock($request->variant_id, $request->from_branch_id, $request->to_branch_id, $request->quantity, $request->note ?? 'Stock transfer');
@@ -67,14 +57,8 @@ class InventoryController extends Controller
         }
     }
 
-    public function adjust(Request $request)
+    public function adjust(InventoryAdjustRequest $request)
     {
-        $request->validate([
-            'variant_id' => 'required|exists:product_variants,id',
-            'branch_id' => 'required|exists:branches,id',
-            'quantity_change' => 'required|integer',
-            'note' => 'nullable|string|max:255',
-        ]);
 
         try {
             $this->inventoryService->adjustStock($request->variant_id, $request->branch_id, $request->quantity_change, $request->note ?? 'Stock adjustment');

@@ -10,15 +10,15 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // Kiểm tra xem user đã đăng nhập chưa, và có phải là 'admin' không
-        if (!$request->user() || $request->user()->role !== 'admin') {
+        // Kiểm tra xem user đã đăng nhập chưa, và có phải là 'super-admin' không (dùng Spatie Permission)
+        if (!$request->user() || !$request->user()->hasRole('super-admin')) {
             return response()->json([
                 'success' => false, 
-                'message' => 'Bạn không có quyền truy cập khu vực này!'
+                'message' => 'Bạn không có quyền truy cập khu vực này. Chỉ super-admin mới được phép.'
             ], 403);
         }
 
-        // Nếu đúng là admin thì cho phép đi tiếp
+        // Nếu đúng là super-admin thì cho phép đi tiếp
         return $next($request);
     }
 }

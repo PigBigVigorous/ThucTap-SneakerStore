@@ -11,6 +11,8 @@ use App\Models\ProductImage;
 use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Http\Requests\ProductStoreRequest;
+use App\Http\Requests\ProductUpdateRequest;
 
 class ProductCatalogController extends Controller
 {
@@ -32,17 +34,8 @@ class ProductCatalogController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(ProductStoreRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'brand_id' => 'required|exists:brands,id',
-            'description' => 'nullable|string',
-            'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp|max:5120',
-            'gallery_images' => 'nullable|array',
-            'variants' => 'required|string', 
-        ]);
 
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
@@ -132,16 +125,9 @@ class ProductCatalogController extends Controller
         return response()->json(['success' => true, 'data' => $product]);
     }
 
-    public function update(Request $request, $id)
+    public function update(ProductUpdateRequest $request, $id)
     {
         $product = \App\Models\Product::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'brand_id' => 'required|exists:brands,id',
-            'description' => 'nullable|string',
-        ]);
 
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {

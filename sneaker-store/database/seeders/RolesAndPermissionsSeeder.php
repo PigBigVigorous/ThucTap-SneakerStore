@@ -46,6 +46,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $warehouseRole->syncPermissions(['manage-products', 'manage-inventory']);
 
         $superAdminRole = Role::findOrCreate('super-admin', 'sanctum');
+        // Super admin có tất cả permissions để có thể truy cập mọi endpoint
+        $superAdminRole->syncPermissions($permissions);
 
         $customerRole = Role::findOrCreate('customer', 'sanctum');
         

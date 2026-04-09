@@ -68,12 +68,8 @@ class ProductController extends Controller
     }
 
     // 🚨 HÀM MỚI: Khách hàng Gửi đánh giá
-    public function storeReview(Request $request, $slug)
+    public function storeReview(\App\Http\Requests\ReviewStoreRequest $request, $slug)
     {
-        $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string|max:1000'
-        ]);
 
         $product = Product::where('slug', $slug)->firstOrFail();
         $user = $request->user();

@@ -8,6 +8,8 @@ use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 use App\Models\ProductVariant;
 use App\Models\VariantBranchStock;
+use App\Http\Requests\BranchStoreRequest;
+use App\Http\Requests\BranchUpdateRequest;
 
 class BranchController extends Controller
 {
@@ -16,15 +18,8 @@ class BranchController extends Controller
         return response()->json(['success' => true, 'data' => Branch::all()]);
     }
 
-    public function store(Request $request)
+    public function store(BranchStoreRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'is_main' => 'boolean',
-        ]);
 
         // 🚀 BẢO MẬT: Nếu tạo Kho này là Kho Tổng, hãy hạ bệ các Kho Tổng cũ xuống thành Kho Phụ (Chỉ cho phép 1 Kho Tổng)
         if ($request->is_main) {
@@ -60,15 +55,8 @@ class BranchController extends Controller
         return response()->json(['success' => true, 'data' => $branch]);
     }
 
-    public function update(Request $request, Branch $branch)
+    public function update(BranchUpdateRequest $request, Branch $branch)
     {
-        $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'address' => 'sometimes|required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'is_main' => 'boolean', // 🚀 ĐÃ BỔ SUNG ĐỂ NHẬN is_main
-        ]);
 
         // 🚀 BẢO MẬT: Nếu sửa Kho này thành Kho Tổng, hạ bệ các kho khác
         if ($request->has('is_main') && $request->is_main) {
