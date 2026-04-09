@@ -61,7 +61,7 @@ export default function AdminOrdersPage() {
             Quản Lý Đơn Hàng
           </h1>
           <div className="flex gap-4">
-            <Link href="/admin" className="text-gray-500 hover:text-black font-bold transition">
+            <Link href="/admin/inventory" className="text-gray-500 hover:text-black font-bold transition">
               Quản lý Kho
             </Link>
             <span className="bg-black text-white px-5 py-2 rounded-xl font-bold text-sm shadow-md">

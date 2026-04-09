@@ -68,8 +68,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Routes for admin
     Route::prefix('admin')->group(function () {
 
-        Route::get('/admin/inventory/stocks', [InventoryController::class, 'getStocks']);
-        
+
+
         Route::middleware(['permission:view-dashboard,sanctum'])->group(function () {
             Route::get('/statistics', function () {
                 $totalRevenue = Order::where('status', 'delivered')->sum('total_amount');
@@ -102,18 +102,27 @@ Route::middleware('auth:sanctum')->group(function () {
                 ]);
             });
         });
+        // 1. CHUNG: Trả về danh sách chi nhánh (để đổ vào dropdown kho/chi nhánh)
+        // Các quyền: quản lý kho, quản lý sản phẩm, hoặc thu ngân đều cần được đọc
+        Route::middleware(['permission:manage-inventory|manage-products|pos-sale,sanctum'])->group(function () {
+            Route::get('/branches', [BranchController::class, 'index']);
+        });
+
+        // 1.1 CHUNG 2: Các thao tác sửa, thêm, xoá chi nhánh dành cho quản trị kho / sản phẩm
+        Route::middleware(['permission:manage-inventory|manage-products,sanctum'])->group(function () {
+            Route::apiResource('branches', BranchController::class)->except(['index']);
+        });
+
         // Thủ kho
         Route::middleware(['permission:manage-inventory,sanctum'])->group(function () {
-            Route::apiResource('branches', BranchController::class);
             Route::get('/inventory/stocks', [InventoryController::class, 'getStocks']);
             Route::get('/inventory/transactions', [InventoryController::class, 'index']);
+            Route::post('/inventory/import', [InventoryController::class, 'import']); // Nhập hàng từ NCC
             Route::post('/inventory/transfer', [InventoryController::class, 'transfer']);
             Route::post('/inventory/adjust', [InventoryController::class, 'adjust']);
         });
         // quản lý sản phẩm
         Route::middleware(['permission:manage-products,sanctum'])->group(function () {
-            Route::apiResource('branches', BranchController::class);
-            
             Route::get('/products', [ProductCatalogController::class, 'index']);
             Route::post('/products', [ProductCatalogController::class, 'store']);
             Route::post('/products/{id}', [ProductCatalogController::class, 'update']);

@@ -9,11 +9,11 @@ export default function BranchManagementPage() {
   const { token } = useAuth();
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingBranch, setEditingBranch] = useState<any>(null);
-  
+
   const [formData, setFormData] = useState({
     name: "", address: "", phone: "", email: "", is_main: false // 🚨 Thêm is_main
   });
@@ -28,7 +28,7 @@ export default function BranchManagementPage() {
       if (data.success) {
         setBranches(Array.isArray(data.data) ? data.data : (Array.isArray(data.data?.data) ? data.data.data : []));
       }
-    } catch (error) {} finally { setLoading(false); }
+    } catch (error) { } finally { setLoading(false); }
   };
 
   useEffect(() => { if (token) fetchBranches(); }, [token]);
@@ -38,7 +38,7 @@ export default function BranchManagementPage() {
       setEditingBranch(branch);
       setFormData({
         name: branch.name || "", address: branch.address || "",
-        phone: branch.phone || "", email: branch.email || "", 
+        phone: branch.phone || "", email: branch.email || "",
         is_main: branch.is_main ? true : false // 🚨 Load dữ liệu cũ
       });
     } else {
@@ -71,11 +71,17 @@ export default function BranchManagementPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("CẢNH BÁO: Bạn có chắc chắn muốn xóa?")) return;
+    if (!window.confirm("CẢNH BÁO: Rủi ro liên quan đến tài sản! Bạn có chắc chắn muốn xóa?")) return;
     try {
       const res = await fetch(`${baseUrl}/admin/branches/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      if (data.success) { toast.success("Đã xóa!"); fetchBranches(); }
+      if (data.success) {
+        toast.success("Đã xóa!");
+        fetchBranches();
+      } else {
+        // 🚨 Hiển thị Toast thông báo lỗi nếu backend báo thất bại (kể cả lỗi kế toán hay phân quyền)
+        toast.error(data.message || "Không thể xóa chi nhánh này!");
+      }
     } catch (error) { toast.error("Lỗi mạng"); }
   };
 
@@ -130,13 +136,13 @@ export default function BranchManagementPage() {
           <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden">
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <h2 className="text-xl font-black uppercase mb-4">{editingBranch ? "Sửa" : "Thêm"} Chi Nhánh</h2>
-              <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Tên chi nhánh..." className="w-full border p-3 rounded text-black font-bold" required />
-              <input type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="Địa chỉ..." className="w-full border p-3 rounded text-black font-medium" required />
-              
+              <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Tên chi nhánh..." className="w-full border p-3 rounded text-black font-bold" required />
+              <input type="text" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="Địa chỉ..." className="w-full border p-3 rounded text-black font-medium" required />
+
               {/* 🚨 CHECKBOX KHO TỔNG CỰC ĐẸP */}
               <div className="pt-2 border-t border-gray-100 mt-2">
                 <label className="flex items-center gap-3 cursor-pointer p-4 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors">
-                  <input type="checkbox" checked={formData.is_main} onChange={(e) => setFormData({...formData, is_main: e.target.checked})} className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500" />
+                  <input type="checkbox" checked={formData.is_main} onChange={(e) => setFormData({ ...formData, is_main: e.target.checked })} className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500" />
                   <div>
                     <span className="text-sm font-black text-purple-900 uppercase">🌟 Đánh dấu là KHO TỔNG</span>
                     <p className="text-xs text-purple-700 font-medium mt-0.5">Kho tổng được phép nhận hàng trực tiếp từ Xưởng/NCC.</p>

@@ -66,7 +66,8 @@ class AuthController extends Controller
         }
 
         
-        $user->load('roles', 'permissions');
+        $user->load('roles');
+        $user->setRelation('permissions', $user->getAllPermissions()); // Lấy đủ cả permissions của role
 
         // Cấp Token mới
         $token = $user->createToken('auth_token')->plainTextToken;

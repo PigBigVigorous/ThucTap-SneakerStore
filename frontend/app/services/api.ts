@@ -119,19 +119,18 @@ export const authAPI = {
 
 export const productAPI = {
   // Lấy danh sách sản phẩm
-  // Lấy danh sách sản phẩm
   getAll: async () => {
     const res = await fetch(`${API_URL}/products`, {
       cache: "no-store",
     });
-    
+
     // NẾU CÓ LỖI, IN THẲNG LỖI ĐÓ RA TERMINAL ĐỂ BẮT BỆNH
     if (!res.ok) {
       const errorDetails = await res.text();
       console.error("🚨 CHI TIẾT LỖI TỪ LARAVEL 🚨:", errorDetails);
       throw new Error("Lỗi không thể tải dữ liệu");
     }
-    
+
     return res.json();
   },
 
@@ -197,13 +196,12 @@ export const orderAPI = {
 
     // Thống nhất cách throw lỗi ra UI
     if (!res.ok) {
-        throw new Error(result.message || "Đã xảy ra lỗi khi tạo đơn hàng.");
+      throw new Error(result.message || "Đã xảy ra lỗi khi tạo đơn hàng.");
     }
 
     return result; // Thành công trả về payload
   },
 
-  // Lấy chi tiết đơn hàng theo tracking code
   // Lấy chi tiết đơn hàng theo tracking code
   getByTrackingCode: async (tracking_code: string, token?: string | null) => {
     const headers: Record<string, string> = {
@@ -330,50 +328,50 @@ export const adminAPI = {
 export const adminProductAPI = {
   // Lấy danh sách sản phẩm (admin)
   getAll: async (token: string) => {
-      const res = await fetch(`${API_URL}/admin/products`, {
-        headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
-      });
-      return res.json();
-    },
-    
-    // 👇 THÊM HÀM CREATE NÀY VÀO 👇
-    create: async (formData: FormData, token: string) => {
-      const res = await fetch(`${API_URL}/admin/products`, {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/json"
-        },
-        body: formData, // Gửi nguyên cục FormData chứa cả chữ lẫn file ảnh
-      });
-      return res.json();
-    },
-    
-    delete: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/admin/products`, {
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    return res.json();
+  },
+
+  // 👇 THÊM HÀM CREATE NÀY VÀO 👇
+  create: async (formData: FormData, token: string) => {
+    const res = await fetch(`${API_URL}/admin/products`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json"
+      },
+      body: formData, // Gửi nguyên cục FormData chứa cả chữ lẫn file ảnh
+    });
+    return res.json();
+  },
+
+  delete: async (id: number, token: string) => {
     const res = await fetch(`${API_URL}/admin/products/${id}`, {
       method: "DELETE",
-      headers: { 
-        "Authorization": `Bearer ${token}`, 
-        "Accept": "application/json" 
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json"
       },
     });
     return res.json();
   },
   update: async (id: number, formData: FormData, token: string) => {
-    // Thêm dòng này để đánh lừa Laravel rằng đây là phương thức PUT dù gửi bằng POST
-    formData.append("_method", "PUT");
+    // 🚨 Bỏ đánh lừa Laravel vì trong api.php chúng ta đã khai báo Route::post('/products/{id}') để hỗ trợ upload ảnh, không cần giả lập PUT nữa.
+    // formData.append("_method", "PUT");
 
     const res = await fetch(`${API_URL}/admin/products/${id}`, {
       method: "POST", // Vẫn dùng POST để FormData xử lý upload File
-      headers: { 
+      headers: {
         "Authorization": `Bearer ${token}`,
         "Accept": "application/json"
       },
       body: formData,
     });
-    
+
     const result = await res.json();
-    
+
     if (!res.ok) {
       console.error("🚨 LỖI CHI TIẾT TỪ BACKEND:", JSON.stringify(result.errors || result, null, 2));
       return { success: false, message: result.message || "Lỗi cập nhật", errors: result.errors };

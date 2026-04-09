@@ -31,22 +31,9 @@ class OrderController extends Controller
      * Đặt hàng (Checkout)
      * API: POST /api/orders
      */
-    public function store(Request $request)
+    public function store(\App\Http\Requests\StoreOrderRequest $request)
     {
-        $validatedData = $request->validate([
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'required|string|max:20',
-            'customer_email' => 'required|email|max:255',
-            'province' => 'required|string|max:255',
-            'district' => 'required|string|max:255',
-            'ward' => 'required|string|max:255',
-            'address_detail' => 'required|string|max:255',
-            'shipping_fee' => 'required|numeric|min:0', // 🚀 ĐÃ BẮT BUỘC NHẬN PHÍ SHIP
-            'payment_method' => 'required|string', // VNPAY hoặc COD
-            'items' => 'required|array|min:1',
-            'items.*.variant_id' => 'required|exists:product_variants,id',
-            'items.*.quantity' => 'required|integer|min:1',
-        ]);
+        $validatedData = $request->validated();
 
         $userId = auth('sanctum')->check() ? auth('sanctum')->id() : null;
 
@@ -113,7 +100,8 @@ private function createVnpayUrl($order)
             "vnp_OrderInfo" => $vnp_OrderInfo,
             "vnp_OrderType" => $vnp_OrderType,
             "vnp_ReturnUrl" => $vnp_Returnurl,
-            "vnp_TxnRef" => $vnp_TxnRef
+            "vnp_TxnRef" => $vnp_TxnRef,
+            "vnp_BankCode" => "VNPAYQR",
         );
 
         ksort($inputData);
