@@ -5,21 +5,18 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Order;
 use App\Services\InventoryService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use App\Models\VariantBranchStock;
-use App\Models\InventoryTransaction;
 
 class ReleasePendingOrders extends Command
 {
-    // Tên lệnh để chạy trên terminal
+    // Tên lệnh để chạy trong terminal
     protected $signature = 'orders:release-pending';
 
-    // Mô tả lệnh
-    protected $description = 'Hoàn tồn kho cho các đơn hàng online thanh toán thất bại hoặc quá hạn 15 phút';
+    protected $description = 'Tự động hủy các đơn hàng VNPAY chưa thanh toán sau 30 phút và hoàn lại tồn kho';
+
     protected $inventoryService;
 
-    // Nhúng Service quản lý kho vào
     public function __construct(InventoryService $inventoryService)
     {
         parent::__construct();
@@ -28,51 +25,35 @@ class ReleasePendingOrders extends Command
 
     public function handle()
     {
-        // Lấy đơn hàng Online, trạng thái thanh toán 'failed' hoặc 'pending' quá 15 phút
-        $expiredOrders = Order::with('items')
-            ->where('payment_method', 'vnpay')
-            ->where('status', 'pending')
-            ->where(function($query) {
-                $query->where('payment_status', 'failed')
-                      ->orWhere(function($q) {
-                          $q->where('payment_status', 'pending')
-                            ->where('created_at', '<=', now()->subMinutes(15));
-                      });
-            })
+        $this->info("Bắt đầu quét các đơn hàng VNPAY bị treo...");
+
+        // Tìm các đơn VNPAY đang pending và tạo cách đây hơn 30 phút
+        $expiredOrders = Order::where('status', 'pending')
+            ->where('payment_status', 'pending')
+            ->where('payment_method', 'vnpay') // 🟢 Rất quan trọng: Chỉ quét đơn VNPAY (đơn COD thì vẫn giao bình thường)
+            ->where('created_at', '<', Carbon::now()->subMinutes(30))
             ->get();
 
+        $count = 0;
+
         foreach ($expiredOrders as $order) {
-            DB::transaction(function () use ($order) {
-                foreach ($order->items as $item) {
-                    // 1. Hoàn lại tồn kho tại đúng chi nhánh đã trừ
-                    $stock = VariantBranchStock::where('product_variant_id', $item->variant_id)
-                        ->where('branch_id', $order->branch_id)
-                        ->first();
+            try {
+                // 1. Gọi hàm cancelOrder (bạn đã viết sẵn cực chuẩn trong InventoryService) để cộng lại tồn kho
+                $this->inventoryService->cancelOrder($order);
 
-                    if ($stock) {
-                        $stock->increment('stock_quantity', $item->quantity);
-
-                        // 2. Ghi log giao dịch kho (Nhập lại do hủy đơn)
-                        InventoryTransaction::create([
-                            'product_variant_id' => $item->variant_id,
-                            'branch_id' => $order->branch_id,
-                            'quantity' => $item->quantity,
-                            'type' => 'in',
-                            'note' => "Hoàn tồn kho từ đơn hàng: {$order->order_tracking_code} (Thanh toán thất bại/Quá hạn)"
-                        ]);
-                    }
-                }
-
-                // 3. Cập nhật trạng thái đơn hàng thành Hủy
+                // 2. Cập nhật trạng thái đơn hàng thành Thất bại/Đã hủy
                 $order->update([
                     'status' => 'cancelled',
-                    'payment_status' => $order->payment_status === 'pending' ? 'failed' : $order->payment_status
+                    'payment_status' => 'failed'
                 ]);
-            });
 
-            $this->info("Đã giải phóng kho cho đơn hàng: {$order->order_tracking_code}");
+                $count++;
+                Log::info("Cronjob: Đã hủy tự động và hoàn kho đơn " . $order->order_tracking_code);
+            } catch (\Exception $e) {
+                Log::error("Cronjob Lỗi khi hủy đơn " . $order->order_tracking_code . ": " . $e->getMessage());
+            }
         }
 
-        return Command::SUCCESS;
+        $this->info("Hoàn tất! Đã xử lý {$count} đơn hàng hết hạn.");
     }
 }

@@ -10,4 +10,3 @@ Artisan::command('inspire', function () {
 
 // sneaker-store/routes/console.php
 Schedule::command('orders:release-pending')->everyMinute();
-Schedule::command('orders:release-pending')->everyMinute();

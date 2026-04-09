@@ -84,13 +84,21 @@ class InventoryService
             // KIỂM TRA LẠI KIỂU DỮ LIỆU ĐỂ TƯƠNG THÍCH POS CŨ (Truyền chuỗi)
             $isPos = is_string($customerData);
 
+            // 🚀 BẢO MẬT: TÍNH PHÍ SHIP TỰ ĐỘNG TỪ BACKEND
+            $shippingFee = 0;
+            if (!$isPos) {
+                $shippingFee = $this->calculateShippingFee($customerData['province'] ?? '', $customerData['district'] ?? '');
+            }
+
             // 1. TẠO ĐƠN HÀNG
             $order = Order::create([
                 'order_tracking_code' => $orderCode,
                 'user_id' => $userId,
                 'status' => 'pending',
+                'payment_status' => 'pending', 
+                'payment_method' => $isPos ? 'cash' : ($customerData['payment_method'] ?? 'cod'), // 🟢 Lưu lại phương thức thanh toán
                 'total_amount' => 0,
-                'shipping_address' => $isPos ? $customerData : null,
+                'shipping_fee' => $shippingFee, // 🟢 Gán phí ship chuẩn
                 'customer_name' => $isPos ? 'Khách lẻ' : ($customerData['customer_name'] ?? null),
                 'customer_phone' => $isPos ? null : ($customerData['customer_phone'] ?? null),
                 'customer_email' => $isPos ? null : ($customerData['customer_email'] ?? null),
@@ -98,10 +106,11 @@ class InventoryService
                 'district' => $isPos ? null : ($customerData['district'] ?? null),
                 'ward' => $isPos ? null : ($customerData['ward'] ?? null),
                 'address_detail' => $isPos ? null : ($customerData['address_detail'] ?? null),
-                'shipping_fee' => $isPos ? 0 : ($customerData['shipping_fee'] ?? 0),
                 'sales_channel_id' => $salesChannelId,
                 'branch_id' => $chosenBranchId, 
             ]);
+
+                
 
             // 2. LẶP TRỪ KHO & LƯU ORDER_ITEMS (Có Lock Hàng)
             foreach ($items as $item) {
@@ -364,5 +373,30 @@ class InventoryService
                 }
             }
         });
+    }
+    /**
+     * Thuật toán định vị nội thành để tính phí ship
+     */
+    private function calculateShippingFee($province, $district)
+    {
+        $province = mb_strtolower($province ?? '');
+        $district = mb_strtolower($district ?? '');
+
+        $innerHCM = ["quận 1", "quận 3", "quận 4", "quận 5", "quận 6", "quận 7", "quận 8", "quận 10", "quận 11", "tân bình", "tân phú", "phú nhuận", "gò vấp", "bình thạnh"];
+        $innerHN = ["ba đình", "hoàn kiếm", "tây hồ", "long biên", "cầu giấy", "đống đa", "hai bà trưng", "hoàng mai", "thanh xuân", "nam từ liêm", "bắc từ liêm", "hà đông"];
+        $innerDN = ["hải châu", "thanh khê", "sơn trà", "cẩm lệ"];
+
+        $isInnerCity = false;
+
+        // Str::contains hỗ trợ truyền mảng để dò tìm
+        if (\Illuminate\Support\Str::contains($province, "hồ chí minh") && \Illuminate\Support\Str::contains($district, $innerHCM)) {
+            $isInnerCity = true;
+        } elseif (\Illuminate\Support\Str::contains($province, "hà nội") && \Illuminate\Support\Str::contains($district, $innerHN)) {
+            $isInnerCity = true;
+        } elseif (\Illuminate\Support\Str::contains($province, "đà nẵng") && \Illuminate\Support\Str::contains($district, $innerDN)) {
+            $isInnerCity = true;
+        }
+
+        return $isInnerCity ? 0 : 30000;
     }
 }

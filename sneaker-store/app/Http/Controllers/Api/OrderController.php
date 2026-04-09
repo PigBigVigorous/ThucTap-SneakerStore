@@ -151,13 +151,26 @@ private function createVnpayUrl($order)
 
         // BẢO MẬT: Nếu đơn hàng có chủ (user_id != null), chỉ có chủ đơn hoặc Admin mới xem được
         if ($order->user_id !== null) {
+            
+            // 1. Lấy thông tin user hiện tại
             $currentUser = auth('sanctum')->user();
 
-            // Giả sử có check role admin (hoặc bỏ qua nếu API này không dùng cho admin)
-            $isAdmin = false; // Temporarily set to false since hasRole method is undefined
+            // 🟢 BỌC LÓT: Nếu Laravel không tự nhận diện được user qua middleware, ta tự giải mã Token thủ công
+            if (!$currentUser && request()->bearerToken()) {
+                $tokenRecord = \Laravel\Sanctum\PersonalAccessToken::findToken(request()->bearerToken());
+                if ($tokenRecord) {
+                    $currentUser = $tokenRecord->tokenable;
+                }
+            }
 
-            if (!$currentUser || ($currentUser->id !== $order->user_id && !$isAdmin)) {
-                return response()->json(['success' => false, 'message' => 'Bạn không có quyền xem đơn hàng này.'], 403);
+            $isAdmin = false; // Tạm thời để false nếu chưa setup Role
+
+            // 🟢 SỬA LỖI LOGIC: Dùng != (chỉ so sánh giá trị) thay vì !== (so sánh cả kiểu dữ liệu)
+            if (!$currentUser || ($currentUser->id != $order->user_id && !$isAdmin)) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Bạn không có quyền xem đơn hàng này. Hiện tại: ' . ($currentUser ? $currentUser->id : 'Khách') . ' | Chủ đơn: ' . $order->user_id
+                ], 403);
             }
         }
 

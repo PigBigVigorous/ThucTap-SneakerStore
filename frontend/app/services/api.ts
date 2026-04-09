@@ -40,10 +40,12 @@ export type Product = {
 
 export type Order = {
   id: number;
-  tracking_code: string;
+  order_tracking_code: string; // Chỉnh lại cho khớp với backend
   user_id: number;
   status: string;
+  payment_status: 'pending' | 'paid' | 'failed'; // 🟢 Thêm trường này
   total_amount: number;
+  shipping_fee: number; // 🟢 Thêm để hiển thị UI
   items: OrderItem[];
   [key: string]: any;
 };
@@ -202,9 +204,27 @@ export const orderAPI = {
   },
 
   // Lấy chi tiết đơn hàng theo tracking code
-  getByTrackingCode: async (tracking_code: string) => {
-    const res = await fetch(`${API_URL}/orders/${tracking_code}`);
-    if (!res.ok) throw new Error("Không tìm thấy đơn hàng");
+  // Lấy chi tiết đơn hàng theo tracking code
+  getByTrackingCode: async (tracking_code: string, token?: string | null) => {
+    const headers: Record<string, string> = {
+      "Accept": "application/json",
+    };
+
+    // 🚀 ĐÂY LÀ ĐOẠN QUAN TRỌNG NHẤT BỊ THIẾU: Đính kèm Thẻ căn cước (Token) vào Request
+    if (token && token !== "null") {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    // Gửi request kèm headers
+    const res = await fetch(`${API_URL}/orders/${encodeURIComponent(tracking_code)}`, {
+      method: "GET",
+      headers: headers, // 👈 Phải có dòng này thì Backend mới nhận được Token
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || "Không tìm thấy đơn hàng");
+    }
     return res.json();
   },
 

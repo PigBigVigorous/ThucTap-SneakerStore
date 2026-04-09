@@ -2,21 +2,20 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { paymentAPI } from "../../services/api";
+import { orderAPI, paymentAPI } from "../../services/api";
 import { useCartStore } from "../../store/useCartStore";
 import { CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 
 function VnpayReturnContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const clearCart = useCartStore((state) => state.clearCart);
+  const [orderData, setOrderData] = useState<any>(null);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     const verifyPayment = async () => {
-      // Lấy toàn bộ query string (VD: ?vnp_Amount=100000&vnp_BankCode=NCB...)
       const queryString = window.location.search;
       if (!queryString) {
         setStatus("error");
@@ -25,18 +24,37 @@ function VnpayReturnContent() {
       }
 
       try {
-        const response = await paymentAPI.verifyVnpay(queryString);
-        if (response.success) {
-          setStatus("success");
-          setMessage("Thanh toán thành công! Cảm ơn bạn đã mua hàng.");
-          clearCart(); // CHỈ KHI THANH TOÁN THÀNH CÔNG MỚI XOÁ GIỎ HÀNG
+        // 1. Verify với Backend
+        const verifyRes = await paymentAPI.verifyVnpay(queryString);
+
+        // 2. Lấy tracking code
+        const trackingCode = searchParams.get('vnp_TxnRef');
+
+        if (trackingCode) {
+          // 🟢 BỐC TOKEN TỪ LOCALSTORAGE ĐỂ LÀM CHÌA KHÓA
+          const token = localStorage.getItem("token");
+
+          // 🟢 TRUYỀN TOKEN VÀO HÀM API ĐỂ TRÁNH LỖI 403
+          const orderRes = await orderAPI.getByTrackingCode(trackingCode, token);
+          setOrderData(orderRes.data);
+
+          // 3. Đánh giá trạng thái
+          if (verifyRes.success === true && orderRes.data.payment_status === 'paid') {
+            setStatus("success");
+            setMessage("Thanh toán thành công! Cảm ơn bạn đã mua hàng.");
+            clearCart();
+          } else {
+            setStatus("error");
+            setMessage(verifyRes.message || "Giao dịch bị hủy hoặc thanh toán không thành công.");
+          }
         } else {
-          setStatus("error");
-          setMessage(response.message || "Thanh toán không thành công.");
+            setStatus("error");
+            setMessage("Không tìm thấy mã giao dịch.");
         }
-      } catch (error) {
+      } catch (error: any) {
+        console.error("Lỗi xác thực thanh toán:", error);
         setStatus("error");
-        setMessage("Lỗi kết nối khi xác thực thanh toán.");
+        setMessage(error.message || "Xác thực thanh toán thất bại. Vui lòng thử lại.");
       }
     };
 
@@ -59,7 +77,7 @@ function VnpayReturnContent() {
             <CheckCircle2 size={80} className="text-green-500 mb-6" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Giao dịch thành công</h2>
             <p className="text-gray-600 mb-8">{message}</p>
-            <div className="flex gap-4">
+            <div className="flex gap-4 justify-center w-full">
               <Link href="/my-orders" className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800">
                 Xem đơn hàng
               </Link>
@@ -75,7 +93,7 @@ function VnpayReturnContent() {
             <XCircle size={80} className="text-red-500 mb-6" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Giao dịch thất bại</h2>
             <p className="text-gray-600 mb-8">{message}</p>
-            <div className="flex gap-4">
+            <div className="flex gap-4 justify-center w-full">
               <Link href="/checkout" className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800">
                 Thử thanh toán lại
               </Link>
@@ -89,7 +107,7 @@ function VnpayReturnContent() {
 
 export default function VnpayReturnPage() {
   return (
-    <Suspense fallback={<div>Đang tải...</div>}>
+    <Suspense fallback={<div className="min-h-[70vh] flex items-center justify-center">Đang tải...</div>}>
       <VnpayReturnContent />
     </Suspense>
   );
