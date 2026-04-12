@@ -13,7 +13,7 @@ class ProductVariant extends Model
     
     // Đã bỏ variant_image_url để tránh lỗi Column not found
     protected $fillable = [
-        'product_id', 'sku', 'size_id', 'color_id', 'price'
+        'product_id', 'sku', 'size_id', 'color_id', 'colorway_name', 'price'
     ];
 
     protected $casts = [

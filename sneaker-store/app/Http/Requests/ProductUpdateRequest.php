@@ -27,9 +27,8 @@ class ProductUpdateRequest extends FormRequest
             'category_id' => 'sometimes|required|integer|exists:categories,id',
             'brand_id' => 'sometimes|required|integer|exists:brands,id',
             'description' => 'nullable|string|max:1000',
-            'base_image' => 'nullable|file|mimes:jpeg,png,jpg,webp|max:5120',
-            'gallery_images' => 'nullable|array',
-            'gallery_images.*' => 'file|mimes:jpeg,png,jpg,webp|max:5120',
+            // NOTE: base_image và gallery_images được validate thủ công trong Controller
+            // vì PHP không convert nested file array (gallery_images[colorId][]) thành UploadedFile đúng cách
         ];
     }
 

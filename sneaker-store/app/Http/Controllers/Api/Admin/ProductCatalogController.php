@@ -36,6 +36,11 @@ class ProductCatalogController extends Controller
 
     public function store(ProductStoreRequest $request)
     {
+        // Validate file ảnh thủ công vì Laravel không xử lý đúng nested file array trong FormRequest
+        $fileError = $this->validateUploadedImages($request);
+        if ($fileError) {
+            return response()->json(['success' => false, 'message' => $fileError], 422);
+        }
 
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
@@ -80,10 +85,11 @@ class ProductCatalogController extends Controller
             foreach ($variants as $v) {
                 $variant = \App\Models\ProductVariant::create([
                     'product_id' => $product->id,
-                    'color_id' => $v['color_id'],
-                    'size_id' => $v['size_id'],
-                    'sku' => $v['sku'] ?? strtoupper(\Illuminate\Support\Str::random(8)),
-                    'price' => $v['price'],
+                    'color_id'   => $v['color_id'],
+                    'size_id'    => $v['size_id'],
+                    'sku'        => $v['sku'] ?? strtoupper(\Illuminate\Support\Str::random(8)),
+                    'price'      => $v['price'],
+                    'colorway_name' => $v['colorway_name'] ?? null, // 🎨 Tên phối màu
                 ]);
 
                 // Lấy số lượng tồn kho đầu kỳ do Admin nhập trên giao diện
@@ -129,9 +135,20 @@ class ProductCatalogController extends Controller
     {
         $product = \App\Models\Product::findOrFail($id);
 
+        // Validate file ảnh thủ công vì Laravel không xử lý đúng nested file array trong FormRequest
+        $fileError = $this->validateUploadedImages($request);
+        if ($fileError) {
+            return response()->json(['success' => false, 'message' => $fileError], 422);
+        }
+
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
-            $product->update($request->only(['name', 'category_id', 'brand_id', 'description']));
+            // Tự động cập nhật slug khi tên sản phẩm thay đổi
+            $updateData = $request->only(['name', 'category_id', 'brand_id', 'description']);
+            if (!empty($updateData['name']) && $updateData['name'] !== $product->name) {
+                $updateData['slug'] = \Illuminate\Support\Str::slug($updateData['name']) . '-' . time();
+            }
+            $product->update($updateData);
 
             if ($request->hasFile('base_image')) {
                 $path = $request->file('base_image')->store('products', 'public');
@@ -164,13 +181,21 @@ class ProductCatalogController extends Controller
                 foreach ($variants as $v) {
                     if (isset($v['id'])) {
                         \App\Models\ProductVariant::where('id', $v['id'])->update([
-                            'color_id' => $v['color_id'], 'size_id' => $v['size_id'], 'price' => $v['price']
+                            'color_id'      => $v['color_id'],
+                            'size_id'       => $v['size_id'],
+                            'price'         => $v['price'],
+                            'colorway_name' => $v['colorway_name'] ?? null, // 🎨 Cập nhật phối màu
                         ]);
                         $receivedVariantIds[] = $v['id'];
                     } else {
                         // NẾU LÀ BIẾN THỂ MỚI (Ví dụ: Thêm size 42)
                         $newVariant = \App\Models\ProductVariant::create([
-                            'product_id' => $product->id, 'color_id' => $v['color_id'], 'size_id' => $v['size_id'], 'sku' => $v['sku'] ?? strtoupper(\Illuminate\Support\Str::random(8)), 'price' => $v['price'],
+                            'product_id'   => $product->id,
+                            'color_id'     => $v['color_id'],
+                            'size_id'      => $v['size_id'],
+                            'sku'          => $v['sku'] ?? strtoupper(\Illuminate\Support\Str::random(8)),
+                            'price'        => $v['price'],
+                            'colorway_name'=> $v['colorway_name'] ?? null, // 🎨 Tên phối màu
                         ]);
                         $receivedVariantIds[] = $newVariant->id;
 
@@ -203,7 +228,11 @@ class ProductCatalogController extends Controller
             }
 
             \Illuminate\Support\Facades\DB::commit();
-            return response()->json(['success' => true, 'message' => 'Đã cập nhật sản phẩm thành công.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã cập nhật sản phẩm thành công.',
+                'data' => ['slug' => $product->fresh()->slug] // Trả về slug mới để frontend redirect
+            ]);
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
@@ -221,5 +250,50 @@ class ProductCatalogController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Lỗi khi xóa: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Validate file ảnh thủ công bằng PHP native (pathinfo + getimagesize).
+     * Không dùng FormRequest vì PHP không convert đúng nested file array
+     * (gallery_images[colorId][]) thành UploadedFile object cho các rule 'mimes'/'image'.
+     *
+     * @return string|null Error message hoặc null nếu hợp lệ
+     */
+    private function validateUploadedImages($request): ?string
+    {
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+        $maxSizeBytes = 5 * 1024 * 1024; // 5MB
+
+        // Kiểm tra ảnh đại diện
+        if ($request->hasFile('base_image')) {
+            $file = $request->file('base_image');
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (!in_array($ext, $allowedExtensions)) {
+                return 'Ảnh đại diện chỉ chấp nhận định dạng: JPG, JPEG, PNG, WEBP, AVIF.';
+            }
+            if ($file->getSize() > $maxSizeBytes) {
+                return 'Ảnh đại diện không được vượt quá 5MB.';
+            }
+        }
+
+        // Kiểm tra gallery (nested: gallery_images[colorId][])
+        $galleryFiles = $request->file('gallery_images');
+        if (!empty($galleryFiles)) {
+            foreach ($galleryFiles as $colorId => $images) {
+                if (!is_array($images)) continue;
+                foreach ($images as $index => $image) {
+                    if (!$image) continue;
+                    $ext = strtolower($image->getClientOriginalExtension());
+                    if (!in_array($ext, $allowedExtensions)) {
+                        return "Gallery ảnh (màu #{$colorId}, ảnh #{$index}) chỉ chấp nhận: JPG, JPEG, PNG, WEBP, AVIF.";
+                    }
+                    if ($image->getSize() > $maxSizeBytes) {
+                        return "Gallery ảnh (màu #{$colorId}, ảnh #{$index}) không được vượt quá 5MB.";
+                    }
+                }
+            }
+        }
+
+        return null; // Hợp lệ
     }
 }

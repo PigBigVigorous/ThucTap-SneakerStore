@@ -38,12 +38,10 @@ export const useCartStore = create<CartState>()(
         set((state) => {
           const existingItem = state.items.find((i) => i.variant_id === newItem.variant_id);
           if (existingItem) {
-            // Nếu đã có trong giỏ -> Cộng dồn số lượng
             if (existingItem.quantity + newItem.quantity > existingItem.stock) {
               toast.error("Vượt quá số lượng tồn kho!");
               return state;
             }
-            toast.success("Đã thêm vào giỏ hàng!");
             return {
               items: state.items.map((i) =>
                 i.variant_id === newItem.variant_id
@@ -52,8 +50,6 @@ export const useCartStore = create<CartState>()(
               ),
             };
           }
-          // Nếu chưa có -> Thêm mới
-          toast.success("Đã thêm vào giỏ hàng!");
           return { items: [...state.items, newItem] };
         });
       },

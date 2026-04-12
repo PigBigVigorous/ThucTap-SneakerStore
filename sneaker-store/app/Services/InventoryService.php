@@ -9,6 +9,8 @@ use App\Models\OrderItem;
 use App\Models\ProductVariant;
 use App\Models\VariantBranchStock;
 use App\Models\InventoryTransaction;
+use App\Models\Discount;
+use Carbon\Carbon;
 use Exception;
 
 class InventoryService
@@ -90,7 +92,7 @@ class InventoryService
                 $shippingFee = $this->calculateShippingFee($customerData['province'] ?? '', $customerData['district'] ?? '');
             }
 
-            // 1. TẠO ĐƠN HÀNG
+            // 1. TẠO ĐƠN HÀNG (Sẽ update TotalAmount và Discount sau)
             $order = Order::create([
                 'order_tracking_code' => $orderCode,
                 'user_id' => $userId,
@@ -108,6 +110,8 @@ class InventoryService
                 'address_detail' => $isPos ? null : ($customerData['address_detail'] ?? null),
                 'sales_channel_id' => $salesChannelId,
                 'branch_id' => $chosenBranchId, 
+                'discount_id' => null,
+                'discount_amount' => 0,
             ]);
 
                 
@@ -148,9 +152,61 @@ class InventoryService
                 ]);
             }
 
-            // 3. CẬP NHẬT TIỀN (BAO GỒM PHÍ SHIP NẾU CÓ)
+            // 3. XỬ LÝ MÃ GIẢM GIÁ (BACKEND KIỂM SOÁT BẢO MẬT KÉP LẦN 2)
+            $discountId = null;
+            $discountAmount = 0;
+            $discountCode = $isPos ? null : ($customerData['discount_code'] ?? null);
+
+            if ($discountCode) {
+                // Sử dụng LockForUpdate để tránh đua lệnh dùng mã
+                $discount = Discount::where('code', $discountCode)->lockForUpdate()->first();
+                
+                if ($discount && $discount->is_active) {
+                    $now = Carbon::now();
+                    $isValid = true;
+                    
+                    if ($discount->start_date && $now->lt($discount->start_date)) $isValid = false;
+                    if ($discount->expiration_date && $now->gt($discount->expiration_date)) $isValid = false;
+                    if ($discount->usage_limit !== null && $discount->used_count >= $discount->usage_limit) $isValid = false;
+                    if ($discount->min_order_value !== null && $totalAmount < $discount->min_order_value) $isValid = false;
+
+                    if ($isValid) {
+                        if ($discount->type === 'fixed') {
+                            $discountAmount = $discount->value;
+                        } else {
+                            $discountAmount = ($totalAmount * $discount->value) / 100;
+                            if ($discount->max_discount_value !== null && $discountAmount > $discount->max_discount_value) {
+                                $discountAmount = $discount->max_discount_value;
+                            }
+                        }
+
+                        if ($discountAmount > $totalAmount) {
+                            $discountAmount = $totalAmount; // Không giảm quá tiền hàng
+                        }
+
+                        // Cập nhật lại số lần đã dùng
+                        $discount->used_count += 1;
+                        $discount->save();
+
+                        $discountId = $discount->id;
+                    }
+                }
+            }
+
+            // 4. CẬP NHẬT TIỀN (BAO GỒM PHÍ SHIP VÀ TRỪ DISCOUNT)
             $shippingFee = $isPos ? 0 : ($customerData['shipping_fee'] ?? 0);
-            $order->update(['total_amount' => $totalAmount + $shippingFee]);
+            $finalTotal = $totalAmount + $shippingFee - $discountAmount;
+            
+            // Đảm bảo Total > 0
+            if ($finalTotal < 0) {
+                $finalTotal = 0;
+            }
+
+            $order->update([
+                'total_amount' => $finalTotal,
+                'discount_id' => $discountId,
+                'discount_amount' => $discountAmount
+            ]);
 
             return $order;
         });

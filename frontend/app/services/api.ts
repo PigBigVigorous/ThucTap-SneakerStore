@@ -58,6 +58,20 @@ export type OrderItem = {
   [key: string]: any;
 };
 
+export type Discount = {
+  id: number;
+  code: string;
+  type: 'percent' | 'fixed';
+  value: number;
+  min_order_value?: number | null;
+  max_discount_value?: number | null;
+  usage_limit?: number | null;
+  used_count: number;
+  start_date?: string | null;
+  expiration_date?: string | null;
+  is_active: boolean;
+};
+
 // ==========================================
 // 🔐 AUTHENTICATION ENDPOINTS
 // ==========================================
@@ -118,13 +132,29 @@ export const authAPI = {
 // ==========================================
 
 export const productAPI = {
-  // Lấy danh sách sản phẩm
-  getAll: async () => {
-    const res = await fetch(`${API_URL}/products`, {
+  // Lấy danh sách sản phẩm (hỗ trợ filter theo category slug, brand name, search, giá, sort)
+  getAll: async (params?: {
+    category?: string;
+    brand?: string;
+    search?: string;
+    sort_by?: string;
+    price_min?: number;
+    price_max?: number;
+    page?: number;
+  }) => {
+    const url = new URL(`${API_URL}/products`);
+    if (params?.category) url.searchParams.set("category", params.category);
+    if (params?.brand)    url.searchParams.set("brand",    params.brand);
+    if (params?.search)   url.searchParams.set("search",   params.search);
+    if (params?.sort_by)  url.searchParams.set("sort_by",  params.sort_by);
+    if (params?.price_min != null) url.searchParams.set("price_min", String(params.price_min));
+    if (params?.price_max != null) url.searchParams.set("price_max", String(params.price_max));
+    if (params?.page)     url.searchParams.set("page",     String(params.page));
+
+    const res = await fetch(url.toString(), {
       cache: "no-store",
     });
 
-    // NẾU CÓ LỖI, IN THẲNG LỖI ĐÓ RA TERMINAL ĐỂ BẮT BỆNH
     if (!res.ok) {
       const errorDetails = await res.text();
       console.error("🚨 CHI TIẾT LỖI TỪ LARAVEL 🚨:", errorDetails);
@@ -144,6 +174,7 @@ export const productAPI = {
   },
 };
 
+
 export interface OrderPayload {
   customer_name: string;
   customer_phone: string;
@@ -153,10 +184,38 @@ export interface OrderPayload {
   ward: string;            // Lưu tên Phường/Xã
   address_detail: string;  // Số nhà, tên đường
   total_amount: number;
+  shipping_fee?: number;   // Phí ship (tuỳ chọn)
+  discount_code?: string | null; // Mã giảm giá
   payment_method: string;
   items: { variant_id: number; quantity: number; }[];
   user_id?: number | null; // Thêm trường này để Backend biết đơn của user nào
 }
+
+// ==========================================
+// 🎟️ DISCOUNT ENDPOINTS (Customer)
+// ==========================================
+
+export const discountAPI = {
+  // Khách hàng apply mã giảm giá
+  apply: async (code: string, orderValue: number) => {
+    const res = await fetch(`${API_URL}/discounts/apply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ code, order_value: orderValue }),
+    });
+    
+    // Server có thể trả về lỗi như mã giới hạn, hết hạn...
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.message || "Không thể áp dụng mã giảm giá");
+    }
+    return result;
+  }
+}
+
 
 // Bổ sung thêm API verify
 export const paymentAPI = {
@@ -252,6 +311,7 @@ export const adminAPI = {
         "Accept": "application/json",
       },
     });
+    if (res.status === 401) throw new Error("UNAUTHORIZED");
     if (!res.ok) throw new Error("Lỗi khi tải thống kê");
     return res.json();
   },
@@ -264,6 +324,7 @@ export const adminAPI = {
         "Accept": "application/json",
       },
     });
+    if (res.status === 401) throw new Error("UNAUTHORIZED");
     if (!res.ok) throw new Error("Lỗi khi tải giao dịch kho");
     return res.json();
   },
@@ -276,6 +337,7 @@ export const adminAPI = {
         "Accept": "application/json",
       },
     });
+    if (res.status === 401) throw new Error("UNAUTHORIZED");
     if (!res.ok) throw new Error("Lỗi khi tải danh sách đơn hàng");
     return res.json();
   },
@@ -302,6 +364,7 @@ export const adminAPI = {
         "Accept": "application/json",
       },
     });
+    if (res.status === 401) throw new Error("UNAUTHORIZED");
     if (!res.ok) throw new Error("Lỗi khi tải danh sách sản phẩm POS");
     return res.json();
   },
@@ -425,3 +488,137 @@ export const adminInventoryAPI = {
     return res.json();
   },
 };
+
+// ==========================================
+// 🗂️ ADMIN CATEGORY ENDPOINTS
+// ==========================================
+
+export const adminCategoryAPI = {
+  getAll: async (token: string) => {
+    const res = await fetch(`${API_URL}/admin/categories`, {
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    return res.json();
+  },
+
+  create: async (data: { name: string; parent_id?: number | null }, token: string) => {
+    const res = await fetch(`${API_URL}/admin/categories`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  delete: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/admin/categories/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    return res.json();
+  },
+};
+
+// ==========================================
+// 🏷️ ADMIN BRAND ENDPOINTS
+// ==========================================
+
+export const adminBrandAPI = {
+  getAll: async (token: string) => {
+    const res = await fetch(`${API_URL}/admin/brands`, {
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    return res.json();
+  },
+
+  create: async (data: { name: string; description?: string; logo_url?: string }, token: string) => {
+    const res = await fetch(`${API_URL}/admin/brands`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  update: async (id: number, data: { name: string; description?: string; logo_url?: string }, token: string) => {
+    const res = await fetch(`${API_URL}/admin/brands/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  delete: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/admin/brands/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    return res.json();
+  },
+};
+
+// ==========================================
+// 🎟️ ADMIN DISCOUNT ENDPOINTS
+// ==========================================
+
+export const adminDiscountAPI = {
+  getAll: async (token: string) => {
+    const res = await fetch(`${API_URL}/admin/discounts`, {
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    if (!res.ok) throw new Error("Lỗi tải danh sách mã giảm giá");
+    return res.json();
+  },
+
+  create: async (data: Omit<Discount, "id" | "used_count">, token: string) => {
+    const res = await fetch(`${API_URL}/admin/discounts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || "Lỗi tạo mã giảm giá");
+    return result;
+  },
+
+  update: async (id: number, data: Partial<Discount>, token: string) => {
+    const res = await fetch(`${API_URL}/admin/discounts/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || "Lỗi cập nhật mã giảm giá");
+    return result;
+  },
+
+  delete: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/admin/discounts/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    return res.json();
+  },
+};
+

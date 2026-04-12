@@ -1,139 +1,390 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { useCartStore } from "../store/useCartStore"; 
-import { Trash2, Heart, ChevronDown, HelpCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCartStore } from "../store/useCartStore";
+import { useFavoritesStore } from "../store/useFavoritesStore";
+import {
+  Trash2, Heart, Minus, Plus, ShoppingBag,
+  ArrowRight, Tag, Truck, Shield, ChevronRight,
+  X,
+} from "lucide-react";
+import toast from "react-hot-toast";
+
+// ─── Format tiền tệ ──────────────────────────────────────────────────────────
+const fmt = (n: number) => n.toLocaleString("vi-VN") + " ₫";
+
+// ─── Ngưỡng freeship ─────────────────────────────────────────────────────────
+const FREESHIP = 5_000_000;
+const SHIP_FEE = 250_000;
+
+// ─── CartPage ─────────────────────────────────────────────────────────────────
 
 export default function CartPage() {
-  
-  const items = useCartStore((state) => state.items);
-  const removeFromCart = useCartStore((state) => state.removeFromCart);
-  const updateQuantity = useCartStore((state) => state.updateQuantity);
-  const getTotalPrice = useCartStore((state) => state.getTotalPrice);
+  const router = useRouter();
+  const items        = useCartStore((s) => s.items);
+  const removeFromCart  = useCartStore((s) => s.removeFromCart);
+  const updateQuantity  = useCartStore((s) => s.updateQuantity);
+  const getTotalPrice   = useCartStore((s) => s.getTotalPrice);
 
-  const subtotal = getTotalPrice();
-  const freeshipThreshold = 5000000; 
-  const progress = Math.min((subtotal / freeshipThreshold) * 100, 100);
-  const remainingForFreeship = freeshipThreshold - subtotal;
+  const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
+  const favorites      = useFavoritesStore((s) => s.favorites);
+
+  const [promoCode, setPromoCode]     = useState("");
+  const [promoOpen, setPromoOpen]     = useState(false);
+  const [removingId, setRemovingId]   = useState<number | null>(null);
+
+  const subtotal  = getTotalPrice();
+  const shipping  = subtotal >= FREESHIP ? 0 : SHIP_FEE;
+  const total     = subtotal + shipping;
+  const progress  = Math.min((subtotal / FREESHIP) * 100, 100);
+  const remaining = FREESHIP - subtotal;
+
+  const handleRemove = (variantId: number) => {
+    setRemovingId(variantId);
+    setTimeout(() => {
+      removeFromCart(variantId);
+      setRemovingId(null);
+    }, 280);
+  };
+
+  // Chỉ toggle Yêu thích, KHÔNG xóa khỏi giỏ hàng
+  const handleToggleFav = (item: typeof items[0]) => {
+    const added = toggleFavorite({
+      product_id: item.product_id,
+      product_name: item.name,
+      category_name: "",
+      price: item.price,
+      image: item.image,
+      slug: item.slug,
+    });
+    toast(added ? "Đã thêm vào Yêu thích ❤" : "Đã xóa khỏi Yêu thích", {
+      icon: added ? "❤️" : "🗑️",
+    });
+  };
+
+
+  // ── Empty state ───────────────────────────────────────────────────────────
 
   if (items.length === 0) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-white px-4">
-        <h1 className="text-[28px] font-medium text-gray-900 mb-6">Giỏ hàng của bạn đang trống.</h1>
-        <p className="text-gray-500 mb-8 text-center max-w-md">
-          Có vẻ như bạn chưa thêm sản phẩm nào vào giỏ hàng. Khám phá ngay những mẫu giày mới nhất của chúng tôi.
+      <div className="min-h-[80vh] flex flex-col items-center justify-center bg-white px-4 py-20">
+        {/* Icon */}
+        <div className="relative mb-8">
+          <div className="w-28 h-28 rounded-full bg-gray-50 flex items-center justify-center">
+            <ShoppingBag size={44} className="text-gray-300" strokeWidth={1.2} />
+          </div>
+          <span className="absolute -top-1 -right-1 w-7 h-7 bg-gray-900 text-white text-xs font-black rounded-full flex items-center justify-center">
+            0
+          </span>
+        </div>
+
+        <h1 className="text-[26px] font-bold text-gray-900 mb-3 tracking-tight">
+          Giỏ hàng trống
+        </h1>
+        <p className="text-gray-400 mb-10 text-center max-w-[340px] text-[15px] leading-relaxed">
+          Có vẻ như bạn chưa thêm sản phẩm nào. Khám phá ngay những đôi giày mới nhất!
         </p>
-        <Link href="/" className="bg-black text-white px-8 py-4 rounded-full font-medium hover:bg-gray-800 transition-colors">
-          Mua sắm ngay
+
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 bg-gray-900 text-white px-8 py-4 rounded-full
+                     font-semibold text-[15px] hover:bg-gray-700 transition-colors"
+        >
+          Mua sắm ngay <ArrowRight size={16} />
         </Link>
       </div>
     );
   }
 
+  // ── Main ─────────────────────────────────────────────────────────────────
+
   return (
-    <main className="min-h-screen bg-white pb-24">
-      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-10">
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
-          
-          {/* CỘT TRÁI: DANH SÁCH SẢN PHẨM */}
-          <div className="w-full lg:w-[65%]">
-            <div className="bg-[#F5F5F5] p-5 rounded-2xl mb-8">
-              <h2 className="text-[#FA5400] font-medium text-base mb-1">
-                {remainingForFreeship > 0 
-                  ? `Mua thêm ${remainingForFreeship.toLocaleString('vi-VN')} ₫ để được Giao hàng miễn phí.` 
-                  : "Tuyệt vời! Bạn đã được Giao hàng tiêu chuẩn miễn phí."}
-              </h2>
-              <div className="w-full bg-gray-200 h-2 mt-4 rounded-full overflow-hidden">
-                <div className="bg-[#FA5400] h-full transition-all duration-700 ease-out rounded-full" style={{ width: `${progress}%` }} />
+    <main className="min-h-screen bg-[#fafafa] pb-24">
+      <div className="max-w-[1180px] mx-auto px-4 sm:px-6 pt-8 lg:pt-12">
+
+        {/* Page title */}
+        <h1 className="text-[28px] font-black text-gray-900 tracking-tight mb-8">
+          Giỏ hàng
+          <span className="ml-3 text-[18px] font-semibold text-gray-400">
+            ({items.reduce((s, i) => s + i.quantity, 0)} sản phẩm)
+          </span>
+        </h1>
+
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+
+          {/* ══════════════════════════════════════════
+              CỘT TRÁI: SẢN PHẨM
+          ══════════════════════════════════════════ */}
+          <div className="w-full lg:flex-1 min-w-0">
+
+            {/* Freeship banner */}
+            <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-100 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-700">
+                  <Truck size={16} className={remaining > 0 ? "text-gray-400" : "text-green-500"} />
+                  {remaining > 0
+                    ? <span>Mua thêm <strong className="text-gray-900">{fmt(remaining)}</strong> để được <strong className="text-green-600">Miễn phí vận chuyển</strong></span>
+                    : <span className="text-green-600 font-bold">🎉 Bạn đã được miễn phí vận chuyển!</span>}
+                </div>
+                <span className="text-[12px] text-gray-400 font-medium">{Math.round(progress)}%</span>
+              </div>
+              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
 
-            <h1 className="text-[28px] font-medium text-gray-900 mb-6 tracking-tight">Giỏ hàng</h1>
+            {/* Items list */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {items.map((item, idx) => {
+                const isFav = favorites.some((f) => f.product_id === item.product_id);
+                const isRemoving = removingId === item.variant_id;
 
-            <div className="space-y-8 divide-y divide-gray-100 border-b border-gray-100 pb-8">
-              {items.map((item) => (
-                <div key={item.variant_id} className="pt-8 first:pt-0 flex gap-4 sm:gap-6">
-                  
-                  {/* 🚨 ĐÃ FIX: Sử dụng đúng item.slug và thêm hiệu ứng click mượt mà */}
-                  <Link href={`/product/${item.slug}`} className="w-[150px] h-[150px] shrink-0 bg-[#F5F5F5] rounded-xl overflow-hidden block transition-transform hover:opacity-90 active:scale-95">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply p-2" />
-                  </Link>
+                return (
+                  <div
+                    key={item.variant_id}
+                    className={`relative flex gap-4 sm:gap-5 px-5 py-5 transition-all duration-300
+                      ${idx !== 0 ? "border-t border-gray-50" : ""}
+                      ${isRemoving ? "opacity-0 scale-95 -translate-x-2" : "opacity-100 scale-100 translate-x-0"}`}
+                  >
+                    {/* Image */}
+                    <Link
+                      href={`/product/${item.slug}`}
+                      className="shrink-0 w-[110px] h-[110px] sm:w-[130px] sm:h-[130px]
+                                 bg-[#f5f5f5] rounded-xl overflow-hidden block hover:opacity-90 transition-opacity"
+                    >
+                      <img
+                        src={item.image || "/placeholder.png"}
+                        alt={item.name}
+                        className="w-full h-full object-contain mix-blend-multiply p-2"
+                      />
+                    </Link>
 
-                  <div className="flex-1 flex flex-col">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-gray-900 text-base">{item.name}</h3>
-                        <p className="text-gray-500 text-base mt-1">Giày Nam</p>
-                        <p className="text-gray-500 text-base mt-0.5">{item.color}</p>
-                        
-                        <div className="flex items-center gap-6 mt-3">
-                          <p className="text-gray-500 text-base">Size: <span className="text-gray-900">{item.size.replace('EU-', '')}</span></p>
-                          <div className="flex items-center gap-2 text-gray-500 text-base">
-                            <label htmlFor={`qty-${item.variant_id}`}>Số lượng:</label>
-                            <select 
-                              id={`qty-${item.variant_id}`}
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(item.variant_id, Number(e.target.value))}
-                              className="bg-transparent text-gray-900 font-medium outline-none cursor-pointer"
-                            >
-                              {/* Chặn số lượng tối đa dựa vào stock */}
-                              {Array.from({ length: Math.min(10, item.stock) }, (_, i) => i + 1).map(num => (
-                                <option key={num} value={num}>{num}</option>
-                              ))}
-                            </select>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex items-start justify-between gap-3">
+                        {/* Name + attrs */}
+                        <div className="min-w-0">
+                          <Link
+                            href={`/product/${item.slug}`}
+                            className="font-semibold text-gray-900 text-[15px] hover:underline line-clamp-2 block"
+                          >
+                            {item.name}
+                          </Link>
+                          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">
+                            <span className="text-[13px] text-gray-400">
+                              Màu: <span className="text-gray-600">{item.color}</span>
+                            </span>
+                            <span className="text-[13px] text-gray-400">
+                              Size: <span className="text-gray-600">{item.size.replace(/eu-?/i, "")}</span>
+                            </span>
                           </div>
                         </div>
-                      </div>
-                      <p className="font-medium text-gray-900 text-base whitespace-nowrap">
-                        {(item.price * item.quantity).toLocaleString('vi-VN')} ₫
-                      </p>
-                    </div>
 
-                    <div className="mt-auto pt-4 flex items-center gap-4 text-gray-500">
-                      <button className="hover:text-black transition-colors" title="Thêm vào Yêu thích">
-                        <Heart size={22} strokeWidth={1.5} />
-                      </button>
-                      <button onClick={() => removeFromCart(item.variant_id)} className="hover:text-black transition-colors" title="Xóa khỏi Giỏ hàng">
-                        <Trash2 size={22} strokeWidth={1.5} />
-                      </button>
+                        {/* Price */}
+                        <div className="text-right shrink-0">
+                          <p className="font-bold text-gray-900 text-[16px]">
+                            {fmt(item.price * item.quantity)}
+                          </p>
+                          {item.quantity > 1 && (
+                            <p className="text-[12px] text-gray-400 mt-0.5">
+                              {fmt(item.price)} / chiếc
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quantity + actions */}
+                      <div className="mt-auto pt-3 flex items-center justify-between flex-wrap gap-3">
+                        {/* Quantity stepper */}
+                        <div className="flex items-center gap-0 border border-gray-200 rounded-full overflow-hidden">
+                          <button
+                            onClick={() => updateQuantity(item.variant_id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                            className="w-9 h-9 flex items-center justify-center hover:bg-gray-50
+                                       disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="w-9 text-center text-[14px] font-semibold text-gray-900 select-none">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.variant_id, item.quantity + 1)}
+                            disabled={item.quantity >= item.stock}
+                            className="w-9 h-9 flex items-center justify-center hover:bg-gray-50
+                                       disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleToggleFav(item)}
+                            title={isFav ? "Xóa khỏi Yêu thích" : "Thêm vào Yêu thích"}
+                            className="w-9 h-9 flex items-center justify-center rounded-full
+                                       hover:bg-gray-50 text-gray-400 hover:text-rose-500 transition-colors"
+                          >
+                            <Heart
+                              size={18}
+                              strokeWidth={isFav ? 0 : 1.5}
+                              className={isFav ? "fill-rose-500 text-rose-500" : ""}
+                            />
+                          </button>
+                          <button
+                            onClick={() => handleRemove(item.variant_id)}
+                            title="Xóa"
+                            className="w-9 h-9 flex items-center justify-center rounded-full
+                                       hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 size={18} strokeWidth={1.5} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Stock warning */}
+                      {item.quantity >= item.stock && (
+                        <p className="mt-1.5 text-[11px] text-red-500 font-medium">
+                          ⚠ Đã đạt tối đa tồn kho ({item.stock} sản phẩm)
+                        </p>
+                      )}
                     </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* Trust badges */}
+            <div className="grid grid-cols-3 gap-3 mt-5">
+              {[
+                { icon: Truck,  label: "Freeship từ 5tr" },
+                { icon: Shield, label: "Hàng chính hãng" },
+                { icon: Tag,    label: "Giá tốt nhất" },
+              ].map(({ icon: Icon, label }) => (
+                <div key={label} className="bg-white rounded-xl p-3 flex flex-col items-center gap-1.5 border border-gray-100 shadow-sm text-center">
+                  <Icon size={18} className="text-gray-400" strokeWidth={1.5} />
+                  <span className="text-[11px] text-gray-500 font-medium">{label}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* CỘT PHẢI: SUMMARY */}
-          <div className="w-full lg:w-[35%]">
-            <div className="sticky top-24">
-              <h2 className="text-[28px] font-medium text-gray-900 mb-6 tracking-tight">Summary</h2>
-              <details className="group [&_summary::-webkit-details-marker]:hidden mb-6 border-b border-gray-100 pb-2">
-                <summary className="flex items-center justify-between cursor-pointer py-2 font-medium text-base text-gray-900 list-none hover:opacity-70 transition-opacity">
-                  Bạn có mã Khuyến mãi?
-                  <span className="transition duration-300 group-open:-rotate-180"><ChevronDown size={20} strokeWidth={1.5} /></span>
-                </summary>
-                <div className="pt-4 pb-6 flex gap-2">
-                  <input type="text" placeholder="Nhập mã" className="flex-1 border border-gray-300 rounded-lg px-4 py-3 outline-none focus:border-black transition-colors font-medium"/>
-                  <button className="bg-white text-gray-900 border border-gray-300 hover:border-black font-medium px-6 py-3 rounded-lg transition-colors">Áp dụng</button>
-                </div>
-              </details>
+          {/* ══════════════════════════════════════════
+              CỘT PHẢI: ORDER SUMMARY
+          ══════════════════════════════════════════ */}
+          <div className="w-full lg:w-[360px] shrink-0">
+            <div className="sticky top-[76px] bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
-              <div className="space-y-4 text-base font-medium border-b border-gray-100 pb-6 mb-6">
-                <div className="flex justify-between text-gray-900"><p>Tạm tính</p><p>{subtotal.toLocaleString('vi-VN')} ₫</p></div>
-                <div className="flex justify-between items-start text-gray-900">
-                  <div className="flex items-center gap-1.5 cursor-pointer hover:underline">Giao hàng & Xử lý <HelpCircle size={14} className="text-gray-500"/></div>
-                  <p>{remainingForFreeship > 0 ? "250.000 ₫" : "Miễn phí"}</p>
-                </div>
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-gray-50">
+                <h2 className="text-[18px] font-black text-gray-900 tracking-tight">
+                  Tóm tắt đơn hàng
+                </h2>
               </div>
 
-              <div className="flex justify-between items-center text-gray-900 font-medium text-[20px] mb-8">
-                <p>Tổng cộng</p>
-                <p>{(subtotal + (remainingForFreeship > 0 ? 250000 : 0)).toLocaleString('vi-VN')} ₫</p>
+              <div className="px-6 py-5 space-y-4">
+
+                {/* Promo code */}
+                <div>
+                  <button
+                    onClick={() => setPromoOpen((v) => !v)}
+                    className="w-full flex items-center justify-between text-[14px] font-semibold text-gray-700
+                               py-2 hover:text-gray-900 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Tag size={15} className="text-gray-400" />
+                      Mã khuyến mãi
+                    </span>
+                    <ChevronRight
+                      size={16}
+                      className={`text-gray-400 transition-transform duration-200 ${promoOpen ? "rotate-90" : ""}`}
+                    />
+                  </button>
+                  {promoOpen && (
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                        placeholder="Nhập mã..."
+                        className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-[14px] font-medium
+                                   outline-none focus:border-gray-900 transition-colors tracking-widest"
+                      />
+                      <button className="bg-gray-900 text-white px-5 rounded-xl text-[14px] font-semibold
+                                         hover:bg-gray-700 transition-colors whitespace-nowrap">
+                        Áp dụng
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-50" />
+
+                {/* Price breakdown */}
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[14px] text-gray-600">
+                    <span>Tạm tính</span>
+                    <span className="font-semibold text-gray-900">{fmt(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-[14px] text-gray-600">
+                    <span className="flex items-center gap-1.5">
+                      <Truck size={14} className="text-gray-400" />
+                      Vận chuyển
+                    </span>
+                    <span className={`font-semibold ${shipping === 0 ? "text-green-600" : "text-gray-900"}`}>
+                      {shipping === 0 ? "Miễn phí" : fmt(shipping)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-100" />
+
+                {/* Total */}
+                <div className="flex justify-between items-center">
+                  <span className="font-black text-gray-900 text-[16px]">Tổng cộng</span>
+                  <span className="font-black text-gray-900 text-[20px]">{fmt(total)}</span>
+                </div>
+
+                {/* VAT note */}
+                <p className="text-[11px] text-gray-400 text-center -mt-1">
+                  Đã bao gồm VAT (nếu có)
+                </p>
+
+                {/* CTA */}
+                <Link
+                  href="/checkout"
+                  className="w-full bg-gray-900 text-white hover:bg-gray-700 font-bold py-4 rounded-2xl
+                             transition-colors text-[15px] flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+                >
+                  Thanh toán ngay
+                  <ArrowRight size={17} />
+                </Link>
+
+                {/* Continue shopping */}
+                <Link
+                  href="/"
+                  className="w-full border border-gray-200 text-gray-600 hover:border-gray-900 hover:text-gray-900
+                             font-semibold py-3 rounded-2xl transition-all text-[14px] flex items-center justify-center gap-1.5"
+                >
+                  Tiếp tục mua sắm
+                </Link>
               </div>
 
-              <Link href="/checkout" className="w-full bg-black text-white hover:bg-gray-800 font-medium py-5 rounded-full transition-colors text-lg shadow-lg active:scale-[0.98] block text-center">
-                Thanh Toán (Checkout)
-              </Link>
+              {/* Security note */}
+              <div className="bg-gray-50 px-6 py-3 flex items-center justify-center gap-2">
+                <Shield size={13} className="text-gray-400" />
+                <span className="text-[11px] text-gray-400 font-medium">
+                  Thanh toán bảo mật 100% — SSL Encrypted
+                </span>
+              </div>
             </div>
           </div>
 

@@ -23,6 +23,13 @@ class DatabaseSeeder extends Seeder
             MasterDataSeeder::class,
         ]);
 
+        // MỚI: TẠO DỮ LIỆU ĐỊA GIỚI HÀNH CHÍNH
+        $this->call([
+            ProvinceSeeder::class,
+            DistrictSeeder::class,
+            WardSeeder::class,
+        ]);
+
         // 4. TẠO SẢN PHẨM & TỒN KHO MẪU
         $this->call([
             ProductSeeder::class,

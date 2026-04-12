@@ -28,10 +28,11 @@ class RolesAndPermissionsSeeder extends Seeder
         // 2. Tạo quyền (Permissions) với guard 'sanctum'
         $permissions = [
             'view-dashboard',
-            'manage-products',
-            'manage-inventory',
-            'manage-orders',
-            'pos-sale',
+            'manage-products',     // Tạo, sửa sản phẩm, danh mục, thương hiệu
+            'manage-inventory',    // Nhập/xuất/chuyển kho, quản lý chi nhánh
+            'manage-orders',       // Xử lý đơn hàng, hoàn trả
+            'pos-sale',            // Truy cập máy tính tiền POS
+            'manage-users',        // Đang chờ phát triển: Quản lý staff, khách hàng
         ];
 
         foreach ($permissions as $permission) {
@@ -39,24 +40,34 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         // 3. Tạo Vai trò (Roles) và Gắn quyền
+        
+        // Thu ngân (Chỉ bán và xem đơn)
         $cashierRole = Role::findOrCreate('cashier', 'sanctum');
         $cashierRole->syncPermissions(['pos-sale', 'manage-orders']);
 
+        // Phụ trách kho (Quản lý hàng vật lý, ko xem doanh thu)
         $warehouseRole = Role::findOrCreate('warehouse-manager', 'sanctum');
         $warehouseRole->syncPermissions(['manage-products', 'manage-inventory']);
 
+        // Quản lý cửa hàng (Xem báo cáo, đổi kho, bán hàng, xử lý khiếu nại - KHÔNG quản lý System Admin)
+        $managerRole = Role::findOrCreate('store-manager', 'sanctum');
+        $managerRole->syncPermissions([
+            'view-dashboard', 'manage-products', 'manage-inventory', 'manage-orders', 'pos-sale'
+        ]);
+
+        // Super Admin (Trùm cuối)
         $superAdminRole = Role::findOrCreate('super-admin', 'sanctum');
-        // Super admin có tất cả permissions để có thể truy cập mọi endpoint
         $superAdminRole->syncPermissions($permissions);
 
+        // Khách thường
         $customerRole = Role::findOrCreate('customer', 'sanctum');
         
-        // 4. Tìm Admin và thăng chức Super Admin
+        // 4. Tìm Admin cũ và thăng chức Super Admin bảo vệ data
         $adminUsers = User::where('role', 'admin')->get();
         foreach ($adminUsers as $admin) {
             $admin->assignRole($superAdminRole);
         }
 
-        $this->command->info('Đã FIX xong hệ thống Phân quyền Sanctum!');
+        $this->command->info('✅ Đã định nghĩa và gắn các nhóm quyền (Roles & Permissions) E-Commerce hoàn chỉnh!');
     }
 }

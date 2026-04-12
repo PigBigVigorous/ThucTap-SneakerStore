@@ -23,11 +23,14 @@ class Order extends Model
     'branch_id',
     'cashier_id',
     'payment_status', // Nên thêm cả trường này nếu chưa có
-    'transaction_id'
+    'transaction_id',
+    'discount_id',
+    'discount_amount'
 ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
     ];
 
     // Quan hệ: Thuộc về 1 Khách hàng (User)
@@ -58,5 +61,11 @@ class Order extends Model
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    // Quan hệ: Thuộc về 1 Mã giảm giá (nếu có áp dụng)
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class);
     }
 }

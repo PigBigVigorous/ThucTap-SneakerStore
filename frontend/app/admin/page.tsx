@@ -1,207 +1,258 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// 🚨 ĐÃ FIX 1: Import Link chuẩn của Next.js
-import Link from "next/link"; 
 import { useAuth } from "../context/AuthContext";
+import Link from "next/link";
 import { adminAPI } from "../services/api";
 import toast from "react-hot-toast";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-// 🚨 ĐÃ FIX 1: Xóa chữ Link ở thư viện Icon
-import { DollarSign, ShoppingBag, Clock, Activity } from "lucide-react"; 
+import { useRouter } from "next/navigation";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
+import {
+  DollarSign, ShoppingBag, Clock, TrendingUp,
+  Package, ClipboardList, ArrowRight, ArrowUpRight,
+} from "lucide-react";
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const fmt = (n: number) =>
+  n >= 1_000_000
+    ? `${(n / 1_000_000).toFixed(1)}M ₫`
+    : `${n.toLocaleString("vi-VN")} ₫`;
+
+function StatCard({
+  label, value, sub, icon: Icon, color,
+}: {
+  label: string; value: string; sub?: string;
+  icon: React.ElementType; color: string;
+}) {
+  return (
+    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex items-center gap-4">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+        <Icon size={22} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[12px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">{label}</p>
+        <p className="text-[22px] font-black text-gray-900 leading-none">{value}</p>
+        {sub && <p className="text-[12px] text-gray-400 mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+const TX_TYPE_MAP: Record<string, { label: string; cls: string }> = {
+  IMPORT:    { label: "Nhập kho",    cls: "bg-blue-50   text-blue-700"   },
+  SALE:      { label: "Bán ra",      cls: "bg-red-50    text-red-700"    },
+  RETURN:    { label: "Hoàn trả",    cls: "bg-green-50  text-green-700"  },
+  TRANSFER:  { label: "Chuyển kho",  cls: "bg-purple-50 text-purple-700" },
+  ADJUSTMENT:{ label: "Điều chỉnh",  cls: "bg-orange-50 text-orange-700" },
+};
+
+// ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
-  const { token } = useAuth();
+  const { token, hasPermission, user } = useAuth();
+  const router = useRouter();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({
-    totalRevenue: 0,
-    totalOrders: 0,
-    pendingOrders: 0,
-    revenueByDay: []
+    totalRevenue: 0, totalOrders: 0, pendingOrders: 0, revenueByDay: [],
   });
   const [loading, setLoading] = useState(true);
 
+  // ── RBAC Redirect Logic ──
   useEffect(() => {
-    const fetchData = async () => {
-      if (!token) return;
+    if (!user || !token) return;
+
+    // Nếu KHÔNG CÓ quyền xem dashboard, tự động chuyển hướng tới trang đầu tiên họ có quyền
+    if (!hasPermission("view-dashboard")) {
+      if (hasPermission("pos-sale")) return router.replace("/admin/pos");
+      if (hasPermission("manage-orders")) return router.replace("/admin/orders");
+      if (hasPermission("manage-products")) return router.replace("/admin/products");
+      if (hasPermission("manage-inventory")) return router.replace("/admin/branches");
+      
+      toast.error("Bạn không có quyền truy cập trang quản trị!");
+      return router.replace("/");
+    }
+  }, [user, token, hasPermission, router]);
+
+  useEffect(() => {
+    if (!token || !hasPermission("view-dashboard")) return;
+    (async () => {
       try {
-        const jsonTx = await adminAPI.getInventoryTransactions(token);
-        const jsonStats = await adminAPI.getStatistics(token);
-
+        const [jsonTx, jsonStats] = await Promise.all([
+          adminAPI.getInventoryTransactions(token),
+          adminAPI.getStatistics(token),
+        ]);
         if (jsonTx.success && jsonStats.success) {
-          setTransactions(jsonTx.data.data);
-          
-          const formattedChartData = jsonStats.data.revenueByDay.map((item: any) => ({
-            name: new Date(item.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
-            "Doanh thu": Number(item.total)
-          }));
-
+          setTransactions(jsonTx.data.data ?? []);
           setStats({
             ...jsonStats.data,
-            revenueByDay: formattedChartData
+            revenueByDay: (jsonStats.data.revenueByDay ?? []).map((d: any) => ({
+              name: new Date(d.date).toLocaleDateString("vi-VN", {
+                day: "2-digit", month: "2-digit",
+              }),
+              revenue: Number(d.total),
+            })),
           });
-
         } else {
-          toast.error("Lỗi phân quyền dữ liệu!");
+          toast.error("Lỗi phân quyền hoặc dữ liệu!");
         }
-      } catch (error) {
-        toast.error("Lỗi lấy dữ liệu Admin!");
+      } catch {
+        toast.error("Lỗi kết nối API Admin!");
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchData();
+    })();
   }, [token]);
 
-  if (loading) return <div className="min-h-screen flex justify-center items-center font-bold text-xl text-gray-500">Đang tải Bảng điều khiển...</div>;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-400 font-semibold animate-pulse">
+        Đang tải bảng điều khiển...
+      </div>
+    );
+
+  const totalRevenue = Number(stats.totalRevenue ?? 0);
 
   return (
-    <main className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        <div className="flex items-center gap-3 border-b border-gray-200 pb-4">
-          <Activity size={32} className="text-red-600" />
-          <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">
-            TỔNG QUAN HỆ THỐNG
-          </h1>
+    <>
+      <div className="space-y-6 max-w-7xl">
+
+        {/* Header */}
+        <div>
+          <h1 className="text-[26px] font-black text-gray-900 tracking-tight">Tổng quan</h1>
+          <p className="text-[13px] text-gray-400 mt-0.5">
+            {new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow">
-            <div className="bg-green-100 text-green-600 p-4 rounded-2xl"><DollarSign size={32} /></div>
-            <div>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Tổng doanh thu</p>
-              <p className="text-3xl font-black text-gray-900">{Number(stats.totalRevenue).toLocaleString('vi-VN')} ₫</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow">
-            <div className="bg-blue-100 text-blue-600 p-4 rounded-2xl"><ShoppingBag size={32} /></div>
-            <div>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Tổng đơn hàng</p>
-              <p className="text-3xl font-black text-gray-900">{stats.totalOrders} <span className="text-lg text-gray-500 font-bold">đơn</span></p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition-shadow">
-            <div className="bg-yellow-100 text-yellow-600 p-4 rounded-2xl"><Clock size={32} /></div>
-            <div>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Đang chờ xử lý</p>
-              <p className="text-3xl font-black text-gray-900">{stats.pendingOrders} <span className="text-lg text-gray-500 font-bold">đơn</span></p>
-            </div>
-          </div>
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <StatCard
+            label="Doanh thu" value={fmt(totalRevenue)}
+            icon={DollarSign} color="bg-emerald-100 text-emerald-600"
+          />
+          <StatCard
+            label="Tổng đơn" value={`${stats.totalOrders}`} sub="đơn hàng"
+            icon={ShoppingBag} color="bg-blue-100 text-blue-600"
+          />
+          <StatCard
+            label="Chờ xử lý" value={`${stats.pendingOrders}`} sub="cần duyệt"
+            icon={Clock} color="bg-amber-100 text-amber-600"
+          />
+          <StatCard
+            label="Tăng trưởng" value="—"
+            icon={TrendingUp} color="bg-purple-100 text-purple-600"
+          />
         </div>
 
-        <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100">
-          <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide mb-6">Biểu đồ doanh thu (7 ngày qua)</h2>
-          <div className="h-80 w-full">
+        {/* Quick links */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { href: "/admin/orders",   icon: ClipboardList, label: "Đơn hàng",  color: "text-blue-600  bg-blue-50" },
+            { href: "/admin/products", icon: Package,       label: "Sản phẩm",  color: "text-orange-600 bg-orange-50" },
+            { href: "/admin/inventory",icon: ArrowUpRight,  label: "Nhập kho",  color: "text-red-600   bg-red-50" },
+            { href: "/admin/pos",      icon: ShoppingBag,   label: "POS",       color: "text-purple-600 bg-purple-50" },
+          ].map(({ href, icon: Icon, label, color }) => (
+            <Link
+              key={href} href={href}
+              className="flex items-center gap-3 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm
+                         hover:shadow-md hover:-translate-y-0.5 transition-all group"
+            >
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+                <Icon size={18} />
+              </div>
+              <span className="font-bold text-[13px] text-gray-700">{label}</span>
+              <ArrowRight size={14} className="ml-auto text-gray-300 group-hover:text-gray-600 transition-colors" />
+            </Link>
+          ))}
+        </div>
+
+        {/* Revenue chart */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 className="text-[15px] font-black text-gray-900 mb-5 uppercase tracking-wide">
+            Doanh thu 7 ngày qua
+          </h2>
+          <div className="h-72 w-full">
             {stats.revenueByDay.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.revenueByDay}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontWeight: 'bold'}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontWeight: 'bold'}} dx={-10} width={80} tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`} />
-                  <Tooltip 
-                    cursor={{fill: '#F3F4F6'}} 
-                    contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                    formatter={(value: number | undefined) => value !== undefined ? [`${value.toLocaleString('vi-VN')} ₫`, 'Doanh thu'] : ['N/A', 'Doanh thu']}
+                <BarChart data={stats.revenueByDay} barSize={36}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false}
+                    tick={{ fill: "#9CA3AF", fontWeight: 600, fontSize: 12 }} dy={8} />
+                  <YAxis axisLine={false} tickLine={false} width={72}
+                    tick={{ fill: "#9CA3AF", fontWeight: 600, fontSize: 11 }}
+                    tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}M`} />
+                  <Tooltip
+                    cursor={{ fill: "#F9FAFB" }}
+                    contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,.08)", fontSize: 13 }}
+                    formatter={(v: number | undefined) => v !== undefined ? [`${v.toLocaleString("vi-VN")} ₫`, "Doanh thu"] : ["—", "Doanh thu"]}
                   />
-                  <Bar dataKey="Doanh thu" fill="#111827" radius={[6, 6, 0, 0]} barSize={40} />
+                  <Bar dataKey="revenue" fill="#0f172a" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-400 font-bold">Chưa có dữ liệu doanh thu tuần này.</div>
+              <div className="h-full flex items-center justify-center text-gray-300 font-semibold">
+                Chưa có dữ liệu doanh thu tuần này
+              </div>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          {/* 🚨 ĐÃ FIX 2: Thêm flex justify-between items-center để đẩy nút sang phải */}
-          <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-            <h2 className="text-lg font-black text-gray-900 uppercase tracking-wide">Biến động kho hàng gần đây</h2>
-            <Link href="/admin/inventory" className="text-sm font-bold text-blue-600 hover:text-blue-800 hover:underline transition-all">
-              Xem tất cả &rarr;
+        {/* Recent transactions */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+            <h2 className="text-[15px] font-black text-gray-900 uppercase tracking-wide">
+              Biến động kho gần đây
+            </h2>
+            <Link href="/admin/inventory"
+              className="text-[12px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+              Xem tất cả <ArrowRight size={13} />
             </Link>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left">
               <thead>
-                <tr className="bg-white text-gray-400 text-xs uppercase tracking-widest border-b border-gray-100">
-                  <th className="p-5 font-bold">Mã GD</th>
-                  <th className="p-5 font-bold">Loại</th>
-                  <th className="p-5 font-bold">Sản phẩm</th>
-                  <th className="p-5 font-bold text-center">Biến động</th>
-                  <th className="p-5 font-bold text-center">Chi nhánh</th>
-                  <th className="p-5 font-bold text-center">Tồn kho HT</th>
+                <tr className="border-b border-gray-50 text-[11px] uppercase tracking-widest text-gray-400">
+                  <th className="px-5 py-3 font-bold">Loại</th>
+                  <th className="px-5 py-3 font-bold">Sản phẩm</th>
+                  <th className="px-5 py-3 font-bold text-center">Biến động</th>
+                  <th className="px-5 py-3 font-bold text-center">Chi nhánh</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {transactions.slice(0, 5).map((tx: any) => (
-                  <tr key={tx.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="p-5 font-bold text-gray-900">#{tx.id}</td>
-                    <td className="p-5">
-                      {(() => {
-                        switch (tx.transaction_type) {
-                          case 'IMPORT':
-                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-600">NHẬP KHO</span>;
-                          case 'SALE':
-                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-red-50 text-red-600">BÁN RA</span>;
-                          case 'RETURN':
-                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-green-50 text-green-600">HOÀN TRẢ</span>;
-                          case 'TRANSFER':
-                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-600">CHUYỂN KHO</span>;
-                          case 'ADJUSTMENT':
-                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-orange-50 text-orange-600">ĐIỀU CHỈNH</span>;
-                          default:
-                            return <span className="px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-gray-100 text-gray-600">{tx.transaction_type}</span>;
-                        }
-                      })()}
-                    </td>
-                    <td className="p-5 font-bold text-gray-700 text-sm">
-                      {tx.variant?.product?.name} ({tx.variant?.color?.name} - {tx.variant?.size?.name})
-                    </td>
-                    <td className="p-5 text-center font-black text-base">
-                      <span className={tx.quantity_change > 0 ? 'text-blue-600' : 'text-red-600'}>
-                        {tx.quantity_change > 0 ? `+${tx.quantity_change}` : tx.quantity_change}
-                      </span>
-                    </td>
-                    <td className="p-5 text-center font-bold text-gray-900">
-                      {tx.transaction_type === 'TRANSFER' 
-                        ? <span className="text-[11px] whitespace-nowrap bg-gray-100 px-2 py-1 rounded">
-                            {tx.from_branch?.name} &rarr; {tx.to_branch?.name}
-                          </span>
-                        : (tx.to_branch?.name || tx.from_branch?.name || <span className="text-gray-400">Hệ thống</span>)
-                      }
-                    </td>
-                    <td className="p-5 text-center font-black text-gray-900">
-                      {(() => {
-                        if (!tx.variant?.branch_stocks) return <span className="text-gray-400">-</span>;
-                        
-                        if (tx.transaction_type === 'TRANSFER') {
-                          const fromStock = tx.variant.branch_stocks.find((bs: any) => bs.branch_id === tx.from_branch_id)?.stock || 0;
-                          const toStock = tx.variant.branch_stocks.find((bs: any) => bs.branch_id === tx.to_branch_id)?.stock || 0;
-                          return (
-                            <div className="flex flex-col text-[11px] leading-tight">
-                              <span className="text-red-600">Xuất còn: {fromStock}</span>
-                              <span className="text-blue-600">Nhập lên: {toStock}</span>
-                            </div>
-                          );
-                        } else {
-                          const branchId = tx.to_branch_id || tx.from_branch_id;
-                          const currentStock = tx.variant.branch_stocks.find((bs: any) => bs.branch_id === branchId)?.stock || 0;
-                          return <span className="text-base">{currentStock}</span>;
-                        }
-                      })()}
-                    </td>
-                  </tr>
-                ))}
+                {transactions.slice(0, 6).map((tx: any) => {
+                  const type = TX_TYPE_MAP[tx.transaction_type] ?? { label: tx.transaction_type, cls: "bg-gray-100 text-gray-600" };
+                  return (
+                    <tr key={tx.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-black uppercase tracking-wide ${type.cls}`}>
+                          {type.label}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-[13px] font-semibold text-gray-700 max-w-[220px] truncate">
+                        {tx.variant?.product?.name}
+                        <span className="font-normal text-gray-400 ml-1">
+                          ({tx.variant?.color?.name} – {tx.variant?.size?.name})
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-center font-black text-[15px]">
+                        <span className={tx.quantity_change > 0 ? "text-blue-600" : "text-red-500"}>
+                          {tx.quantity_change > 0 ? `+${tx.quantity_change}` : tx.quantity_change}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-center text-[13px] font-medium text-gray-600">
+                        {tx.to_branch?.name ?? tx.from_branch?.name ?? "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
 
       </div>
-    </main>
+    </>
   );
 }

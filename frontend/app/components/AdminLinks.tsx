@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "../context/AuthContext";
 // 🚨 THÊM useState và useEffect
 import { useState, useEffect } from "react"; 
-import { LayoutDashboard, ClipboardList, ShoppingCart, Package, ArrowRightLeft, ChevronDown, BarChart3, Store } from 'lucide-react'; 
+import { LayoutDashboard, ClipboardList, ShoppingCart, Package, ArrowRightLeft, ChevronDown, BarChart3, Store, Layers, Tag, Ticket } from 'lucide-react'; 
 
 export default function AdminLinks() {
   const { user, hasPermission, hasRole } = useAuth();
@@ -52,9 +52,27 @@ export default function AdminLinks() {
           </Link>
         )}
 
+        {hasRole('super-admin') && (
+          <Link href="/admin/discounts" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-bold uppercase transition-colors">
+            <Ticket size={16} /> Mã Giảm Giá
+          </Link>
+        )}
+
         {hasPermission('manage-products') && (
           <Link href="/admin/products" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-orange-600 font-bold uppercase transition-colors">
             <Package size={16} /> Sản phẩm
+          </Link>
+        )}
+
+        {hasPermission('manage-products') && (
+          <Link href="/admin/categories" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-bold uppercase transition-colors">
+            <Layers size={16} /> Danh mục
+          </Link>
+        )}
+
+        {hasPermission('manage-products') && (
+          <Link href="/admin/brands" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-rose-600 font-bold uppercase transition-colors">
+            <Tag size={16} /> Thương Hiệu
           </Link>
         )}
 
