@@ -118,6 +118,12 @@ class OrderController extends Controller
 
                 // 4. Cập nhật trạng thái mới
                 $order->status = $newStatus;
+                
+                // Tự động mark Đã thanh toán khi Đã giao hàng thành công
+                if ($newStatus === 'delivered') {
+                    $order->payment_status = 'paid';
+                }
+
                 $order->save();
 
                 return response()->json([

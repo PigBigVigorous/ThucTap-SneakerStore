@@ -68,4 +68,19 @@ class Order extends Model
     {
         return $this->belongsTo(Discount::class);
     }
+
+    /**
+     * Thuộc tính ảo: Địa chỉ đầy đủ
+     */
+    public function getFullAddressAttribute()
+    {
+        $addressParts = array_filter([
+            $this->address_detail,
+            $this->ward,
+            $this->district,
+            $this->province
+        ]);
+
+        return !empty($addressParts) ? implode(', ', $addressParts) : '';
+    }
 }

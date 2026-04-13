@@ -622,3 +622,110 @@ export const adminDiscountAPI = {
   },
 };
 
+// ==========================================
+// 👥 ADMIN STAFF ENDPOINTS
+// ==========================================
+
+export const adminStaffAPI = {
+  // Lấy danh sách nhân viên
+  getAll: async (token: string) => {
+    const res = await fetch(`${API_URL}/admin/staff`, {
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    if (!res.ok) throw new Error("Lỗi tải danh sách nhân viên");
+    return res.json();
+  },
+
+  // Tạo mới nhân viên
+  create: async (data: any, token: string) => {
+    const res = await fetch(`${API_URL}/admin/staff`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || "Lỗi tạo nhân viên");
+    return result;
+  },
+
+  // Cập nhật nhân viên
+  update: async (id: number, data: any, token: string) => {
+    const res = await fetch(`${API_URL}/admin/staff/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || "Lỗi cập nhật nhân viên");
+    return result;
+  },
+
+  // Khóa/Mở khóa tài khoản
+  toggleStatus: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/admin/staff/${id}/toggle-status`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    return res.json();
+  },
+
+  // Xóa nhân viên
+  delete: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/admin/staff/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    return res.json();
+  },
+
+  // Lấy danh sách Roles
+  getRoles: async (token: string) => {
+    const res = await fetch(`${API_URL}/admin/roles`, {
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    return res.json();
+  },
+};
+
+// ==========================================
+// 📊 ADMIN REPORT ENDPOINTS
+// ==========================================
+
+export const adminReportAPI = {
+  // Lấy dữ liệu doanh thu theo kỳ (day, month, year)
+  getRevenue: async (token: string, period: 'day' | 'month' | 'year' = 'day') => {
+    const res = await fetch(`${API_URL}/admin/reports/revenue?period=${period}`, {
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    if (!res.ok) throw new Error("Lỗi tải báo cáo doanh thu");
+    return res.json();
+  },
+
+  // Helper để download file CSV dùng Authorization Header
+  downloadCSV: async (token: string, period: string) => {
+    const res = await fetch(`${API_URL}/admin/reports/revenue/export`, {
+      headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
+    });
+    if (!res.ok) throw new Error("Lỗi xuất file báo cáo");
+    
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bao-cao-doanh-thu-${period}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+};

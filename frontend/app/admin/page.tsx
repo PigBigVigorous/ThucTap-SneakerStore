@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import Link from "next/link";
-import { adminAPI } from "../services/api";
+import { adminAPI, adminReportAPI } from "../services/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import {
@@ -12,6 +12,7 @@ import {
 import {
   DollarSign, ShoppingBag, Clock, TrendingUp,
   Package, ClipboardList, ArrowRight, ArrowUpRight,
+  Download, Filter,
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -58,6 +59,9 @@ export default function AdminDashboard() {
     totalRevenue: 0, totalOrders: 0, pendingOrders: 0, revenueByDay: [],
   });
   const [loading, setLoading] = useState(true);
+  const [reportPeriod, setReportPeriod] = useState<'day' | 'month' | 'year'>('day');
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartLoading, setChartLoading] = useState(false);
 
   // ── RBAC Redirect Logic ──
   useEffect(() => {
@@ -85,15 +89,12 @@ export default function AdminDashboard() {
         ]);
         if (jsonTx.success && jsonStats.success) {
           setTransactions(jsonTx.data.data ?? []);
-          setStats({
-            ...jsonStats.data,
-            revenueByDay: (jsonStats.data.revenueByDay ?? []).map((d: any) => ({
-              name: new Date(d.date).toLocaleDateString("vi-VN", {
-                day: "2-digit", month: "2-digit",
-              }),
-              revenue: Number(d.total),
-            })),
-          });
+          setStats(jsonStats.data);
+          // Initial chart data from statistics (last 7 days)
+          setChartData((jsonStats.data.revenueByDay ?? []).map((d: any) => ({
+            name: formatChartDate(d.date, 'day'),
+            revenue: Number(d.total),
+          })));
         } else {
           toast.error("Lỗi phân quyền hoặc dữ liệu!");
         }
@@ -104,6 +105,46 @@ export default function AdminDashboard() {
       }
     })();
   }, [token]);
+
+  const formatChartDate = (date: string, period: string) => {
+    if (period === 'year') return date;
+    if (period === 'month') {
+      const parts = date.split('-');
+      return `Tháng ${parts[1]}/${parts[0]}`;
+    }
+    return new Date(date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+  };
+
+  const fetchDetailedRevenue = async (period: 'day' | 'month' | 'year') => {
+    if (!token) return;
+    setChartLoading(true);
+    setReportPeriod(period);
+    try {
+      const res = await adminReportAPI.getRevenue(token, period);
+      if (res.success) {
+        setChartData(res.data.map((d: any) => ({
+          name: formatChartDate(d.date, period),
+          revenue: Number(d.total),
+          orders: d.order_count
+        })));
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi tải báo cáo");
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!token) return;
+    const loadingToast = toast.loading("Đang tạo file báo cáo...");
+    try {
+      await adminReportAPI.downloadCSV(token, reportPeriod);
+      toast.success("Xuất báo cáo thành công!", { id: loadingToast });
+    } catch (err: any) {
+      toast.error(err.message || "Lỗi khi xuất file!", { id: loadingToast });
+    }
+  };
 
   if (loading)
     return (
@@ -170,30 +211,74 @@ export default function AdminDashboard() {
 
         {/* Revenue chart */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-[15px] font-black text-gray-900 mb-5 uppercase tracking-wide">
-            Doanh thu 7 ngày qua
-          </h2>
-          <div className="h-72 w-full">
-            {stats.revenueByDay.length > 0 ? (
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+            <h2 className="text-[15px] font-black text-gray-900 uppercase tracking-wide">
+              Phân tích Doanh thu
+            </h2>
+            
+            <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl">
+              {[
+                { key: 'day', label: 'Ngày' },
+                { key: 'month', label: 'Tháng' },
+                { key: 'year', label: 'Năm' },
+              ].map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => fetchDetailedRevenue(p.key as any)}
+                  className={`px-4 py-1.5 rounded-lg text-[12px] font-bold transition-all
+                    ${reportPeriod === p.key 
+                      ? "bg-white text-gray-900 shadow-sm" 
+                      : "text-gray-400 hover:text-gray-600"}`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl
+                         text-[12px] font-bold hover:bg-emerald-100 transition-all ml-auto"
+            >
+              <Download size={14} /> Xuất CSV
+            </button>
+          </div>
+
+          <div className="h-72 w-full relative">
+            {chartLoading && (
+              <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center text-gray-400 font-bold animate-pulse">
+                Đang cập nhật dữ liệu...
+              </div>
+            )}
+            
+            {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.revenueByDay} barSize={36}>
+                <BarChart data={chartData} barSize={reportPeriod === 'day' ? 30 : 50}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                   <XAxis dataKey="name" axisLine={false} tickLine={false}
-                    tick={{ fill: "#9CA3AF", fontWeight: 600, fontSize: 12 }} dy={8} />
+                    tick={{ fill: "#9CA3AF", fontWeight: 600, fontSize: 11 }} dy={8} />
                   <YAxis axisLine={false} tickLine={false} width={72}
                     tick={{ fill: "#9CA3AF", fontWeight: 600, fontSize: 11 }}
-                    tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}M`} />
+                    tickFormatter={(v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(0)}M` : v.toLocaleString()} />
                   <Tooltip
                     cursor={{ fill: "#F9FAFB" }}
-                    contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 16px rgba(0,0,0,.08)", fontSize: 13 }}
-                    formatter={(v: number | undefined) => v !== undefined ? [`${v.toLocaleString("vi-VN")} ₫`, "Doanh thu"] : ["—", "Doanh thu"]}
+                    contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,.1)", fontSize: 13 }}
+                    formatter={(v: number, name: string, props: any) => [
+                      <div key="tip" className="space-y-1">
+                        <p className="font-black text-gray-900">{v.toLocaleString("vi-VN")} ₫</p>
+                        {props.payload.orders !== undefined && (
+                          <p className="text-[11px] text-gray-400 font-bold uppercase">{props.payload.orders} đơn hàng</p>
+                        )}
+                      </div>, 
+                      ""
+                    ]}
                   />
                   <Bar dataKey="revenue" fill="#0f172a" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-300 font-semibold">
-                Chưa có dữ liệu doanh thu tuần này
+              <div className="h-full flex items-center justify-center text-gray-300 font-semibold italic text-[13px]">
+                Không có dữ liệu doanh thu trong kỳ này
               </div>
             )}
           </div>

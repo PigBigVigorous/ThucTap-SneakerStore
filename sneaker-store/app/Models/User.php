@@ -18,6 +18,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'is_active', // Thêm trạng thái hoạt động
         'role', // Thêm role vào fillable để có thể gán giá trị khi tạo người dùng
     ];
 

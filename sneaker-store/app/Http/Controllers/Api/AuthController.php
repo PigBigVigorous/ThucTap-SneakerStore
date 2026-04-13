@@ -65,6 +65,14 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Kiểm tra xem tài khoản có bị khóa không
+        if (!$user->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên!'
+            ], 403);
+        }
+
         
         $user->load('roles');
         $user->setRelation('permissions', $user->getAllPermissions()); // Lấy đủ cả permissions của role

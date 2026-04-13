@@ -1,0 +1,9 @@
+﻿"BÁO CÁO DOANH THU CHI TIẾT"
+"Ngày xuất:","13/04/2026 01:02"
+"Tổng doanh thu:","5.060.000 VNĐ"
+"Tổng số đơn hàng:",2
+"Tổng tiền đã giảm:","0 VNĐ"
+
+STT,"Mã Đơn Hàng","Ngày Đặt","Khách Hàng",Email,"Số Điện Thoại","Chi Tiết Sản Phẩm","Mã Giảm Giá","Giảm Giá (VNĐ)","Phí Ship (VNĐ)","TỔNG TIỀN (VNĐ)","Hình Thức Thanh Toán","Địa Chỉ Giao Hàng"
+1,#ORD-8MA6XR,"12/04/2026 16:12","Trần Nguyễn Gia Khang",khangvaphuc3@gmail.com,0354518017,"Nike Air Force 1 Low [40/Trắng] x1","Không có",0.00,30000,2530000.00,cod,
+2,#ORD-TGFYDK,"12/04/2026 15:05","Trần Nguyễn Gia Khang",khangvaphuc3@gmail.com,0354518017,"Nike Air Force 1 Low [40/Trắng] x1","Không có",0.00,30000,2530000.00,cod,

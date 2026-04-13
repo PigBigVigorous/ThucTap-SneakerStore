@@ -131,6 +131,7 @@ class PosController extends Controller
                 // and set cashier_id to the logged-in admin/staff
                 $order->update([
                     'status' => 'delivered',
+                    'payment_status' => 'paid',
                     'cashier_id' => $request->user()->id,
                 ]);
 

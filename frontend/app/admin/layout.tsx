@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, ClipboardList, Package, Layers,
   Tag, Store, ArrowRightLeft, ShoppingCart, Ticket,
-  LogOut, ChevronRight,
+  LogOut, ChevronRight, Users,
 } from "lucide-react";
 
 const NAV = [
@@ -19,6 +19,7 @@ const NAV = [
   { href: "/admin/branches",  label: "Chi nhánh",    icon: Store,           perm: "manage-inventory" },
   { href: "/admin/inventory", label: "Kho hàng",     icon: ArrowRightLeft,  perm: "manage-inventory" },
   { href: "/admin/pos",       label: "POS",          icon: ShoppingCart,    perm: "pos-sale" },
+  { href: "/admin/staff",     label: "Nhân sự",      icon: Users,           perm: "view-staff" },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {

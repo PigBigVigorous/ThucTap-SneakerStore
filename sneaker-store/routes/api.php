@@ -12,7 +12,7 @@ use App\Http\Controllers\Api\Admin\ProductCatalogController;
 use App\Http\Controllers\Api\Admin\BranchController;
 use App\Models\Order;
 use App\Http\Controllers\Api\PaymentController;
-use App\Http\Controllers\DiscountController;
+use App\Http\Controllers\Api\Admin\ReportController;
 use Illuminate\Support\Facades\DB;
 
 //Route của khách hàng chưa đăng nhập
@@ -142,6 +142,10 @@ Route::middleware('auth:sanctum')->group(function () {
                     ]
                 ]);
             });
+
+            // BÁO CÁO DOANH THU CHI TIẾT
+            Route::get('/reports/revenue', [ReportController::class, 'getRevenueReport']);
+            Route::get('/reports/revenue/export', [ReportController::class, 'exportRevenueCSV']);
         });
         // 1. CHUNG: Trả về danh sách chi nhánh (để đổ vào dropdown kho/chi nhánh)
         // Các quyền: quản lý kho, quản lý sản phẩm, hoặc thu ngân đều cần được đọc
@@ -263,6 +267,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware(['permission:pos-sale,sanctum'])->group(function () {
             Route::get('/pos/products', [PosController::class, 'getProducts']);
             Route::post('/pos/orders', [PosController::class, 'placeOrder']);
+        });
+
+        // QUẢN LÝ NHÂN SỰ
+        // Quyền xem danh sách nhân sự (Dành cho Manager & Admin)
+        Route::middleware(['permission:view-staff,sanctum'])->group(function () {
+            Route::get('/staff', [StaffController::class, 'index']);
+            Route::get('/roles', [StaffController::class, 'getRoles']);
+        });
+
+        // Quyền quản lý chi tiết (Chỉ Admin)
+        Route::middleware(['permission:manage-users,sanctum'])->group(function () {
+            Route::post('/staff', [StaffController::class, 'store']);
+            Route::put('/staff/{id}', [StaffController::class, 'update']);
+            Route::patch('/staff/{id}/toggle-status', [StaffController::class, 'toggleStatus']);
+            Route::delete('/staff/{id}', [StaffController::class, 'destroy']);
         });
     });
 });
