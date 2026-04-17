@@ -56,7 +56,12 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [stats, setStats] = useState<any>({
-    totalRevenue: 0, totalOrders: 0, pendingOrders: 0, revenueByDay: [],
+    totalRevenue: 0,
+    totalOrders: 0,
+    pendingOrders: 0,
+    revenueByDay: [],
+    topProducts: [],
+    lowStockAlerts: [],
   });
   const [loading, setLoading] = useState(true);
   const [reportPeriod, setReportPeriod] = useState<'day' | 'month' | 'year'>('day');
@@ -263,9 +268,9 @@ export default function AdminDashboard() {
                   <Tooltip
                     cursor={{ fill: "#F9FAFB" }}
                     contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,.1)", fontSize: 13 }}
-                    formatter={(v: number, name: string, props: any) => [
+                    formatter={(v: number | string | undefined, name: string | undefined, props: any) => [
                       <div key="tip" className="space-y-1">
-                        <p className="font-black text-gray-900">{v.toLocaleString("vi-VN")} ₫</p>
+                        <p className="font-black text-gray-900">{Number(v ?? 0).toLocaleString("vi-VN")} ₫</p>
                         {props.payload.orders !== undefined && (
                           <p className="text-[11px] text-gray-400 font-bold uppercase">{props.payload.orders} đơn hàng</p>
                         )}
@@ -281,6 +286,95 @@ export default function AdminDashboard() {
                 Không có dữ liệu doanh thu trong kỳ này
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Top selling + Low stock */}
+        <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h2 className="text-[15px] font-black text-gray-900 uppercase tracking-wide">Top sản phẩm bán chạy</h2>
+                <p className="text-[12px] text-gray-400 mt-1">Dựa trên số lượng đã giao</p>
+              </div>
+              <div className="text-[12px] uppercase font-bold text-emerald-600 bg-emerald-50 rounded-full px-3 py-1">
+                Top 5 sản phẩm
+              </div>
+            </div>
+
+            <div className="overflow-x-auto mt-5">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-50 text-[11px] uppercase tracking-widest text-gray-400">
+                    <th className="px-5 py-3 font-bold">#</th>
+                    <th className="px-5 py-3 font-bold">Sản phẩm</th>
+                    <th className="px-5 py-3 font-bold text-right">Đã bán</th>
+                    <th className="px-5 py-3 font-bold text-right">Tồn kho</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {(stats.topProducts ?? []).length > 0 ? (
+                    stats.topProducts.map((item: any, index: number) => (
+                      <tr key={`${item.variant_id}-${index}`} className="hover:bg-gray-50/60 transition-colors">
+                        <td className="px-5 py-3 text-[13px] font-semibold text-gray-700">{index + 1}</td>
+                        <td className="px-5 py-3 text-[13px] font-semibold text-gray-700 max-w-[300px] truncate">
+                          {item.product_name}
+                          <span className="font-normal text-gray-400 ml-1">
+                            ({item.color ?? '—'} / {item.size ?? '—'})
+                          </span>
+                          <div className="text-[12px] text-gray-400 mt-1">SKU: {item.sku ?? 'N/A'}</div>
+                        </td>
+                        <td className="px-5 py-3 text-[13px] font-black text-right text-slate-900">{item.total_sold}</td>
+                        <td className={`px-5 py-3 text-[13px] text-right font-semibold ${item.current_stock <= 5 ? 'text-red-500' : 'text-gray-700'}`}>
+                          {item.current_stock}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="text-center py-8 text-gray-500">Chưa có dữ liệu bán hàng.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h2 className="text-[15px] font-black text-gray-900 uppercase tracking-wide">Cảnh báo tồn kho</h2>
+                <p className="text-[12px] text-gray-400 mt-1">Các biến thể dưới 10 đơn vị</p>
+              </div>
+              <div className="text-[12px] uppercase font-bold text-amber-600 bg-amber-50 rounded-full px-3 py-1">
+                Nguy cơ sắp hết
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              {(stats.lowStockAlerts ?? []).length > 0 ? (
+                stats.lowStockAlerts.map((item: any) => (
+                  <div key={`${item.variant_id}-${item.branch_name}`} className="rounded-2xl border border-red-100 bg-red-50/60 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[13px] font-semibold text-gray-900">{item.product_name}</p>
+                        <p className="text-[12px] text-gray-500 mt-1">
+                          {item.color ?? '—'} / {item.size ?? '—'} • SKU: {item.sku ?? 'N/A'}
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-black uppercase text-red-600">{item.stock} còn lại</span>
+                    </div>
+                    <div className="mt-3 text-[12px] text-gray-600">
+                      Chi nhánh: <span className="font-semibold text-gray-900">{item.branch_name}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-gray-500">
+                  Không có biến thể nào sắp hết kho.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

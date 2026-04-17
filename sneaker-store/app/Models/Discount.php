@@ -21,11 +21,13 @@ class Discount extends Model
         'start_date',
         'expiration_date',
         'is_active',
+        'category_ids',
     ];
 
     protected $casts = [
         'start_date' => 'datetime',
         'expiration_date' => 'datetime',
         'is_active' => 'boolean',
+        'category_ids' => 'array',
     ];
 }

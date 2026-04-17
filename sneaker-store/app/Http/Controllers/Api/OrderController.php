@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Request as FacadesRequest;
 use Illuminate\Support\Str;
 use App\Services\InventoryService;
+use App\Services\OrderNotificationService;
 use App\Models\SalesChannel;
 use App\Models\Branch;
 use App\Models\Order;
@@ -20,11 +21,15 @@ use Exception;
 class OrderController extends Controller
 {
     protected $inventoryService;
+    protected $notificationService;
 
     // Vẫn giữ lại InventoryService phòng trường hợp ngài cần dùng ở các hàm khác
-    public function __construct(InventoryService $inventoryService)
-    {
+    public function __construct(
+        InventoryService $inventoryService,
+        OrderNotificationService $notificationService
+    ) {
         $this->inventoryService = $inventoryService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -62,29 +67,31 @@ class OrderController extends Controller
                 ], 201);
             }
             
+            // Gửi email xác nhận đơn cho COD
+            $this->notificationService->sendOrderConfirmation($order);
+
             // XỬ LÝ COD
             return response()->json([
-                'success' => true, 
-                'message' => 'Đặt hàng thành công!', 
+                'success' => true,
+                'message' => 'Đặt hàng thành công! Email xác nhận sẽ được gửi trong giây lát.',
                 'data' => ['order_tracking_code' => $order->order_tracking_code]
             ], 201);
-            
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         }
     }
 
-private function createVnpayUrl($order)
+    private function createVnpayUrl($order)
     {
         $vnp_Url = env('VNP_URL');
         $vnp_Returnurl = env('VNP_RETURN_URL');
         $vnp_TmnCode = env('VNP_TMN_CODE');
         $vnp_HashSecret = env('VNP_HASH_SECRET');
 
-        $vnp_TxnRef = $order->order_tracking_code; 
+        $vnp_TxnRef = $order->order_tracking_code;
         $vnp_OrderInfo = "Thanh toan don hang " . $order->order_tracking_code;
         $vnp_OrderType = 'billpayment';
-        $vnp_Amount = $order->total_amount * 100; 
+        $vnp_Amount = $order->total_amount * 100;
         $vnp_Locale = 'vn';
         $vnp_IpAddr = FacadesRequest::ip();
 
@@ -109,8 +116,12 @@ private function createVnpayUrl($order)
         $i = 0;
         $hashdata = "";
         foreach ($inputData as $key => $value) {
-            if ($i == 1) { $hashdata .= '&' . urlencode($key) . "=" . urlencode($value); } 
-            else { $hashdata .= urlencode($key) . "=" . urlencode($value); $i = 1; }
+            if ($i == 1) {
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
             $query .= urlencode($key) . "=" . urlencode($value) . '&';
         }
 

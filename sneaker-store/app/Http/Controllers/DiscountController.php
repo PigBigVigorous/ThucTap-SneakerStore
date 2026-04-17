@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Discount;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -37,6 +38,8 @@ class DiscountController extends Controller
             'start_date' => 'nullable|date',
             'expiration_date' => 'nullable|date|after_or_equal:start_date',
             'is_active' => 'boolean',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'required|integer|exists:categories,id',
         ]);
 
         $discount = Discount::create($validated);
@@ -86,6 +89,8 @@ class DiscountController extends Controller
             'start_date' => 'nullable|date',
             'expiration_date' => 'nullable|date|after_or_equal:start_date',
             'is_active' => 'boolean',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'required|integer|exists:categories,id',
         ]);
 
         $discount->update($validated);
@@ -125,11 +130,34 @@ class DiscountController extends Controller
     {
         $request->validate([
             'code' => 'required|string',
-            'order_value' => 'required|numeric|min:0',
+            'order_value' => 'nullable|numeric|min:0',
+            'items' => 'nullable|array',
+            'items.*.variant_id' => 'required_with:items|integer|exists:product_variants,id',
+            'items.*.quantity' => 'required_with:items|integer|min:1',
         ]);
 
         $code = trim($request->code);
         $orderValue = $request->order_value;
+        $items = collect($request->input('items', []));
+
+        $totalAmount = 0;
+        $eligibleAmount = null;
+
+        if ($items->isNotEmpty()) {
+            $variants = ProductVariant::with('product')
+                ->whereIn('id', $items->pluck('variant_id')->unique())
+                ->get()
+                ->keyBy('id');
+
+            foreach ($items as $item) {
+                $variant = $variants->get($item['variant_id']);
+                if (!$variant) continue;
+                $quantity = max(0, (int) $item['quantity']);
+                $totalAmount += $variant->price * $quantity;
+            }
+        } else {
+            $totalAmount = $orderValue ?? 0;
+        }
 
         // Tìm mã giảm giá
         $discount = Discount::where('code', $code)->first();
@@ -162,7 +190,8 @@ class DiscountController extends Controller
         }
 
         // 6. Kiểm tra điều kiện giá trị đơn tối thiểu
-        if ($discount->min_order_value !== null && $orderValue < $discount->min_order_value) {
+        $validationBase = $items->isNotEmpty() ? $totalAmount : ($orderValue ?? 0);
+        if ($discount->min_order_value !== null && $validationBase < $discount->min_order_value) {
             return response()->json([
                 'success' => false, 
                 'message' => 'Đơn hàng chưa đạt giá trị tối thiểu ' . number_format($discount->min_order_value, 0, ',', '.') . 'đ để sử dụng mã này.'
@@ -172,19 +201,43 @@ class DiscountController extends Controller
         // 7. Tính Toán Tiền Giảm
         $discountAmount = 0;
 
+        if ($discount->category_ids && count($discount->category_ids) > 0) {
+            if ($items->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'Cần gửi danh sách sản phẩm để kiểm tra mã này.'], 400);
+            }
+
+            $eligibleAmount = 0;
+            foreach ($items as $item) {
+                $variant = $variants->get($item['variant_id']);
+                if (!$variant || !$variant->product) {
+                    continue;
+                }
+
+                if (in_array($variant->product->category_id, $discount->category_ids)) {
+                    $eligibleAmount += $variant->price * max(0, (int) $item['quantity']);
+                }
+            }
+
+            if ($eligibleAmount <= 0) {
+                return response()->json(['success' => false, 'message' => 'Mã giảm giá chỉ áp dụng cho một số nhóm sản phẩm nhất định.'], 400);
+            }
+        }
+
+        $baseAmount = $eligibleAmount !== null ? $eligibleAmount : $totalAmount;
+
         if ($discount->type === 'fixed') {
             $discountAmount = $discount->value;
         } elseif ($discount->type === 'percent') {
-            $discountAmount = ($orderValue * $discount->value) / 100;
-            // Nếu có max_discount_value thì cap lại
+            $discountAmount = ($baseAmount * $discount->value) / 100;
             if ($discount->max_discount_value !== null && $discountAmount > $discount->max_discount_value) {
                 $discountAmount = $discount->max_discount_value;
             }
         }
 
         // Đảm bảo không giảm quá giá trị đơn hàng
-        if ($discountAmount > $orderValue) {
-            $discountAmount = $orderValue;
+        $clampBase = $items->isNotEmpty() ? $totalAmount : ($orderValue ?? 0);
+        if ($discountAmount > $clampBase) {
+            $discountAmount = $clampBase;
         }
 
         return response()->json([

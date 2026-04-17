@@ -10,7 +10,11 @@ use App\Http\Controllers\Api\Admin\PosController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\ProductCatalogController;
 use App\Http\Controllers\Api\Admin\BranchController;
+use App\Http\Controllers\Api\Admin\StaffController;
+use App\Http\Controllers\DiscountController;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\VariantBranchStock;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Admin\ReportController;
 use Illuminate\Support\Facades\DB;
@@ -132,13 +136,54 @@ Route::middleware('auth:sanctum')->group(function () {
                     ];
                 }
 
+                $topSellingProducts = OrderItem::query()
+                    ->selectRaw('product_variant_id, SUM(quantity) as total_sold')
+                    ->whereHas('order', fn ($query) => $query->where('status', 'delivered'))
+                    ->with(['variant.product', 'variant.size', 'variant.color'])
+                    ->groupBy('product_variant_id')
+                    ->orderByDesc('total_sold')
+                    ->limit(5)
+                    ->get()
+                    ->map(function ($item) {
+                        $variant = $item->variant;
+                        return [
+                            'variant_id' => $item->product_variant_id,
+                            'sku' => $variant?->sku,
+                            'product_name' => $variant?->product?->name ?? 'Sản phẩm',
+                            'size' => $variant?->size?->name,
+                            'color' => $variant?->color?->name,
+                            'total_sold' => (int) $item->total_sold,
+                            'current_stock' => $variant?->total_stock ?? 0,
+                        ];
+                    });
+
+                $lowStockAlerts = VariantBranchStock::query()
+                    ->with(['variant.product', 'variant.size', 'variant.color', 'branch'])
+                    ->where('stock', '<=', 10)
+                    ->orderBy('stock', 'asc')
+                    ->limit(8)
+                    ->get()
+                    ->map(function ($row) {
+                        return [
+                            'branch_name' => $row->branch?->name ?? 'Chi nhánh',
+                            'variant_id' => $row->variant_id,
+                            'sku' => $row->variant?->sku,
+                            'product_name' => $row->variant?->product?->name ?? 'Sản phẩm',
+                            'size' => $row->variant?->size?->name,
+                            'color' => $row->variant?->color?->name,
+                            'stock' => (int) $row->stock,
+                        ];
+                    });
+
                 return response()->json([
                     'success' => true,
                     'data' => [
                         'totalRevenue' => (float) $totalRevenue,
                         'totalOrders' => (int) $totalOrders,
                         'pendingOrders' => (int) $pendingOrders,
-                        'revenueByDay' => $revenueByDay
+                        'revenueByDay' => $revenueByDay,
+                        'topProducts' => $topSellingProducts,
+                        'lowStockAlerts' => $lowStockAlerts,
                     ]
                 ]);
             });
@@ -271,7 +316,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // QUẢN LÝ NHÂN SỰ
         // Quyền xem danh sách nhân sự (Dành cho Manager & Admin)
-        Route::middleware(['permission:view-staff,sanctum'])->group(function () {
+        Route::middleware(['permission:view-staff|manage-users,sanctum'])->group(function () {
             Route::get('/staff', [StaffController::class, 'index']);
             Route::get('/roles', [StaffController::class, 'getRoles']);
         });

@@ -170,11 +170,35 @@ class InventoryService
                     if ($discount->usage_limit !== null && $discount->used_count >= $discount->usage_limit) $isValid = false;
                     if ($discount->min_order_value !== null && $totalAmount < $discount->min_order_value) $isValid = false;
 
+                    $eligibleAmount = null;
+                    if ($discount->category_ids && count($discount->category_ids) > 0) {
+                        $eligibleAmount = 0;
+                        $variantIds = collect($items)->pluck('variant_id')->unique()->toArray();
+                        $variants = ProductVariant::with('product')->whereIn('id', $variantIds)->get()->keyBy('id');
+
+                        foreach ($items as $item) {
+                            $variant = $variants->get($item['variant_id']);
+                            if (!$variant || !$variant->product) {
+                                continue;
+                            }
+
+                            if (in_array($variant->product->category_id, $discount->category_ids)) {
+                                $eligibleAmount += $variant->price * $item['quantity'];
+                            }
+                        }
+
+                        if ($eligibleAmount <= 0) {
+                            $isValid = false;
+                        }
+                    }
+
                     if ($isValid) {
+                        $baseAmount = $eligibleAmount !== null ? $eligibleAmount : $totalAmount;
+
                         if ($discount->type === 'fixed') {
                             $discountAmount = $discount->value;
                         } else {
-                            $discountAmount = ($totalAmount * $discount->value) / 100;
+                            $discountAmount = ($baseAmount * $discount->value) / 100;
                             if ($discount->max_discount_value !== null && $discountAmount > $discount->max_discount_value) {
                                 $discountAmount = $discount->max_discount_value;
                             }

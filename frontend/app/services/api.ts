@@ -70,6 +70,15 @@ export type Discount = {
   start_date?: string | null;
   expiration_date?: string | null;
   is_active: boolean;
+  category_ids?: number[] | null;
+};
+
+export type Category = {
+  id: number;
+  name: string;
+  slug: string;
+  parent_id?: number | null;
+  children?: Category[];
 };
 
 // ==========================================
@@ -197,14 +206,14 @@ export interface OrderPayload {
 
 export const discountAPI = {
   // Khách hàng apply mã giảm giá
-  apply: async (code: string, orderValue: number) => {
+  apply: async (code: string, orderValue: number, items: { variant_id: number; quantity: number }[]) => {
     const res = await fetch(`${API_URL}/discounts/apply`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
-      body: JSON.stringify({ code, order_value: orderValue }),
+      body: JSON.stringify({ code, order_value: orderValue, items }),
     });
     
     // Server có thể trả về lỗi như mã giới hạn, hết hạn...

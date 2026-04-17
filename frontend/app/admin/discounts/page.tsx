@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { adminDiscountAPI, Discount } from "../../services/api";
+import { adminDiscountAPI, adminCategoryAPI, Category, Discount } from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
 import { Ticket, Plus, Trash2, Edit2, X, Check, Save } from "lucide-react";
 
@@ -15,6 +15,7 @@ const emptyForm: FormState = {
   min_order_value: null,
   max_discount_value: null,
   usage_limit: null,
+  category_ids: [],
   start_date: "",
   expiration_date: "",
   is_active: true,
@@ -25,6 +26,8 @@ export default function DiscountsPage() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [originalCategories, setOriginalCategories] = useState<Category[]>([]);
 
   // Form thêm mới
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -46,8 +49,85 @@ export default function DiscountsPage() {
   };
 
   useEffect(() => {
-    if (token) fetchDiscounts();
+    if (token) {
+      fetchDiscounts();
+      fetchCategories();
+    }
   }, [token]);
+
+  const flattenCategories = (items: Category[], prefix = "") => {
+    const uniqueMap = new Map<number, Category>();
+    const flatten = (cats: Category[], pref: string) => {
+      cats.forEach(category => {
+        const label = pref ? `${pref} / ${category.name}` : category.name;
+        uniqueMap.set(category.id, { ...category, name: label });
+        if (category.children && category.children.length > 0) {
+          flatten(category.children, label);
+        }
+      });
+    };
+    flatten(items, prefix);
+    return Array.from(uniqueMap.values());
+  };
+
+  const getAllChildrenIds = (categoryId: number, allCategories: Category[]): number[] => {
+    const category = allCategories.find(c => c.id === categoryId);
+    if (!category || !category.children) return [];
+    const childrenIds: number[] = [];
+    const collect = (cats: Category[]) => {
+      cats.forEach(cat => {
+        childrenIds.push(cat.id);
+        if (cat.children) collect(cat.children);
+      });
+    };
+    collect(category.children);
+    return childrenIds;
+  };
+
+  const toggleCategorySelection = (categoryId: number, currentSelected: number[], allCategories: Category[]) => {
+    const childrenIds = getAllChildrenIds(categoryId, allCategories);
+    const allIds = [categoryId, ...childrenIds];
+    const isCurrentlySelected = currentSelected.includes(categoryId);
+    
+    if (isCurrentlySelected) {
+      // Unselect: remove category and all its children
+      return currentSelected.filter(id => !allIds.includes(id));
+    } else {
+      // Select: add category and all its children
+      const newSelected = [...currentSelected];
+      allIds.forEach(id => {
+        if (!newSelected.includes(id)) newSelected.push(id);
+      });
+      return newSelected;
+    }
+  };
+
+  const getSelectedCount = (selectedIds: number[], allCategories: Category[]) => {
+    // Count only top-level selected categories, not children
+    return selectedIds.filter(id => {
+      const category = allCategories.find(c => c.id === id);
+      return category && !category.parent_id; // Only count root level
+    }).length;
+  };
+
+  const toggleAllCategories = (currentSelected: number[], allCategories: Category[]) => {
+    const allIds = allCategories.map(c => c.id);
+    return currentSelected.length === allIds.length ? [] : allIds;
+  };
+
+  const fetchCategories = async () => {
+    if (!token) return;
+    try {
+      const res = await adminCategoryAPI.getAll(token);
+      if (res.success) {
+        const original = res.data || [];
+        setOriginalCategories(original);
+        setCategories(flattenCategories(original));
+      }
+    } catch {
+      toast.error("Không tải được danh mục sản phẩm");
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +153,7 @@ export default function DiscountsPage() {
         min_order_value: form.min_order_value ? Number(form.min_order_value) : null,
         max_discount_value: form.max_discount_value ? Number(form.max_discount_value) : null,
         usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
+        category_ids: form.category_ids && form.category_ids.length > 0 ? form.category_ids : null,
       };
 
       const res = await adminDiscountAPI.create(payload as any, token);
@@ -98,6 +179,7 @@ export default function DiscountsPage() {
       min_order_value: discount.min_order_value,
       max_discount_value: discount.max_discount_value,
       usage_limit: discount.usage_limit,
+      category_ids: discount.category_ids ?? [],
       start_date: discount.start_date ? new Date(discount.start_date).toISOString().slice(0, 16) : "",
       expiration_date: discount.expiration_date ? new Date(discount.expiration_date).toISOString().slice(0, 16) : "",
       is_active: discount.is_active,
@@ -112,6 +194,7 @@ export default function DiscountsPage() {
         ...editForm,
         start_date: editForm.start_date ? new Date(editForm.start_date).toISOString() : null,
         expiration_date: editForm.expiration_date ? new Date(editForm.expiration_date).toISOString() : null,
+        category_ids: editForm.category_ids && editForm.category_ids.length > 0 ? editForm.category_ids : null,
       };
       const res = await adminDiscountAPI.update(id, payload as any, token);
       if (res.success) {
@@ -274,6 +357,37 @@ export default function DiscountsPage() {
                 </div>
 
                 <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-gray-500">Áp dụng cho nhóm danh mục</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm({ ...form, category_ids: toggleAllCategories(form.category_ids || [], originalCategories) });
+                      }}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                    >
+                      {(form.category_ids || []).length === categories.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                    {categories.map((category) => (
+                      <label key={category.id} className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={(form.category_ids || []).includes(category.id)}
+                          onChange={(e) => {
+                            setForm({ ...form, category_ids: toggleCategorySelection(category.id, form.category_ids || [], originalCategories) });
+                          }}
+                          className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-700 font-medium">{category.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400">Đã chọn {getSelectedCount(form.category_ids || [], originalCategories)} danh mục. Bỏ trống nghĩa là áp dụng cho tất cả sản phẩm.</p>
+                </div>
+
+                <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 space-y-4">
                   {/* Thời gian */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -368,6 +482,37 @@ export default function DiscountsPage() {
                                   <input type="number" value={editForm.value} onChange={e=>setEditForm({...editForm, value: Number(e.target.value)})} className="border rounded-lg p-2 w-full font-bold" />
                                </div>
                             </div>
+                          </div>
+
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-xs text-gray-500 font-bold">Danh mục áp dụng</label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditForm({ ...editForm, category_ids: toggleAllCategories(editForm.category_ids || [], originalCategories) });
+                                }}
+                                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                              >
+                                {(editForm.category_ids || []).length === categories.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                              {categories.map((category) => (
+                                <label key={category.id} className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={(editForm.category_ids || []).includes(category.id)}
+                                    onChange={(e) => {
+                                      setEditForm({ ...editForm, category_ids: toggleCategorySelection(category.id, editForm.category_ids || [], originalCategories) });
+                                    }}
+                                    className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500"
+                                  />
+                                  <span className="text-sm text-gray-700 font-medium">{category.name}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <p className="text-xs text-gray-400 mt-2">Đã chọn {getSelectedCount(editForm.category_ids || [], originalCategories)} danh mục</p>
                           </div>
 
                           <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">

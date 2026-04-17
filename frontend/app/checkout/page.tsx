@@ -153,7 +153,10 @@ export default function CheckoutPage() {
     try {
       // Calculate subtotal to pass to backend check
       const currentSubtotal = cart.reduce((t, i) => t + i.price * i.quantity, 0);
-      const res = await discountAPI.apply(discountCode.trim(), currentSubtotal);
+      const res = await discountAPI.apply(discountCode.trim(), currentSubtotal, cart.map((item) => ({
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+      })));
       if (res.success) {
         setAppliedDiscount({
           code: res.data.code,
