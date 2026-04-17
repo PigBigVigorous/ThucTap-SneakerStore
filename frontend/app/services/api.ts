@@ -721,18 +721,19 @@ export const adminReportAPI = {
     return res.json();
   },
 
-  // Helper để download file CSV dùng Authorization Header
-  downloadCSV: async (token: string, period: string) => {
+  // Helper để download file Excel
+  downloadExcel: async (token: string, period: string) => {
     const res = await fetch(`${API_URL}/admin/reports/revenue/export`, {
       headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
     });
     if (!res.ok) throw new Error("Lỗi xuất file báo cáo");
     
+    // Server trả về Stream nên dùng blob
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bao-cao-doanh-thu-${period}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `bao-cao-doanh-thu-sneaker-${period}-${new Date().toISOString().split('T')[0]}.xlsx`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

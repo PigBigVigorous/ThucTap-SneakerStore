@@ -144,7 +144,7 @@ export default function AdminDashboard() {
     if (!token) return;
     const loadingToast = toast.loading("Đang tạo file báo cáo...");
     try {
-      await adminReportAPI.downloadCSV(token, reportPeriod);
+      await adminReportAPI.downloadExcel(token, reportPeriod);
       toast.success("Xuất báo cáo thành công!", { id: loadingToast });
     } catch (err: any) {
       toast.error(err.message || "Lỗi khi xuất file!", { id: loadingToast });
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
               className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl
                          text-[12px] font-bold hover:bg-emerald-100 transition-all ml-auto"
             >
-              <Download size={14} /> Xuất CSV
+              <Download size={14} /> Xuất Excel
             </button>
           </div>
 
