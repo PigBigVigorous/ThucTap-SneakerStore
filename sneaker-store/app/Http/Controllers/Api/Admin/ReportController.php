@@ -63,8 +63,12 @@ class ReportController extends Controller
         $query = Order::with(['user', 'items.variant.product', 'items.variant.size', 'items.variant.color', 'discount', 'salesChannel', 'branch'])
             ->where('status', 'delivered');
 
-        if ($startDate) $query->where('created_at', '>=', $startDate);
-        if ($endDate) $query->where('created_at', '<=', $endDate);
+        if ($startDate) {
+            $query->where('created_at', '>=', $startDate . ' 00:00:00');
+        }
+        if ($endDate) {
+            $query->where('created_at', '<=', $endDate . ' 23:59:59');
+        }
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();

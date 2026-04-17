@@ -65,6 +65,8 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [reportPeriod, setReportPeriod] = useState<'day' | 'month' | 'year'>('day');
+  const [exportStartDate, setExportStartDate] = useState("");
+  const [exportEndDate, setExportEndDate] = useState("");
   const [chartData, setChartData] = useState<any[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
 
@@ -144,7 +146,7 @@ export default function AdminDashboard() {
     if (!token) return;
     const loadingToast = toast.loading("Đang tạo file báo cáo...");
     try {
-      await adminReportAPI.downloadExcel(token, reportPeriod);
+      await adminReportAPI.downloadExcel(token, reportPeriod, exportStartDate, exportEndDate);
       toast.success("Xuất báo cáo thành công!", { id: loadingToast });
     } catch (err: any) {
       toast.error(err.message || "Lỗi khi xuất file!", { id: loadingToast });
@@ -240,13 +242,33 @@ export default function AdminDashboard() {
               ))}
             </div>
 
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl
-                         text-[12px] font-bold hover:bg-emerald-100 transition-all ml-auto"
-            >
-              <Download size={14} /> Xuất Excel
-            </button>
+            <div className="flex items-center gap-3 ml-auto">
+              {/* Date pickers cho việc xuất file */}
+              <div className="flex items-center justify-between gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm relative z-10 w-full sm:w-auto">
+                  <input 
+                    type="date" 
+                    value={exportStartDate}
+                    onChange={(e) => setExportStartDate(e.target.value)}
+                    className="bg-transparent text-[13px] font-semibold text-gray-700 outline-none cursor-pointer w-full sm:w-[115px]"
+                    title="Từ ngày"
+                  />
+                  <span className="text-gray-300">-</span>
+                  <input 
+                    type="date" 
+                    value={exportEndDate}
+                    onChange={(e) => setExportEndDate(e.target.value)}
+                    className="bg-transparent text-[13px] font-semibold text-gray-700 outline-none cursor-pointer w-full sm:w-[115px]"
+                    title="Đến ngày"
+                  />
+              </div>
+
+              <button
+                onClick={handleExport}
+                className="flex items-center justify-center gap-2 px-4 py-1.5 h-[36px] bg-emerald-50 text-emerald-700 rounded-xl text-[13px] font-bold hover:bg-emerald-100 transition-all shadow-sm shrink-0"
+              >
+                <Download size={15} /> Xuất Excel
+              </button>
+            </div>
           </div>
 
           <div className="h-72 w-full relative">

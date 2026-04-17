@@ -722,8 +722,16 @@ export const adminReportAPI = {
   },
 
   // Helper để download file Excel
-  downloadExcel: async (token: string, period: string) => {
-    const res = await fetch(`${API_URL}/admin/reports/revenue/export`, {
+  downloadExcel: async (token: string, period: string, startDate?: string, endDate?: string) => {
+    let fetchUrl = `${API_URL}/admin/reports/revenue/export`;
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    const qs = params.toString();
+    if (qs) fetchUrl += `?${qs}`;
+
+    const res = await fetch(fetchUrl, {
       headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
     });
     if (!res.ok) throw new Error("Lỗi xuất file báo cáo");
