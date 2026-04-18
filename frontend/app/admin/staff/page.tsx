@@ -4,21 +4,21 @@ import { useState, useEffect } from "react";
 import { adminStaffAPI } from "../../services/api";
 import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
-import { 
-  Users, UserPlus, Shield, Lock, Unlock, 
+import {
+  Users, UserPlus, Shield, Lock, Unlock,
   Trash2, Mail, RefreshCw, Search, X, Check
 } from "lucide-react";
 
 export default function AdminStaffPage() {
   const { token, user: currentUser, hasPermission } = useAuth();
-  
+
   const [staff, setStaff] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Form state
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
@@ -38,7 +38,7 @@ export default function AdminStaffPage() {
         adminStaffAPI.getAll(token),
         adminStaffAPI.getRoles(token)
       ]);
-      
+
       if (staffRes.success) setStaff(staffRes.data || []);
       if (rolesRes.success) setRoles(rolesRes.data || []);
     } catch (err: any) {
@@ -70,7 +70,7 @@ export default function AdminStaffPage() {
   const handleDelete = async (id: number) => {
     if (!token || !canManage) return;
     if (!window.confirm("⚠️ Bạn có chắc muốn xóa nhân viên này? Thao tác này không thể hoàn tác.")) return;
-    
+
     try {
       const res = await adminStaffAPI.delete(id, token);
       if (res.success) {
@@ -87,7 +87,7 @@ export default function AdminStaffPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !canManage) return;
-    
+
     setIsSubmitting(true);
     try {
       if (editingId) {
@@ -129,8 +129,8 @@ export default function AdminStaffPage() {
     setIsModalOpen(true);
   };
 
-  const filteredStaff = staff.filter(u => 
-    u.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredStaff = staff.filter(u =>
+    u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
     u.roles?.[0]?.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -145,7 +145,7 @@ export default function AdminStaffPage() {
           </h1>
           <p className="text-[13px] text-gray-400 mt-1">Quản lý đội ngũ vận hành và phân quyền hệ thống</p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <button
             onClick={fetchData}
@@ -155,7 +155,7 @@ export default function AdminStaffPage() {
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Làm mới
           </button>
-          
+
           {canManage && (
             <button
               onClick={openAddModal}
@@ -178,7 +178,7 @@ export default function AdminStaffPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Tìm tên, email, chức vụ..."
-              className="w-full pl-9 pr-4 py-2 text-[13px] border border-gray-200 rounded-xl outline-none
+              className="w-full pl-9 pr-4 py-2 text-[13px] text-gray-900 border border-gray-200 rounded-xl outline-none
                          focus:border-red-400 transition-colors bg-white font-medium"
             />
           </div>
@@ -255,9 +255,8 @@ export default function AdminStaffPage() {
                             </button>
                             <button
                               onClick={() => handleToggleStatus(u.id)}
-                              className={`p-2 rounded-lg transition-all ${
-                                u.is_active ? "text-amber-500 hover:bg-amber-50" : "text-green-500 hover:bg-green-50"
-                              }`}
+                              className={`p-2 rounded-lg transition-all ${u.is_active ? "text-amber-500 hover:bg-amber-50" : "text-green-500 hover:bg-green-50"
+                                }`}
                               title={u.is_active ? "Khóa tài khoản" : "Mở khóa tài khoản"}
                             >
                               {u.is_active ? <Lock size={16} /> : <Unlock size={16} />}
@@ -291,7 +290,7 @@ export default function AdminStaffPage() {
               <h3 className="text-[18px] font-black text-gray-900 uppercase tracking-tight">
                 {editingId ? "Cập nhật nhân sự" : "Thêm nhân viên mới"}
               </h3>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 hover:bg-gray-200 rounded-full transition-colors"
               >

@@ -17,10 +17,9 @@ type Brand = {
 type FormState = {
   name: string;
   description: string;
-  logo_url: string;
 };
 
-const emptyForm: FormState = { name: "", description: "", logo_url: "" };
+const emptyForm: FormState = { name: "", description: "" };
 
 export default function BrandsPage() {
   const { token } = useAuth();
@@ -60,7 +59,6 @@ export default function BrandsPage() {
         {
           name: form.name.trim(),
           description: form.description.trim() || undefined,
-          logo_url: form.logo_url.trim() || undefined,
         },
         token
       );
@@ -83,7 +81,6 @@ export default function BrandsPage() {
     setEditForm({
       name: brand.name,
       description: brand.description || "",
-      logo_url: brand.logo_url || "",
     });
   };
 
@@ -96,7 +93,6 @@ export default function BrandsPage() {
         {
           name: editForm.name.trim(),
           description: editForm.description.trim() || undefined,
-          logo_url: editForm.logo_url.trim() || undefined,
         },
         token
       );
@@ -164,7 +160,7 @@ export default function BrandsPage() {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="VD: Nike, Adidas, Puma..."
-                    className="w-full border border-gray-300 rounded-xl p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
+                    className="w-full text-gray-900 border border-gray-300 rounded-xl p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all"
                   />
                 </div>
 
@@ -178,35 +174,10 @@ export default function BrandsPage() {
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="Mô tả ngắn về thương hiệu..."
-                    className="w-full border border-gray-300 rounded-xl p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all resize-none"
+                    className="w-full text-gray-900 border border-gray-300 rounded-xl p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all resize-none"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
-                    URL Logo{" "}
-                    <span className="text-gray-400 font-normal">(tùy chọn)</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={form.logo_url}
-                    onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-                    placeholder="https://example.com/logo.png"
-                    className="w-full border border-gray-300 rounded-xl p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none transition-all font-mono text-xs"
-                  />
-                  {form.logo_url && (
-                    <div className="mt-2 flex items-center gap-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={form.logo_url}
-                        alt="Logo preview"
-                        className="h-8 object-contain border border-gray-200 rounded p-1 bg-white"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                      <span className="text-xs text-gray-400">Preview logo</span>
-                    </div>
-                  )}
-                </div>
 
                 <button
                   type="submit"
@@ -268,13 +239,6 @@ export default function BrandsPage() {
                             onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                             className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-rose-400 outline-none"
                             placeholder="Mô tả (tùy chọn)"
-                          />
-                          <input
-                            type="url"
-                            value={editForm.logo_url}
-                            onChange={(e) => setEditForm({ ...editForm, logo_url: e.target.value })}
-                            className="w-full border border-gray-300 rounded-lg p-2.5 text-xs font-mono focus:ring-2 focus:ring-rose-400 outline-none"
-                            placeholder="URL Logo (tùy chọn)"
                           />
                           <div className="flex gap-2 justify-end pt-1">
                             <button

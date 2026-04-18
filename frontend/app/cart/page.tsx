@@ -17,7 +17,7 @@ const fmt = (n: number) => n.toLocaleString("vi-VN") + " ₫";
 
 // ─── Ngưỡng freeship ─────────────────────────────────────────────────────────
 const FREESHIP = 5_000_000;
-const SHIP_FEE = 250_000;
+const SHIP_FEE = 30_000;
 
 // ─── CartPage ─────────────────────────────────────────────────────────────────
 
@@ -27,6 +27,8 @@ export default function CartPage() {
   const removeFromCart  = useCartStore((s) => s.removeFromCart);
   const updateQuantity  = useCartStore((s) => s.updateQuantity);
   const getTotalPrice   = useCartStore((s) => s.getTotalPrice);
+  const toggleSelect    = useCartStore((s) => s.toggleSelect);
+  const toggleSelectAll = useCartStore((s) => s.toggleSelectAll);
 
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const favorites      = useFavoritesStore((s) => s.favorites);
@@ -35,8 +37,11 @@ export default function CartPage() {
   const [promoOpen, setPromoOpen]     = useState(false);
   const [removingId, setRemovingId]   = useState<number | null>(null);
 
+  const selectedCount = items.filter((i) => i.selected !== false).length;
+  const isAllSelected = selectedCount === items.length && items.length > 0;
+
   const subtotal  = getTotalPrice();
-  const shipping  = subtotal >= FREESHIP ? 0 : SHIP_FEE;
+  const shipping  = (subtotal >= FREESHIP || selectedCount === 0) ? 0 : SHIP_FEE;
   const total     = subtotal + shipping;
   const progress  = Math.min((subtotal / FREESHIP) * 100, 100);
   const remaining = FREESHIP - subtotal;
@@ -138,6 +143,21 @@ export default function CartPage() {
               </div>
             </div>
 
+            {/* Select All Bar */}
+            {items.length > 0 && (
+              <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-100 shadow-sm flex items-center justify-between">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={(e) => toggleSelectAll(e.target.checked)}
+                    className="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer"
+                  />
+                  <span className="font-semibold text-gray-900 text-[15px]">Chọn tất cả ({items.length} sản phẩm)</span>
+                </label>
+              </div>
+            )}
+
             {/* Items list */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               {items.map((item, idx) => {
@@ -151,6 +171,16 @@ export default function CartPage() {
                       ${idx !== 0 ? "border-t border-gray-50" : ""}
                       ${isRemoving ? "opacity-0 scale-95 -translate-x-2" : "opacity-100 scale-100 translate-x-0"}`}
                   >
+                    {/* Item Checkbox */}
+                    <div className="flex flex-col justify-center pt-1 sm:pt-2">
+                       <input
+                         type="checkbox"
+                         checked={item.selected !== false}
+                         onChange={() => toggleSelect(item.variant_id)}
+                         className="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer"
+                       />
+                    </div>
+
                     {/* Image */}
                     <Link
                       href={`/product/${item.slug}`}
@@ -360,11 +390,16 @@ export default function CartPage() {
 
                 {/* CTA */}
                 <Link
-                  href="/checkout"
-                  className="w-full bg-gray-900 text-white hover:bg-gray-700 font-bold py-4 rounded-2xl
-                             transition-colors text-[15px] flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+                  href={selectedCount > 0 ? "/checkout" : "#"}
+                  onClick={(e) => {
+                    if (selectedCount === 0) {
+                      e.preventDefault();
+                      toast.error("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
+                    }
+                  }}
+                  className={`w-full ${selectedCount === 0 ? "bg-gray-300 cursor-not-allowed" : "bg-gray-900 hover:bg-gray-700 active:scale-[0.98]"} text-white font-bold py-4 rounded-2xl transition-colors text-[15px] flex items-center justify-center gap-2 shadow-sm`}
                 >
-                  Thanh toán ngay
+                  Thanh toán ngay {selectedCount > 0 ? `(${selectedCount})` : ""}
                   <ArrowRight size={17} />
                 </Link>
 

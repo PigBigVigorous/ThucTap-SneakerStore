@@ -14,6 +14,7 @@ export type CartItem = {
   quantity: number;
   stock: number;
   slug: string;
+  selected?: boolean;
 };
 
 // 2. Định nghĩa các hành động (Actions) của Giỏ hàng
@@ -22,7 +23,10 @@ interface CartState {
   addToCart: (item: CartItem) => void;
   removeFromCart: (variant_id: number) => void;
   updateQuantity: (variant_id: number, quantity: number) => void;
+  toggleSelect: (variant_id: number) => void;
+  toggleSelectAll: (selected: boolean) => void;
   clearCart: () => void;
+  clearSelectedItems: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
 }
@@ -50,7 +54,7 @@ export const useCartStore = create<CartState>()(
               ),
             };
           }
-          return { items: [...state.items, newItem] };
+          return { items: [...state.items, { ...newItem, selected: true }] };
         });
       },
 
@@ -80,17 +84,40 @@ export const useCartStore = create<CartState>()(
         });
       },
 
+      // TOGGLE CHỌN SẢN PHẨM
+      toggleSelect: (variant_id) => {
+        set((state) => ({
+          items: state.items.map((i) =>
+            i.variant_id === variant_id ? { ...i, selected: i.selected === false ? true : false } : i
+          ),
+        }));
+      },
+
+      // CHỌN / BỎ CHỌN TẤT CẢ
+      toggleSelectAll: (selected) => {
+        set((state) => ({
+          items: state.items.map((i) => ({ ...i, selected })),
+        }));
+      },
+
       // XÓA SẠCH GIỎ (Dùng khi đặt hàng xong)
       clearCart: () => set({ items: [] }),
+
+      // XÓA CÁC SẢN PHẨM ĐÃ CHỌN (Sau khi thanh toán thành công)
+      clearSelectedItems: () => {
+        set((state) => ({
+          items: state.items.filter((i) => i.selected === false),
+        }));
+      },
 
       // TÍNH TỔNG SỐ LƯỢNG HÀNG (Dùng cho icon cái túi)
       getTotalItems: () => {
         return get().items.reduce((total, item) => total + item.quantity, 0);
       },
 
-      // TÍNH TỔNG TIỀN (Dùng cho trang Checkout)
+      // TÍNH TỔNG TIỀN (Dùng cho trang Checkout, chỉ tính sản phẩm được chọn)
       getTotalPrice: () => {
-        return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+        return get().items.filter(i => i.selected !== false).reduce((total, item) => total + item.price * item.quantity, 0);
       },
     }),
     {

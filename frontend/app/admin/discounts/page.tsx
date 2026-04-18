@@ -88,7 +88,7 @@ export default function DiscountsPage() {
     const childrenIds = getAllChildrenIds(categoryId, allCategories);
     const allIds = [categoryId, ...childrenIds];
     const isCurrentlySelected = currentSelected.includes(categoryId);
-    
+
     if (isCurrentlySelected) {
       // Unselect: remove category and all its children
       return currentSelected.filter(id => !allIds.includes(id));
@@ -253,10 +253,10 @@ export default function DiscountsPage() {
             <div className="bg-white rounded-3xl shadow-xl shadow-indigo-100/50 border border-indigo-50 p-6 sticky top-24 overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
               <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
-                <Plus size={22} className="text-indigo-500 bg-indigo-50 p-1rounded-lg" /> 
+                <Plus size={22} className="text-indigo-500 bg-indigo-50 p-1rounded-lg" />
                 Phát Hành Voucher Mới
               </h2>
-              
+
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 space-y-4">
                   {/* Mã định danh */}
@@ -283,7 +283,7 @@ export default function DiscountsPage() {
                       <select
                         value={form.type}
                         onChange={(e) => setForm({ ...form, type: e.target.value as 'percent' | 'fixed' })}
-                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full text-gray-900 bg-white border border-gray-200 rounded-xl p-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
                       >
                         <option value="percent">Giảm %</option>
                         <option value="fixed">Giảm tiền mặt (đ)</option>
@@ -302,7 +302,7 @@ export default function DiscountsPage() {
                         value={form.value || ''}
                         onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
                         placeholder={form.type === 'percent' ? "VD: 10" : "VD: 50000"}
-                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full text-gray-900 bg-white border border-gray-200 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
                       />
                     </div>
                   </div>
@@ -321,7 +321,7 @@ export default function DiscountsPage() {
                         value={form.min_order_value || ''}
                         onChange={(e) => setForm({ ...form, min_order_value: e.target.value ? Number(e.target.value) : null })}
                         placeholder="VD: 500000"
-                        className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none"
+                        className="w-full text-gray-900 bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none"
                       />
                     </div>
                     <div>
@@ -335,7 +335,7 @@ export default function DiscountsPage() {
                         value={form.max_discount_value || ''}
                         onChange={(e) => setForm({ ...form, max_discount_value: e.target.value ? Number(e.target.value) : null })}
                         placeholder={form.type === 'fixed' ? 'Bỏ qua' : 'VD: 100000'}
-                        className={`w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none ${form.type==='fixed'?'bg-gray-100 opacity-50':''}`}
+                        className={`w-full text-gray-900 bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none ${form.type === 'fixed' ? 'bg-gray-100 opacity-50' : ''}`}
                       />
                     </div>
                   </div>
@@ -343,7 +343,7 @@ export default function DiscountsPage() {
                   {/* Giới hạn lượt */}
                   <div>
                     <label className="block text-xs font-bold text-gray-500 mb-1">
-                       Giới hạn số lượt dùng (Bỏ trống = Vô hạn)
+                      Giới hạn số lượt dùng (Bỏ trống = Vô hạn)
                     </label>
                     <input
                       type="number"
@@ -351,7 +351,7 @@ export default function DiscountsPage() {
                       value={form.usage_limit || ''}
                       onChange={(e) => setForm({ ...form, usage_limit: e.target.value ? Number(e.target.value) : null })}
                       placeholder="VD: 100 lượt"
-                      className="w-full bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none"
+                      className="w-full text-gray-900 bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none"
                     />
                   </div>
                 </div>
@@ -456,7 +456,7 @@ export default function DiscountsPage() {
                 <div className="divide-y divide-gray-100">
                   {discounts.map((discount) => (
                     <div key={discount.id} className="p-5 hover:bg-gray-50/80 transition-colors group">
-                      
+
                       {/* XEM CHẾ ĐỘ THƯỜNG HOẶC CHỈNH SỬA */}
                       {editingId === discount.id ? (
                         /* CHẾ ĐỘ CHỈNH SỬA NHANH */
@@ -466,21 +466,21 @@ export default function DiscountsPage() {
                           </div>
                           <div className="grid grid-cols-2 gap-4 mb-4">
                             <div>
-                               <label className="text-xs text-gray-500 font-bold mb-1 block">Mã giảm</label>
-                               <input type="text" value={editForm.code} onChange={e=>setEditForm({...editForm, code: e.target.value})} className="border rounded-lg p-2 w-full font-mono text-indigo-700 font-bold" />
+                              <label className="text-xs text-gray-500 font-bold mb-1 block">Mã giảm</label>
+                              <input type="text" value={editForm.code} onChange={e => setEditForm({ ...editForm, code: e.target.value })} className="border rounded-lg p-2 w-full font-mono text-indigo-700 font-bold" />
                             </div>
                             <div className="flex gap-2">
-                               <div className="flex-1">
-                                  <label className="text-xs text-gray-500 font-bold mb-1 block">Loại</label>
-                                  <select value={editForm.type} onChange={e=>setEditForm({...editForm, type: e.target.value as 'percent'|'fixed'})} className="border rounded-lg p-2 w-full">
-                                    <option value="percent">% Ngoại tệ</option>
-                                    <option value="fixed">VND</option>
-                                  </select>
-                               </div>
-                               <div className="flex-1">
-                                  <label className="text-xs text-gray-500 font-bold mb-1 block">Giá trị</label>
-                                  <input type="number" value={editForm.value} onChange={e=>setEditForm({...editForm, value: Number(e.target.value)})} className="border rounded-lg p-2 w-full font-bold" />
-                               </div>
+                              <div className="flex-1">
+                                <label className="text-xs text-gray-500 font-bold mb-1 block">Loại</label>
+                                <select value={editForm.type} onChange={e => setEditForm({ ...editForm, type: e.target.value as 'percent' | 'fixed' })} className="border rounded-lg p-2 w-full">
+                                  <option value="percent">% Ngoại tệ</option>
+                                  <option value="fixed">VND</option>
+                                </select>
+                              </div>
+                              <div className="flex-1">
+                                <label className="text-xs text-gray-500 font-bold mb-1 block">Giá trị</label>
+                                <input type="number" value={editForm.value} onChange={e => setEditForm({ ...editForm, value: Number(e.target.value) })} className="border rounded-lg p-2 w-full font-bold" />
+                              </div>
                             </div>
                           </div>
 
@@ -516,12 +516,12 @@ export default function DiscountsPage() {
                           </div>
 
                           <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
-                             <button onClick={() => setEditingId(null)} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-xl font-bold flex items-center gap-1">
-                                <X size={16} /> Hủy
-                             </button>
-                             <button onClick={() => handleUpdate(discount.id)} className="px-6 py-2 text-sm bg-indigo-600 text-white rounded-xl font-black flex items-center gap-2 hover:bg-indigo-700 shadow-md">
-                                <Save size={16} /> Lưu Thay Đổi
-                             </button>
+                            <button onClick={() => setEditingId(null)} className="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-xl font-bold flex items-center gap-1">
+                              <X size={16} /> Hủy
+                            </button>
+                            <button onClick={() => handleUpdate(discount.id)} className="px-6 py-2 text-sm bg-indigo-600 text-white rounded-xl font-black flex items-center gap-2 hover:bg-indigo-700 shadow-md">
+                              <Save size={16} /> Lưu Thay Đổi
+                            </button>
                           </div>
                         </div>
                       ) : (
@@ -529,40 +529,40 @@ export default function DiscountsPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4 relative">
                           {/* Code Badge */}
                           <div className={`shrink-0 border-l-4 p-4 pl-5 rounded-r-xl ${discount.is_active ? 'bg-indigo-50/50 border-indigo-500' : 'bg-gray-100 border-gray-300'} flex flex-col justify-center`}>
-                             <span className={`font-mono text-xl font-black tracking-widest ${discount.is_active ? 'text-indigo-700' : 'text-gray-400 line-through'}`}>
-                               {discount.code}
-                             </span>
-                             <span className={`text-[11px] font-bold mt-1 uppercase ${discount.type === 'percent' ? 'text-purple-600' : 'text-emerald-600'}`}>
-                               {discount.type === 'percent' ? `Giảm ${discount.value}%` : `Giảm ${formatMoney(discount.value)}`}
-                             </span>
+                            <span className={`font-mono text-xl font-black tracking-widest ${discount.is_active ? 'text-indigo-700' : 'text-gray-400 line-through'}`}>
+                              {discount.code}
+                            </span>
+                            <span className={`text-[11px] font-bold mt-1 uppercase ${discount.type === 'percent' ? 'text-purple-600' : 'text-emerald-600'}`}>
+                              {discount.type === 'percent' ? `Giảm ${discount.value}%` : `Giảm ${formatMoney(discount.value)}`}
+                            </span>
                           </div>
 
                           {/* Stats */}
                           <div className="flex-1 grid grid-cols-2 gap-y-2 gap-x-4 pl-2 text-sm">
-                             <div>
-                               <p className="text-xs text-gray-400">Đơn tối thiểu</p>
-                               <p className="font-semibold text-gray-800">{discount.min_order_value ? formatMoney(discount.min_order_value) : 'Không yêu cầu'}</p>
-                             </div>
-                             <div>
-                               <p className="text-xs text-gray-400">Giảm tối đa</p>
-                               <p className="font-semibold text-gray-800">{discount.type==='percent' && discount.max_discount_value ? formatMoney(discount.max_discount_value) : '-'}</p>
-                             </div>
-                             <div>
-                               <p className="text-xs text-gray-400">Đã dùng / Giới hạn</p>
-                               <p className="font-bold text-gray-800">
-                                 <span className="text-blue-600">{discount.used_count}</span> 
-                                 <span className="text-gray-300 mx-1">/</span> 
-                                 {discount.usage_limit ? discount.usage_limit : '∞'}
-                               </p>
-                             </div>
-                             <div>
-                               <p className="text-xs text-gray-400">Thời hạn</p>
-                               <p className="font-semibold text-gray-800 flex flex-col xl:flex-row xl:gap-2">
-                                 {(!discount.start_date && !discount.expiration_date) && <span className="text-emerald-500">Vĩnh viễn</span>}
-                                 {discount.start_date && <span>Từ: {new Date(discount.start_date).toLocaleDateString('vi-VN')}</span>}
-                                 {discount.expiration_date && <span className="text-rose-500">Đến: {new Date(discount.expiration_date).toLocaleDateString('vi-VN')}</span>}
-                               </p>
-                             </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Đơn tối thiểu</p>
+                              <p className="font-semibold text-gray-800">{discount.min_order_value ? formatMoney(discount.min_order_value) : 'Không yêu cầu'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Giảm tối đa</p>
+                              <p className="font-semibold text-gray-800">{discount.type === 'percent' && discount.max_discount_value ? formatMoney(discount.max_discount_value) : '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Đã dùng / Giới hạn</p>
+                              <p className="font-bold text-gray-800">
+                                <span className="text-blue-600">{discount.used_count}</span>
+                                <span className="text-gray-300 mx-1">/</span>
+                                {discount.usage_limit ? discount.usage_limit : '∞'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Thời hạn</p>
+                              <p className="font-semibold text-gray-800 flex flex-col xl:flex-row xl:gap-2">
+                                {(!discount.start_date && !discount.expiration_date) && <span className="text-emerald-500">Vĩnh viễn</span>}
+                                {discount.start_date && <span>Từ: {new Date(discount.start_date).toLocaleDateString('vi-VN')}</span>}
+                                {discount.expiration_date && <span className="text-rose-500">Đến: {new Date(discount.expiration_date).toLocaleDateString('vi-VN')}</span>}
+                              </p>
+                            </div>
                           </div>
 
                           {/* Actions */}

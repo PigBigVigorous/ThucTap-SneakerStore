@@ -66,4 +66,46 @@ class Product extends Model
         // Lấy danh sách ảnh và sắp xếp theo thứ tự sort_order
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
     }
+
+    public function reviews()
+    {
+        return $this->hasMany(\App\Models\Review::class);
+    }
+
+    /**
+     * Scope tìm kiếm sản phẩm cho Chatbot AI.
+     * Lọc theo thương hiệu (tên) và giá tối đa (từ variants).
+     */
+    public function scopeChatbotSearch($query, $brand = null, $maxPrice = null)
+    {
+        $query->where('is_active', true)
+              ->with([
+                  'brand',
+                  // Eager-load variants kèm branchStocks để tính tồn kho chính xác
+                  'variants' => function ($q) use ($maxPrice) {
+                      if ($maxPrice) {
+                          $q->where('price', '<=', $maxPrice);
+                      }
+                      $q->with('branchStocks')->orderBy('price');
+                  },
+                  'images',
+              ]);
+
+        if ($brand) {
+            $query->whereHas('brand', function ($q) use ($brand) {
+                $q->where('name', 'like', '%' . $brand . '%');
+            });
+        }
+
+        if ($maxPrice) {
+            $query->whereHas('variants', function ($q) use ($maxPrice) {
+                $q->where('price', '<=', $maxPrice)
+                  ->whereHas('branchStocks', function ($sq) {
+                      $sq->where('stock', '>', 0);
+                  });
+            });
+        }
+
+        return $query->limit(6);
+    }
 }

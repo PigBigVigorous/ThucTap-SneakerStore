@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { toCanvas } from "html-to-image";
+import jsPDF from "jspdf";
 import { adminAPI } from "../../services/api";
 import toast from "react-hot-toast";
 import {
@@ -28,7 +30,7 @@ interface CartItem {
 const fmt = (n: number) => Number(n).toLocaleString("vi-VN") + " ₫";
 
 export default function PosPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
@@ -36,12 +38,15 @@ export default function PosPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  
+
   const [branches, setBranches] = useState<any[]>([]);
   const [branchId, setBranchId] = useState<number | "">("");
+  const [currentOrderCode, setCurrentOrderCode] = useState<string | null>(null);
 
   // Payment Calculation
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qr'>('cash');
   const [customerCashStr, setCustomerCashStr] = useState("");
+  const [showQrModal, setShowQrModal] = useState(false);
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
@@ -117,7 +122,7 @@ export default function PosPage() {
 
   // ─── Math ────────────────────────────────────────────────────────────────────
   const totalAmount = cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
-  const totalItems  = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const customerCash = Number(customerCashStr.replace(/\D/g, '')) || 0;
   const change = customerCash - totalAmount;
 
@@ -125,7 +130,7 @@ export default function PosPage() {
   const handleCheckout = async () => {
     if (!cart.length) return toast.error("Giỏ hàng trống!");
     if (!branchId) return toast.error("Chọn chi nhánh!");
-    if (customerCash > 0 && change < 0) return toast.error("Khách đưa chưa đủ tiền!");
+    if (paymentMethod === 'cash' && customerCash > 0 && change < 0) return toast.error("Khách đưa chưa đủ tiền!");
 
     setProcessing(true);
     try {
@@ -133,8 +138,56 @@ export default function PosPage() {
       const response = await adminAPI.posCreateOrder(token!, { items, branch_id: branchId as number });
       if (response.success) {
         toast.success("Thanh toán thành công!", { icon: "✅" });
-        setCart([]);
-        setCustomerCashStr("");
+
+        // Lấy mã đơn hàng từ API (hoặc tạo mã dự phòng)
+        const orderCode = response.data?.order_tracking_code || response.data?.code || response.data?.order_code || `POS-${Date.now()}`;
+        setCurrentOrderCode(orderCode);
+
+        // Tự động in hóa đơn & Xuất PDF sau khi DOM render mã đơn
+        setTimeout(async () => {
+          try {
+            const printElement = document.getElementById("pos-print-invoice");
+            if (printElement) {
+              const canvas = await toCanvas(printElement, {
+                pixelRatio: 2, // Tăng chất lượng ảnh
+                backgroundColor: "#ffffff",
+              });
+
+              const pdfWidth = 80; // Khổ giấy 80mm
+              const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+              const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "mm",
+                format: [pdfWidth, pdfHeight]
+              });
+
+              const imgData = canvas.toDataURL("image/png");
+              pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+              const pdfBlob = pdf.output("blob");
+
+              // Gắn file PDF vào FormData để sẵn sàng gọi API
+              const formData = new FormData();
+              formData.append("pdf_file", pdfBlob, `${orderCode}.pdf`);
+              formData.append("order_code", orderCode);
+
+              // TODO: Thay thế bằng hàm gọi API thực tế của bạn
+              // await adminAPI.uploadInvoicePdf(token!, formData);
+            }
+          } catch (err) {
+            console.error("Lỗi tạo PDF hóa đơn:", err);
+          }
+
+          // Xong xuôi mới gọi in cho khách
+          window.print();
+
+          // Sau khi tắt form in -> Clear dữ liệu
+          setCart([]);
+          setCustomerCashStr("");
+          setCurrentOrderCode(null);
+          setShowQrModal(false);
+        }, 300);
+
         // Reload products quietly
         const reload = await adminAPI.getPosProducts(token!, branchId as number, 100);
         if (reload.success) setProducts(reload.data || []);
@@ -156,280 +209,442 @@ export default function PosPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-80px)] flex gap-4 overflow-hidden -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8 bg-[#f4f6fb]">
-      
-      {/* ════════════════════════════════════════════════════
+    <>
+      <div className="h-[calc(100vh-80px)] flex gap-4 overflow-hidden -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8 bg-[#f4f6fb] print:hidden">
+
+        {/* ════════════════════════════════════════════════════
           BÊN TRÁI: SẢN PHẨM (MÁY POS)
       ════════════════════════════════════════════════════ */}
-      <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden min-w-0">
-        
-        {/* Header POS */}
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white z-10 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
-              <ShoppingCart size={22} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-gray-900 leading-tight">POS Bán Hàng</h1>
-              <p className="text-xs font-semibold text-gray-400">Chọn sản phẩm để thêm vào hóa đơn</p>
-            </div>
-          </div>
+        <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden min-w-0">
 
-          <div className="flex items-center gap-2">
-            <Store className="text-gray-400" size={16} />
-            <select 
-              value={branchId}
-              onChange={(e) => setBranchId(Number(e.target.value))}
-              className="bg-gray-50 border border-gray-200 text-gray-800 text-sm font-bold rounded-lg px-3 py-2 outline-none cursor-pointer hover:border-gray-300 transition-colors"
-            >
-              <option value="" disabled>-- Chọn chi nhánh --</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name} {b.is_main ? "(Kho Tổng)" : ""}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+          {/* Header POS */}
+          <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white z-10 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                <ShoppingCart size={22} />
+              </div>
+              <div>
+                <h1 className="text-xl font-black text-gray-900 leading-tight">POS Bán Hàng</h1>
+                <p className="text-xs font-semibold text-gray-400">Chọn sản phẩm để thêm vào hóa đơn</p>
+              </div>
+            </div>
 
-        {/* Khung Tìm kiếm */}
-        <div className="p-6 pb-2 shrink-0">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              ref={searchRef}
-              autoFocus
-              type="text"
-              placeholder="Quét mã vạch hoặc nhập tên sản phẩm, SKU..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-50 border border-transparent focus:bg-white focus:border-indigo-500 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-gray-900 outline-none transition-all shadow-sm"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+            <div className="flex items-center gap-2">
+              <Store className="text-gray-400" size={16} />
+              <select
+                value={branchId}
+                onChange={(e) => setBranchId(Number(e.target.value))}
+                className="bg-gray-50 border border-gray-200 text-gray-800 text-sm font-bold rounded-lg px-3 py-2 outline-none cursor-pointer hover:border-gray-300 transition-colors"
               >
-                <X size={16} />
-              </button>
+                <option value="" disabled>-- Chọn chi nhánh --</option>
+                {branches.map(b => (
+                  <option key={b.id} value={b.id}>{b.name} {b.is_main ? "(Kho Tổng)" : ""}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Khung Tìm kiếm */}
+          <div className="p-6 pb-2 shrink-0">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                ref={searchRef}
+                autoFocus
+                type="text"
+                placeholder="Quét mã vạch hoặc nhập tên sản phẩm, SKU..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-gray-50 border border-transparent focus:bg-white focus:border-indigo-500 rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-gray-900 outline-none transition-all shadow-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Lưới Sản phẩm (Có thể scroll) */}
+          <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar">
+            {loading ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin" />
+                  <p className="text-sm font-bold text-gray-400">Đang tải kho hàng...</p>
+                </div>
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <ShoppingCart className="w-16 h-16 text-gray-200 mb-4" />
+                <p className="text-gray-400 font-bold">Không tìm thấy sản phẩm</p>
+                <p className="text-xs text-gray-400 mt-1">Thử thay đổi từ khóa hoặc chọn chi nhánh khác</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+                {filteredProducts.map((p) => {
+                  const outOfStock = p.stock <= 0;
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => !outOfStock && addToCart(p)}
+                      className={`group bg-white rounded-2xl border ${outOfStock ? 'border-gray-100 opacity-60' : 'border-gray-100 hover:border-indigo-500 hover:shadow-lg hover:-translate-y-1'} overflow-hidden transition-all cursor-pointer flex flex-col`}
+                    >
+                      {/* Hình ảnh */}
+                      <div className="aspect-square bg-[#f8f9fa] relative overflow-hidden shrink-0">
+                        <img
+                          src={p.image_url || "/placeholder.png"}
+                          alt={p.product.name}
+                          className="w-full h-full object-contain mix-blend-multiply p-4 group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${outOfStock ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-green-700'}`}>
+                            {outOfStock ? "HẾT HÀNG" : `Kho: ${p.stock}`}
+                          </span>
+                        </div>
+                      </div>
+                      {/* Thông tin */}
+                      <div className="p-3.5 flex flex-col flex-1">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">{p.sku}</p>
+                        <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 mb-1.5">{p.product.name}</h3>
+
+                        <div className="flex items-center gap-1.5 mt-auto mb-2 text-[11px] font-semibold text-gray-500">
+                          {p.color && (
+                            <span className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded">
+                              <span className="w-2.5 h-2.5 rounded-full border border-gray-200" style={{ backgroundColor: p.color.hex_code || '#ccc' }} />
+                              {p.color.name}
+                            </span>
+                          )}
+                          {p.size && <span className="bg-gray-50 px-1.5 py-0.5 rounded">{p.size.name}</span>}
+                        </div>
+
+                        <div className="flex items-center justify-between mt-auto">
+                          <span className="text-sm font-black text-indigo-600">{fmt(p.price)}</span>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${outOfStock ? 'bg-gray-100 text-gray-400' : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white'} transition-colors`}>
+                            <Plus size={14} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Lưới Sản phẩm (Có thể scroll) */}
-        <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar">
-          {loading ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin" />
-                <p className="text-sm font-bold text-gray-400">Đang tải kho hàng...</p>
+        {/* ════════════════════════════════════════════════════
+          BÊN PHẢI: HÓA ĐƠN & THANH TOÁN (BILLING)
+      ════════════════════════════════════════════════════ */}
+        <div className="w-[360px] xl:w-[400px] flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden shrink-0">
+
+          {/* Header Giỏ */}
+          <div className="px-5 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
+            <h2 className="text-base font-black text-gray-900 uppercase tracking-widest">Chi tiết đơn</h2>
+            <span className="bg-gray-900 text-white text-xs font-black px-2.5 py-1 rounded-full">
+              {totalItems} MÓN
+            </span>
+          </div>
+
+          {/* Danh sách items */}
+          <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+            {cart.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-gray-300">
+                <ShoppingCart size={40} className="mb-3 opacity-50" />
+                <p className="text-sm font-bold">Chưa có sản phẩm</p>
               </div>
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <ShoppingCart className="w-16 h-16 text-gray-200 mb-4" />
-              <p className="text-gray-400 font-bold">Không tìm thấy sản phẩm</p>
-              <p className="text-xs text-gray-400 mt-1">Thử thay đổi từ khóa hoặc chọn chi nhánh khác</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
-              {filteredProducts.map((p) => {
-                const outOfStock = p.stock <= 0;
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => !outOfStock && addToCart(p)}
-                    className={`group bg-white rounded-2xl border ${outOfStock ? 'border-gray-100 opacity-60' : 'border-gray-100 hover:border-indigo-500 hover:shadow-lg hover:-translate-y-1'} overflow-hidden transition-all cursor-pointer flex flex-col`}
-                  >
-                    {/* Hình ảnh */}
-                    <div className="aspect-square bg-[#f8f9fa] relative overflow-hidden shrink-0">
-                      <img
-                        src={p.image_url || "/placeholder.png"}
-                        alt={p.product.name}
-                        className="w-full h-full object-contain mix-blend-multiply p-4 group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${outOfStock ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-green-700'}`}>
-                          {outOfStock ? "HẾT HÀNG" : `Kho: ${p.stock}`}
-                        </span>
-                      </div>
+            ) : (
+              <div className="space-y-1">
+                {cart.map((item) => (
+                  <div key={item.variant_id} className="group flex gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors relative pr-8">
+                    {/* Icon Xóa góc phải */}
+                    <button
+                      onClick={() => updateQuantity(item.variant_id, 0)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={16} />
+                    </button>
+
+                    <div className="w-14 h-14 bg-white rounded-lg border border-gray-100 overflow-hidden shrink-0 shadow-sm">
+                      <img src={item.product.image_url || "/placeholder.png"} className="w-full h-full object-contain mix-blend-multiply p-1" />
                     </div>
-                    {/* Thông tin */}
-                    <div className="p-3.5 flex flex-col flex-1">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">{p.sku}</p>
-                      <h3 className="text-sm font-bold text-gray-900 leading-snug line-clamp-2 mb-1.5">{p.product.name}</h3>
-                      
-                      <div className="flex items-center gap-1.5 mt-auto mb-2 text-[11px] font-semibold text-gray-500">
-                        {p.color && (
-                          <span className="flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded">
-                            <span className="w-2.5 h-2.5 rounded-full border border-gray-200" style={{ backgroundColor: p.color.hex_code || '#ccc' }} />
-                            {p.color.name}
-                          </span>
-                        )}
-                        {p.size && <span className="bg-gray-50 px-1.5 py-0.5 rounded">{p.size.name}</span>}
+
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <p className="text-xs font-bold text-gray-900 truncate">{item.product.product.name}</p>
+                      <div className="flex items-center gap-1.5 my-1 text-[10px] text-gray-500 font-medium">
+                        <span>{item.product.color?.name}</span> • <span>Size {item.product.size?.name}</span>
                       </div>
 
                       <div className="flex items-center justify-between mt-auto">
-                        <span className="text-sm font-black text-indigo-600">{fmt(p.price)}</span>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${outOfStock ? 'bg-gray-100 text-gray-400' : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white'} transition-colors`}>
-                          <Plus size={14} />
+                        <span className="text-xs font-black text-indigo-600">{fmt(item.product.price)}</span>
+
+                        {/* Bộ đếm số lượng thông minh */}
+                        <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                          <button onClick={() => updateQuantity(item.variant_id, item.quantity - 1)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 text-gray-600">
+                            <Minus size={12} />
+                          </button>
+                          <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.variant_id, item.quantity + 1)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 text-gray-600">
+                            <Plus size={12} />
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ════════════════════════════════════════════════════
-          BÊN PHẢI: HÓA ĐƠN & THANH TOÁN (BILLING)
-      ════════════════════════════════════════════════════ */}
-      <div className="w-[360px] xl:w-[400px] flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden shrink-0">
-        
-        {/* Header Giỏ */}
-        <div className="px-5 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
-          <h2 className="text-base font-black text-gray-900 uppercase tracking-widest">Chi tiết đơn</h2>
-          <span className="bg-gray-900 text-white text-xs font-black px-2.5 py-1 rounded-full">
-            {totalItems} MÓN
-          </span>
-        </div>
-
-        {/* Danh sách items */}
-        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
-          {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-300">
-              <ShoppingCart size={40} className="mb-3 opacity-50" />
-              <p className="text-sm font-bold">Chưa có sản phẩm</p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {cart.map((item) => (
-                <div key={item.variant_id} className="group flex gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors relative pr-8">
-                  {/* Icon Xóa góc phải */}
-                  <button
-                    onClick={() => updateQuantity(item.variant_id, 0)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X size={16} />
-                  </button>
-
-                  <div className="w-14 h-14 bg-white rounded-lg border border-gray-100 overflow-hidden shrink-0 shadow-sm">
-                    <img src={item.product.image_url || "/placeholder.png"} className="w-full h-full object-contain mix-blend-multiply p-1" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0 flex flex-col justify-center">
-                    <p className="text-xs font-bold text-gray-900 truncate">{item.product.product.name}</p>
-                    <div className="flex items-center gap-1.5 my-1 text-[10px] text-gray-500 font-medium">
-                      <span>{item.product.color?.name}</span> • <span>Size {item.product.size?.name}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between mt-auto">
-                      <span className="text-xs font-black text-indigo-600">{fmt(item.product.price)}</span>
-                      
-                      {/* Bộ đếm số lượng thông minh */}
-                      <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                        <button onClick={() => updateQuantity(item.variant_id, item.quantity - 1)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 text-gray-600">
-                          <Minus size={12} />
-                        </button>
-                        <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.variant_id, item.quantity + 1)} className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 text-gray-600">
-                          <Plus size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Khối tính tiền - Sticky Bottom */}
-        <div className="mt-auto bg-white border-t border-gray-100 p-5 shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-          
-          <div className="space-y-3 mb-4">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-500 font-bold">Tạm tính</span>
-              <span className="font-bold text-gray-900">{fmt(totalAmount)}</span>
-            </div>
-            
-            {/* Thu tiền khách */}
-            <div className={`flex justify-between items-center p-3 rounded-xl border ${change < 0 && customerCash > 0 ? 'border-red-200 bg-red-50' : 'border-gray-100 bg-gray-50'}`}>
-              <span className="text-sm font-bold text-gray-700 flex items-center gap-1"><DollarSign size={16}/> Khách đưa</span>
-              <input
-                type="text"
-                value={customerCashStr}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  setCustomerCashStr(val ? Number(val).toLocaleString('vi-VN') : "");
-                }}
-                placeholder="Nhập số tiền..."
-                className="w-28 text-right bg-transparent text-sm font-black outline-none text-gray-900 placeholder:text-gray-300"
-              />
-            </div>
-
-            {/* Trả lại */}
-            {customerCash > 0 && (
-              <div className="flex justify-between items-center text-sm">
-                <span className={`font-bold ${change < 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                  {change < 0 ? 'Còn thiếu' : 'Tiền thừa trả khách'}
-                </span>
-                <span className={`font-black ${change < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  {fmt(Math.abs(change))}
-                </span>
+                ))}
               </div>
             )}
           </div>
 
-          <div className="flex gap-2 mb-4">
-            {[500000, 1000000, 2000000].map((amt) => (
-              <button 
-                key={amt} 
-                onClick={() => addCash(amt)}
-                className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg py-2 text-xs font-black text-gray-600 transition-colors"
-               >
-                +{amt/1000}k
-               </button>
-            ))}
-            <button 
-              onClick={() => setCustomerCashStr(totalAmount.toString())}
-              className="flex-1 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg py-2 text-xs font-black text-green-700 transition-colors"
-            >
-              Vừa đủ
-            </button>
-          </div>
+          {/* Khối tính tiền - Sticky Bottom */}
+          <div className="mt-auto bg-white border-t border-gray-100 p-5 shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
 
-          <div className="border-t border-gray-100 pt-4 mb-4 flex justify-between items-end">
-            <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Tổng tiền hóa đơn</span>
-            <span className="text-3xl font-black text-indigo-600 leading-none">{fmt(totalAmount)}</span>
-          </div>
+            <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
+              <button
+                onClick={() => setPaymentMethod('cash')}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${paymentMethod === 'cash' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Tiền mặt
+              </button>
+              <button
+                onClick={() => setPaymentMethod('qr')}
+                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${paymentMethod === 'qr' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Mã QR
+              </button>
+            </div>
 
-          <div className="flex gap-3">
-            <button className="w-14 h-14 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center hover:bg-gray-200 transition-colors shrink-0">
-              <Printer size={20} />
-            </button>
-            <button
-              onClick={handleCheckout}
-              disabled={!cart.length || processing || (customerCash > 0 && change < 0)}
-              className="flex-1 h-14 bg-indigo-600 disabled:bg-gray-300 text-white rounded-2xl font-black text-base flex items-center justify-center gap-2 hover:bg-indigo-700 hover:shadow-lg transition-all"
-            >
-              {processing ? (
+            <div className="space-y-3 mb-4">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500 font-bold">Tạm tính</span>
+                <span className="font-bold text-gray-900">{fmt(totalAmount)}</span>
+              </div>
+
+              {paymentMethod === 'cash' && (
                 <>
-                  <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin"/> Đang xử lý
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 size={20} /> THANH TOÁN
+                  {/* Thu tiền khách */}
+                  <div className={`flex justify-between items-center p-3 rounded-xl border ${change < 0 && customerCash > 0 ? 'border-red-200 bg-red-50' : 'border-gray-100 bg-gray-50'}`}>
+                    <span className="text-sm font-bold text-gray-700 flex items-center gap-1"><DollarSign size={16} /> Khách đưa</span>
+                    <input
+                      type="text"
+                      value={customerCashStr}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setCustomerCashStr(val ? Number(val).toLocaleString('vi-VN') : "");
+                      }}
+                      placeholder="Nhập số tiền..."
+                      className="w-28 text-right bg-transparent text-sm font-black outline-none text-gray-900 placeholder:text-gray-300"
+                    />
+                  </div>
+
+                  {/* Trả lại */}
+                  {customerCash > 0 && (
+                    <div className="flex justify-between items-center text-sm">
+                      <span className={`font-bold ${change < 0 ? 'text-red-500' : 'text-gray-500'}`}>
+                        {change < 0 ? 'Còn thiếu' : 'Tiền thừa trả khách'}
+                      </span>
+                      <span className={`font-black ${change < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {fmt(Math.abs(change))}
+                      </span>
+                    </div>
+                  )}
                 </>
               )}
-            </button>
+            </div>
+
+            {paymentMethod === 'cash' && (
+              <div className="flex gap-2 mb-4">
+                {[500000, 1000000, 2000000].map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => addCash(amt)}
+                    className="flex-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg py-2 text-xs font-black text-gray-600 transition-colors"
+                  >
+                    +{amt / 1000}k
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCustomerCashStr(totalAmount.toString())}
+                  className="flex-1 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg py-2 text-xs font-black text-green-700 transition-colors"
+                >
+                  Vừa đủ
+                </button>
+              </div>
+            )}
+
+            <div className="border-t border-gray-100 pt-4 mb-4 flex justify-between items-end">
+              <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Tổng tiền hóa đơn</span>
+              <span className="text-3xl font-black text-indigo-600 leading-none">{fmt(totalAmount)}</span>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.print()}
+                disabled={!cart.length}
+                className="w-14 h-14 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center hover:bg-gray-200 transition-colors shrink-0 disabled:opacity-50"
+              >
+                <Printer size={20} />
+              </button>
+              <button
+                onClick={() => paymentMethod === 'qr' ? setShowQrModal(true) : handleCheckout()}
+                disabled={!cart.length || processing || (paymentMethod === 'cash' && customerCash > 0 && change < 0)}
+                className="flex-1 h-14 bg-indigo-600 disabled:bg-gray-300 text-white rounded-2xl font-black text-base flex items-center justify-center gap-2 hover:bg-indigo-700 hover:shadow-lg transition-all"
+              >
+                {processing ? (
+                  <>
+                    <div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Đang xử lý
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={20} /> {paymentMethod === 'qr' ? 'TẠO MÃ QR' : 'THANH TOÁN'}
+                  </>
+                )}
+              </button>
+            </div>
+
           </div>
-
         </div>
-
       </div>
 
-    </div>
+      {/* POS QR Modal */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm print:hidden">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full flex flex-col items-center relative animate-in fade-in zoom-in duration-300">
+            <button onClick={() => setShowQrModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800">
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Thanh toán QR</h2>
+            <p className="text-sm text-gray-500 text-center mb-6">Đưa mã QR này cho khách hàng quét để thanh toán.</p>
+
+            <div className="bg-gray-50 p-4 rounded-xl mb-6 shadow-inner border border-gray-100 flex items-center justify-center">
+              <img
+                src={`/maqrck.png`}
+                alt="QR Code"
+                className="w-full max-w-[220px] h-auto object-contain"
+              />
+            </div>
+
+            <div className="w-full bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center space-y-1 mb-6">
+              <div className="text-xs text-indigo-400 uppercase tracking-widest font-semibold">Cần thu</div>
+              <div className="text-3xl font-black text-indigo-600">{(totalAmount).toLocaleString('vi-VN')} ₫</div>
+            </div>
+
+            <button
+              onClick={() => {
+                handleCheckout();
+              }}
+              disabled={processing}
+              className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-black rounded-2xl transition-colors shadow-lg shadow-green-600/30 flex items-center justify-center gap-2"
+            >
+              {processing ? "Đang xử lý..." : <><CheckCircle2 size={20} /> XÁC NHẬN ĐÃ NHẬN TIỀN</>}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════
+          KHU VỰC ẨN: TEMPLATE HÓA ĐƠN IN FORMAT 80mm
+      ════════════════════════════════════════════════════ */}
+      <style>{`
+        @media print {
+          body {
+            visibility: hidden;
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
+          }
+          #pos-print-invoice {
+            visibility: visible;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 80mm;
+            margin: 0;
+            padding: 5mm;
+            color: #000;
+            font-family: monospace, sans-serif;
+          }
+          #pos-print-invoice * {
+            visibility: visible;
+          }
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
+        }
+      `}</style>
+      
+      {(() => {
+        const currentBranch = branches.find(b => b.id === branchId);
+        return (
+          <div id="pos-print-invoice" className="absolute top-[-9999px] left-[-9999px] w-[80mm] bg-white print:static print:block text-black p-[5mm]">
+            <div className="text-center mb-4">
+              <h2 className="text-[18px] font-bold uppercase tracking-widest leading-none text-black">Sneaker Store</h2>
+              <p className="text-[11px] mt-1 text-black">Đ/c: {currentBranch?.address || '123 Đường Cầu Giấy, Hà Nội'}</p>
+              <p className="text-[11px] text-black">SĐT: {currentBranch?.phone || '0987 654 321'}</p>
+              <h3 className="text-[14px] font-bold mt-3 border-y border-black border-dashed py-1 text-black">HÓA ĐƠN BÁN LẺ</h3>
+              {currentOrderCode && (
+                <p className="text-[12px] font-bold mt-1 text-black uppercase">Mã Đơn: {currentOrderCode}</p>
+              )}
+            </div>
+
+            <div className="flex justify-between text-[11px] mb-2 font-semibold text-black">
+              <span>{new Date().toLocaleDateString('vi-VN')} {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>NV: {user?.name || 'Thu Ngân'}</span>
+            </div>
+
+            <div className="border-b border-black border-dashed mb-2 pb-1 text-[11px] font-bold flex justify-between text-black">
+              <span className="w-1/2">Tên SP</span>
+              <span className="w-1/4 text-center">SL</span>
+              <span className="w-1/4 text-right">TTiền</span>
+            </div>
+
+            <div className="text-[11px] space-y-1 mb-2 border-b border-black border-dashed pb-2 text-black">
+              {cart.map((c, i) => (
+                <div key={i} className="flex justify-between items-start">
+                  <div className="w-1/2 pr-1">
+                    <span className="block leading-tight font-semibold text-black">{c.product.product.name}</span>
+                    <span className="text-[9px] text-gray-800 block">{c.product.color?.name}/{c.product.size?.name}</span>
+                  </div>
+                  <span className="w-1/4 text-center flex items-center justify-center font-bold">{c.quantity}</span>
+                  <span className="w-1/4 text-right flex items-center justify-end font-bold text-black">{fmt(c.product.price * c.quantity)}</span>
+                </div>
+              ))}
+            </div>
+
+        <div className="text-[11px] space-y-1 text-black">
+          <div className="flex justify-between">
+            <span>Tạm tính:</span>
+            <span>{fmt(totalAmount)}</span>
+          </div>
+          {change < 0 ? null : (
+            <>
+              <div className="flex justify-between">
+                <span>Khách đưa:</span>
+                <span>{fmt(customerCash)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tiền thừa:</span>
+                <span>{fmt(Math.abs(change))}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between text-[14px] font-black pt-1 border-t border-black border-dashed mt-1">
+            <span>TỔNG CỘNG:</span>
+            <span>{fmt(totalAmount)}</span>
+          </div>
+        </div>
+
+        <div className="text-center mt-6 text-[11px] italic font-semibold text-black">
+          Cảm ơn quý khách và hẹn gặp lại!
+        </div>
+      </div>
+      );
+    })()}
+
+    </>
   );
 }

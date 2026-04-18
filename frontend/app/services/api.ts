@@ -351,6 +351,19 @@ export const adminAPI = {
     return res.json();
   },
 
+  // Lấy chi tiết đơn hàng (admin)
+  getOrderDetails: async (orderId: number, token: string) => {
+    const res = await fetch(`${API_URL}/admin/orders/${orderId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    if (res.status === 401) throw new Error("UNAUTHORIZED");
+    if (!res.ok) throw new Error("Lỗi khi tải chi tiết đơn hàng");
+    return res.json();
+  },
+
   // Cập nhật trạng thái đơn hàng
   updateOrderStatus: async (orderId: number, status: string, token: string) => {
     const res = await fetch(`${API_URL}/admin/orders/${orderId}/status`, {

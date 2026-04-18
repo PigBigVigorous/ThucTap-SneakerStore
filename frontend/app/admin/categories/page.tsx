@@ -129,7 +129,7 @@ export default function CategoriesPage() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="VD: Giày Chạy Bộ, Giày Lifestyle..."
-                    className="w-full border border-gray-300 rounded-xl p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    className="w-full border border-gray-300 rounded-xl p-3 text-sm text-gray-900 bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   />
                 </div>
 
@@ -141,7 +141,7 @@ export default function CategoriesPage() {
                   <select
                     value={newParentId}
                     onChange={(e) => setNewParentId(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl p-3 text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    className="w-full border border-gray-300 rounded-xl p-3 text-sm text-gray-900 bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   >
                     <option value="">— Danh mục cấp 1 (gốc) —</option>
                     {rootCategories.map((c) => (
