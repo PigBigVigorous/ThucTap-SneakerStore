@@ -16,25 +16,21 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'is_active' => 'boolean', // Ép kiểu về true/false thay vì 1/0
+        'is_active' => 'boolean',
     ];
     
     protected static function booted()
     {
-        // Khi product bị xóa
         static::deleting(function ($product) {
             if ($product->isForceDeleting()) {
-                // Xóa cứng: xóa sạch dữ liệu liên quan
                 $product->variants()->forceDelete();
                 $product->images()->forceDelete();
                 $product->reviews()->forceDelete();
             } else {
-                // Xóa mềm: xóa mềm các variants
                 $product->variants()->delete();
             }
         });
 
-        // Khi product được khôi phục
         static::restoring(function ($product) {
             $product->variants()->restore();
         });
@@ -55,7 +51,6 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    // Một sản phẩm có nhiều biến thể (SKU)
     public function variants()
     {
         return $this->hasMany(ProductVariant::class);
@@ -63,7 +58,6 @@ class Product extends Model
 
     public function images()
     {
-        // Lấy danh sách ảnh và sắp xếp theo thứ tự sort_order
         return $this->hasMany(ProductImage::class)->orderBy('sort_order');
     }
 
@@ -72,4 +66,66 @@ class Product extends Model
         return $this->hasMany(\App\Models\Review::class);
     }
 
+    /**
+     * Scope tìm kiếm cho Chatbot Claude (tool: search_shoe_inventory).
+     * Hỗ trợ lọc theo: product_name, category, color, gender, sizes.
+     */
+    public function scopeSearchInventory($query, array $params = [])
+    {
+        $query->where('is_active', true)
+              ->with([
+                  'brand',
+                  'category.parent',
+                  'images',
+                  'variants' => function ($q) {
+                      $q->with(['color', 'size', 'branchStocks'])->orderBy('price');
+                  },
+              ]);
+
+        // Lọc theo tên sản phẩm
+        if (!empty($params['product_name'])) {
+            $name = $params['product_name'];
+            $query->where('name', 'like', '%' . $name . '%');
+        }
+
+        // Lọc theo danh mục
+        if (!empty($params['category'])) {
+            $cat = $params['category'];
+            $query->whereHas('category', function ($q) use ($cat) {
+                $q->where('name', 'like', '%' . $cat . '%');
+            })->orWhereHas('category.parent', function ($q) use ($cat) {
+                $q->where('name', 'like', '%' . $cat . '%');
+            });
+        }
+
+        // Lọc theo giới tính (qua tên danh mục)
+        if (!empty($params['gender'])) {
+            $gender = $params['gender'];
+            $query->where(function ($q) use ($gender) {
+                $q->whereHas('category', function ($q2) use ($gender) {
+                    $q2->where('name', 'like', '%' . $gender . '%');
+                })->orWhereHas('category.parent', function ($q2) use ($gender) {
+                    $q2->where('name', 'like', '%' . $gender . '%');
+                });
+            });
+        }
+
+        // Lọc theo màu sắc
+        if (!empty($params['color'])) {
+            $color = $params['color'];
+            $query->whereHas('variants.color', function ($q) use ($color) {
+                $q->where('name', 'like', '%' . $color . '%');
+            });
+        }
+
+        // Lọc theo size (mảng)
+        if (!empty($params['sizes']) && is_array($params['sizes'])) {
+            $sizes = $params['sizes'];
+            $query->whereHas('variants.size', function ($q) use ($sizes) {
+                $q->whereIn('name', $sizes);
+            });
+        }
+
+        return $query->limit(6);
+    }
 }

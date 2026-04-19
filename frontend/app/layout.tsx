@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import Providers from "./Providers";
 import Header from "./components/Header";
+import ChatbotWidget from "./components/ChatbotWidget";
 
 const montserrat = Montserrat({
   subsets: ["latin", "vietnamese"],
@@ -43,6 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </div>
 
+          {/* Chatbot AI Widget — Tư vấn chọn giày, hiện trên mọi trang */}
+          <ChatbotWidget />
         </Providers>
       </body>
     </html>

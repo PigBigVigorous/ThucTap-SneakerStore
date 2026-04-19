@@ -18,6 +18,7 @@ use App\Models\VariantBranchStock;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Admin\ReportController;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\ChatbotController;
 
 //Route của khách hàng chưa đăng nhập
 Route::post('/register', [AuthController::class, 'register']);
@@ -35,6 +36,8 @@ Route::get('/payment/vnpay-callback', [PaymentController::class, 'vnpayCallback'
 Route::get('/products/{slug}/reviews', [ProductController::class, 'getReviews']);
 // 2. Sản phẩm liên quan (public)
 Route::get('/products/{slug}/related', [ProductController::class, 'getRelated']);
+// 3. Chatbot AI tư vấn giày — Claude API (public, không cần đăng nhập)
+Route::post('/chatbot', [ChatbotController::class, 'handleChat']);
 
 
 // Master data: Màu sắc & Size & Danh mục (public, không cần auth - để admin form dùng)
