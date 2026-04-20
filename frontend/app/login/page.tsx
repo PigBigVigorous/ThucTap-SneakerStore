@@ -24,7 +24,7 @@ export default function LoginPage() {
       if (data.success && data.data) {
         toast.success("👋 Đăng nhập thành công!");
         login(data.data.user, data.data.token);
-        
+
         setTimeout(() => {
           window.location.href = "/";
         }, 1500);
@@ -51,14 +51,19 @@ export default function LoginPage() {
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Địa chỉ Email</label>
-              <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" placeholder="email@example.com" />
+              <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" placeholder="email@example.com" />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Mật khẩu</label>
-              <input required type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" placeholder="******" />
-            </div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-bold text-gray-700">Mật khẩu</label>
 
+              </div>
+              <input required type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" placeholder="******" />
+            </div>
+            <Link href="/forgot-password" title="Quên mật khẩu?" className="text-xs font-bold text-black hover:text-red-600 transition-colors">
+              Quên mật khẩu?
+            </Link>
             <button type="submit" disabled={loading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all disabled:bg-gray-400">
               {loading ? "Đang xử lý..." : "ĐĂNG NHẬP"}
             </button>

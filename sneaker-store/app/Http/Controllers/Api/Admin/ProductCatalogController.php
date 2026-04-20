@@ -244,11 +244,15 @@ class ProductCatalogController extends Controller
     {
         try {
             $product = Product::findOrFail($id);
-            $product->delete();
-            ProductVariant::where('product_id', $id)->delete();
-            return response()->json(['success' => true, 'message' => 'Đã đưa sản phẩm vào thùng rác!']);
+            $product->is_active = false;
+            $product->save();
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Đã tạm ngưng kinh doanh sản phẩm này (is_active = false)!'
+            ]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Lỗi khi xóa: ' . $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'Lỗi khi cập nhật trạng thái: ' . $e->getMessage()], 500);
         }
     }
 

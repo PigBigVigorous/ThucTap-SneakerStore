@@ -184,9 +184,25 @@ class DiscountController extends Controller
             return response()->json(['success' => false, 'message' => 'Mã giảm giá đã hết hạn.'], 400);
         }
 
-        // 5. Kiểm tra giới hạn lượt dùng
+        // 5. Kiểm tra giới hạn lượt dùng TỔNG
         if ($discount->usage_limit !== null && $discount->used_count >= $discount->usage_limit) {
             return response()->json(['success' => false, 'message' => 'Mã giảm giá đã hết lượt sử dụng.'], 400);
+        }
+
+        // 6. Kiểm tra giới hạn lượt dùng MỖI USER (Mới bổ sung)
+        $user = auth('sanctum')->user();
+        if ($user && $discount->usage_limit_per_user !== null) {
+            $userUsageCount = \App\Models\Order::where('user_id', $user->id)
+                ->where('discount_id', $discount->id)
+                ->whereNotIn('status', ['cancelled', 'returned'])
+                ->count();
+
+            if ($userUsageCount >= $discount->usage_limit_per_user) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Bạn đã sử dụng mã này tối đa ' . $discount->usage_limit_per_user . ' lần.'
+                ], 400);
+            }
         }
 
         // 6. Kiểm tra điều kiện giá trị đơn tối thiểu

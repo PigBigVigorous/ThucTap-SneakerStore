@@ -15,6 +15,13 @@ use Exception;
 
 class InventoryService
 {
+    protected $shippingService;
+
+    public function __construct(ShippingService $shippingService)
+    {
+        $this->shippingService = $shippingService;
+    }
+
     /**
      * Hàm xử lý đặt hàng và trừ kho an toàn (Multi-warehouse support)
      * 
@@ -169,6 +176,18 @@ class InventoryService
                     if ($discount->expiration_date && $now->gt($discount->expiration_date)) $isValid = false;
                     if ($discount->usage_limit !== null && $discount->used_count >= $discount->usage_limit) $isValid = false;
                     if ($discount->min_order_value !== null && $totalAmount < $discount->min_order_value) $isValid = false;
+
+                    // KIỂM TRA GIỚI HẠN LƯỢT DÙNG MỖI USER (Backend safety check)
+                    if ($isValid && $userId && $discount->usage_limit_per_user !== null) {
+                        $userUsageCount = Order::where('user_id', $userId)
+                            ->where('discount_id', $discount->id)
+                            ->whereNotIn('status', ['cancelled', 'returned'])
+                            ->count();
+
+                        if ($userUsageCount >= $discount->usage_limit_per_user) {
+                            $isValid = false;
+                        }
+                    }
 
                     $eligibleAmount = null;
                     if ($discount->category_ids && count($discount->category_ids) > 0) {
@@ -457,26 +476,8 @@ class InventoryService
     /**
      * Thuật toán định vị nội thành để tính phí ship
      */
-    private function calculateShippingFee($province, $district)
+    private function calculateShippingFee($province, $district, $ward = '')
     {
-        $province = mb_strtolower($province ?? '');
-        $district = mb_strtolower($district ?? '');
-
-        $innerHCM = ["quận 1", "quận 3", "quận 4", "quận 5", "quận 6", "quận 7", "quận 8", "quận 10", "quận 11", "tân bình", "tân phú", "phú nhuận", "gò vấp", "bình thạnh"];
-        $innerHN = ["ba đình", "hoàn kiếm", "tây hồ", "long biên", "cầu giấy", "đống đa", "hai bà trưng", "hoàng mai", "thanh xuân", "nam từ liêm", "bắc từ liêm", "hà đông"];
-        $innerDN = ["hải châu", "thanh khê", "sơn trà", "cẩm lệ"];
-
-        $isInnerCity = false;
-
-        // Str::contains hỗ trợ truyền mảng để dò tìm
-        if (\Illuminate\Support\Str::contains($province, "hồ chí minh") && \Illuminate\Support\Str::contains($district, $innerHCM)) {
-            $isInnerCity = true;
-        } elseif (\Illuminate\Support\Str::contains($province, "hà nội") && \Illuminate\Support\Str::contains($district, $innerHN)) {
-            $isInnerCity = true;
-        } elseif (\Illuminate\Support\Str::contains($province, "đà nẵng") && \Illuminate\Support\Str::contains($district, $innerDN)) {
-            $isInnerCity = true;
-        }
-
-        return $isInnerCity ? 0 : 30000;
+        return $this->shippingService->calculateFee($province, $district, $ward);
     }
 }

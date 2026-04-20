@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "../store/useCartStore";
 import { Check, Lock, Package, ChevronRight, Truck, CreditCard, MapPin, User, ShieldCheck, Ticket, Banknote } from "lucide-react";
 import toast from "react-hot-toast";
-import { orderAPI, discountAPI } from "../services/api";
+import { orderAPI, discountAPI, shippingAPI } from "../services/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
@@ -58,6 +58,7 @@ export default function CheckoutPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false); // Khóa nút sau khi đặt thành công
   const [qrModalData, setQrModalData] = useState<{ amount: number; description: string; name: string } | null>(null);
 
   const [provinces, setProvinces] = useState<LocationItem[]>([]);
@@ -76,7 +77,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const subtotal = cart.reduce((t, i) => t + i.price * i.quantity, 0);
   const FREESHIP_THRESHOLD = 5000000;
-  const [shippingFee, setShippingFee] = useState(subtotal >= FREESHIP_THRESHOLD ? 0 : 30000);
+  const [shippingFee, setShippingFee] = useState(0);
 
   // Discount State
   const [discountCode, setDiscountCode] = useState("");
@@ -93,22 +94,30 @@ export default function CheckoutPage() {
       .catch(() => { });
   }, []);
 
-  // Auto calculate shipping
+  // Auto calculate shipping via API
   useEffect(() => {
     if (subtotal >= FREESHIP_THRESHOLD) {
       setShippingFee(0);
       return;
     }
-    const p = formData.province?.toLowerCase() || "";
-    const d = formData.district?.toLowerCase() || "";
-    const innerHCM = ["quận 1", "quận 3", "quận 4", "quận 5", "quận 6", "quận 7", "quận 8", "quận 10", "quận 11", "tân bình", "tân phú", "phú nhuận", "gò vấp", "bình thạnh"];
-    const innerHN = ["ba đình", "hoàn kiếm", "tây hồ", "long biên", "cầu giấy", "đống đa", "hai bà trưng", "hoàng mai", "thanh xuân", "nam từ liêm", "bắc từ liêm", "hà đông"];
-    const innerDN = ["hải châu", "thanh khê", "sơn trà", "cẩm lệ"];
-    const inner = (p.includes("hồ chí minh") && innerHCM.some(x => d.includes(x)))
-      || (p.includes("hà nội") && innerHN.some(x => d.includes(x)))
-      || (p.includes("đà nẵng") && innerDN.some(x => d.includes(x)));
-    setShippingFee(inner ? 0 : 30000);
-  }, [formData.province, formData.district, subtotal]);
+    
+    // Chỉ tính phí khi đã chọn đủ Tỉnh và Huyện
+    if (formData.province && formData.district) {
+      const fetchShippingFee = async () => {
+        try {
+          const res = await shippingAPI.calculateFee(formData.province, formData.district, formData.ward);
+          if (res.success) {
+            setShippingFee(res.shipping_fee);
+          }
+        } catch (error) {
+          console.error("Lỗi tính phí ship:", error);
+          // Fallback nếu API lỗi (giữ lại 30k làm dự phòng)
+          setShippingFee(30000);
+        }
+      };
+      fetchShippingFee();
+    }
+  }, [formData.province, formData.district, formData.ward, subtotal]);
 
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const code = e.target.value;
@@ -222,9 +231,11 @@ export default function CheckoutPage() {
         // Update CÙNG toast ID thành success — nó sẽ hiện trên màn hình dù giỏ hàng bị xóa
         toast.success(msg, { id: toastId, duration: 5000 });
 
+        // Đánh dấu đã đặt xong TRƯỚC khi clear cart để tránh flash "giỏ trống"
+        setOrderPlaced(true);
+        setOrderSuccess(true);
         setQrModalData(null);
         clearSelectedItems();
-        setOrderSuccess(true);
         setTimeout(() => router.push(user ? "/my-orders" : "/"), 3500);
       } else {
         toast.error(data.message || "Có lỗi xảy ra từ máy chủ.", { id: toastId, duration: 5000 });
@@ -236,7 +247,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (cart.length === 0 && !orderSuccess) {
+  if (cart.length === 0 && !orderSuccess && !orderPlaced) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-4">
         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-2">
@@ -433,13 +444,23 @@ export default function CheckoutPage() {
                   <span className="text-xl font-black text-rose-600">{total.toLocaleString('vi-VN')} <span className="text-sm font-bold">₫</span></span>
                 </div>
               </div>
-              <div className="hidden lg:block">
+              <div>
                 <button
                   onClick={handlePreSubmit}
-                  disabled={isLoading || !isFormValid}
-                  className={`w-full py-4 rounded-2xl text-base font-bold transition-all shadow-lg ${isLoading || !isFormValid ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] shadow-gray-900/20'}`}
+                  disabled={isLoading || !isFormValid || orderPlaced}
+                  className={`w-full py-4 rounded-2xl text-base font-bold transition-all shadow-lg ${
+                    orderPlaced
+                      ? 'bg-green-500 text-white cursor-not-allowed'
+                      : isLoading || !isFormValid
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] shadow-gray-900/20'
+                  }`}
                 >
-                  {isLoading ? (
+                  {orderPlaced ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Check size={18} /> Đã đặt hàng thành công!
+                    </span>
+                  ) : isLoading ? (
                     <span className="flex items-center justify-center gap-2">
                       <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                       Đang xử lý...

@@ -134,6 +134,32 @@ export const authAPI = {
     });
     return res.json();
   },
+
+  // Gửi OTP khôi phục mật khẩu
+  forgotPassword: async (email: string) => {
+    const res = await fetch(`${API_URL}/forgot-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+    return res.json();
+  },
+
+  // Đổi mật khẩu mới kèm OTP
+  resetPassword: async (data: { email: string; otp: string; password: string; password_confirmation: string }) => {
+    const res = await fetch(`${API_URL}/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
 };
 
 // ==========================================
@@ -236,6 +262,25 @@ export const paymentAPI = {
     return res.json();
   }
 }
+
+// ==========================================
+// 🚚 SHIPPING ENDPOINTS (Customer)
+// ==========================================
+
+export const shippingAPI = {
+  calculateFee: async (province: string, district: string, ward: string = "") => {
+    const res = await fetch(`${API_URL}/shipping-fee/calculate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ province, district, ward }),
+    });
+    if (!res.ok) throw new Error("Lỗi khi tính phí vận chuyển");
+    return res.json();
+  },
+};
 
 // ==========================================
 // 🛒 ORDER ENDPOINTS (Customer)

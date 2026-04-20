@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\Admin\InventoryController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\PosController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ForgotPasswordController;
+use App\Http\Controllers\Api\ShippingController;
 use App\Http\Controllers\Api\Admin\ProductCatalogController;
 use App\Http\Controllers\Api\Admin\BranchController;
 use App\Http\Controllers\Api\Admin\StaffController;
@@ -23,6 +25,9 @@ use App\Http\Controllers\ChatbotController;
 //Route của khách hàng chưa đăng nhập
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetOtp']);
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
+Route::post('/shipping-fee/calculate', [ShippingController::class, 'calculateFee']);
 Route::get('/products', [ProductController::class, 'index']);
 // ⚠️ Route tĩnh PHẢI đặt TRƯỚC route có tham số động {slug}
 Route::get('/products/price-range', [ProductController::class, 'priceRange']);
