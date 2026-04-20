@@ -33,6 +33,13 @@ class Order extends Model
         'discount_amount' => 'decimal:2',
     ];
 
+    protected $appends = ['shipping_address'];
+
+    public function getShippingAddressAttribute()
+    {
+        return $this->full_address;
+    }
+
     // Quan hệ: Thuộc về 1 Khách hàng (User)
     public function user()
     {
@@ -81,6 +88,11 @@ class Order extends Model
             $this->province
         ]);
 
-        return !empty($addressParts) ? implode(', ', $addressParts) : '';
+        if (empty($addressParts)) {
+            // Nếu có cashier_id hoặc không có các trường địa chỉ thì là mua tại quầy
+            return $this->cashier_id ? 'Mua tại quầy' : '';
+        }
+
+        return implode(', ', $addressParts);
     }
 }

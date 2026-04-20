@@ -64,10 +64,26 @@ class RolesAndPermissionsSeeder extends Seeder
         // Khách thường
         $customerRole = Role::findOrCreate('customer', 'sanctum');
         
-        // 4. Tìm Admin cũ và thăng chức Super Admin bảo vệ data
-        $adminUsers = User::where('role', 'admin')->get();
-        foreach ($adminUsers as $admin) {
+        // 4. Tìm Admin cũ và thăng chức Super Admin
+        $admin = User::where('email', 'admin@sneaker.com')->first();
+        if ($admin) {
             $admin->assignRole($superAdminRole);
+            $admin->update(['role' => 'admin']); 
+        }
+
+        // Gán vai trò cho các tài khoản mẫu khác (Dễ thương dùng cho demo)
+        $staffMap = [
+            'thungan@gmail.com' => 'cashier',
+            'thukho@gmail.com' => 'warehouse-manager',
+            'quanly@gmail.com' => 'store-manager',
+        ];
+
+        foreach ($staffMap as $email => $roleName) {
+            $user = User::where('email', $email)->first();
+            if ($user) {
+                $user->syncRoles([$roleName]);
+                $user->update(['role' => 'staff']);
+            }
         }
 
         $this->command->info('✅ Đã định nghĩa và gắn các nhóm quyền (Roles & Permissions) E-Commerce hoàn chỉnh!');
