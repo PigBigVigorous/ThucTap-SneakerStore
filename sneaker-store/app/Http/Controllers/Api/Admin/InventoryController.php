@@ -19,12 +19,31 @@ class InventoryController extends Controller
         $this->inventoryService = $inventoryService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = InventoryTransaction::with([
+        $query = InventoryTransaction::with([
             'variant.product', 'variant.color', 'variant.size',
             'variant.branchStocks', 'fromBranch', 'toBranch'
-        ])->orderBy('created_at', 'desc')->paginate(15);
+        ]);
+
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->whereHas('variant.product', function($pq) use ($search) {
+                    $pq->where('name', 'LIKE', "%{$search}%");
+                })->orWhereHas('variant', function($vq) use ($search) {
+                    $vq->where('sku', 'LIKE', "%{$search}%");
+                });
+            });
+        }
+
+        if ($request->has('brand_id')) {
+            $query->whereHas('variant.product', function($pq) use ($request) {
+                $pq->where('brand_id', $request->input('brand_id'));
+            });
+        }
+
+        $transactions = $query->orderBy('created_at', 'desc')->paginate(30);
 
         return response()->json(['success' => true, 'message' => 'Lấy danh sách lịch sử kho thành công', 'data' => $transactions]);
     }
@@ -71,6 +90,8 @@ class InventoryController extends Controller
     public function getStocks(Request $request)
     {
         $branchId = $request->query('branch_id');
+        $search = $request->query('search');
+        $brandId = $request->query('brand_id');
         
         // 🚀 SỬA LỖI UI CRASH: Chỉ lấy tồn kho của những Biến thể CHƯA BỊ XÓA (has('variant'))
         $query = \App\Models\VariantBranchStock::has('variant')->with([
@@ -82,6 +103,22 @@ class InventoryController extends Controller
 
         if ($branchId) {
             $query->where('branch_id', $branchId);
+        }
+
+        if ($brandId) {
+            $query->whereHas('variant.product', function($pq) use ($brandId) {
+                $pq->where('brand_id', $brandId);
+            });
+        }
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->whereHas('variant.product', function($pq) use ($search) {
+                    $pq->where('name', 'LIKE', "%{$search}%");
+                })->orWhereHas('variant', function($vq) use ($search) {
+                    $vq->where('sku', 'LIKE', "%{$search}%");
+                });
+            });
         }
 
         return response()->json([

@@ -16,17 +16,31 @@ use App\Http\Requests\ProductUpdateRequest;
 
 class ProductCatalogController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // 🚀 SỬA Ở ĐÂY: Bổ sung 'variants.color' và 'variants.size' vào hàm with() 
-        // để Backend bốc kèm Tên Màu và Tên Size gửi lên cho Frontend!
-        $products = Product::with([
+        $query = Product::with([
             'brand', 
             'category', 
-            'variants.color', // Thêm mới
-            'variants.size',  // Thêm mới
+            'variants.color',
+            'variants.size',
             'images'
-        ])->paginate(15);
+        ]);
+
+        if ($request->has('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('slug', 'LIKE', "%{$search}%")
+                  ->orWhereHas('brand', function($bq) use ($search) {
+                      $bq->where('name', 'LIKE', "%{$search}%");
+                  })
+                  ->orWhereHas('category', function($cq) use ($search) {
+                      $cq->where('name', 'LIKE', "%{$search}%");
+                  });
+            });
+        }
+
+        $products = $query->paginate(30); // Tăng số lượng lên 30 cho admin dễ nhìn
 
         return response()->json([
             'success' => true,

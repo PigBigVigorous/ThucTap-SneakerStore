@@ -457,8 +457,11 @@ export const adminAPI = {
 
 export const adminProductAPI = {
   // Lấy danh sách sản phẩm (admin)
-  getAll: async (token: string) => {
-    const res = await fetch(`${API_URL}/admin/products`, {
+  getAll: async (token: string, search?: string) => {
+    const url = new URL(`${API_URL}/admin/products`);
+    if (search) url.searchParams.set("search", search);
+    
+    const res = await fetch(url.toString(), {
       headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
     });
     return res.json();
@@ -516,14 +519,33 @@ export const adminProductAPI = {
 
 export const adminInventoryAPI = {
   // Lấy lịch sử giao dịch kho
-  getTransactions: async (token: string) => {
-    const res = await fetch(`${API_URL}/admin/inventory/transactions`, {
+  getTransactions: async (token: string, search?: string, brandId?: string) => {
+    const url = new URL(`${API_URL}/admin/inventory/transactions`);
+    if (search) url.searchParams.set("search", search);
+    if (brandId) url.searchParams.set("brand_id", brandId);
+    const res = await fetch(url.toString(), {
       headers: {
         "Authorization": `Bearer ${token}`,
         "Accept": "application/json",
       },
     });
     if (!res.ok) throw new Error("Lỗi khi tải giao dịch kho");
+    return res.json();
+  },
+
+  // Lấy tồn kho hiện tại
+  getStocks: async (token: string, branchId: string = "", search?: string, brandId?: string) => {
+    const url = new URL(`${API_URL}/admin/inventory/stocks`);
+    if (branchId) url.searchParams.set("branch_id", branchId);
+    if (search) url.searchParams.set("search", search);
+    if (brandId) url.searchParams.set("brand_id", brandId);
+    const res = await fetch(url.toString(), {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    if (!res.ok) throw new Error("Lỗi khi tải dữ liệu tồn khi");
     return res.json();
   },
 

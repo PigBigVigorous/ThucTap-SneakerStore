@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { adminInventoryAPI } from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
+import { Search } from "lucide-react";
 
 export default function InventoryPage() {
   const { token } = useAuth();
@@ -12,13 +13,16 @@ export default function InventoryPage() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [branches, setBranches] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   
   // 🚨 STATE CHO BẢNG TỒN KHO
   const [stocks, setStocks] = useState<any[]>([]);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState("");
+  const [selectedBrandFilter, setSelectedBrandFilter] = useState("");
 
   // 🚨 STATE CHO FORM NHẬP KHO TỔNG (MỚI THÊM)
   const [importForm, setImportForm] = useState({
@@ -36,9 +40,14 @@ export default function InventoryPage() {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
   useEffect(() => {
-    if (activeTab === "history" && token) fetchTransactions();
-    if (activeTab === "stocks" && token) fetchStocks(selectedBranchFilter);
-  }, [activeTab, token, selectedBranchFilter]);
+    if (token) {
+      const timer = setTimeout(() => {
+        if (activeTab === "history") fetchTransactions();
+        if (activeTab === "stocks") fetchStocks(selectedBranchFilter);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, token, selectedBranchFilter, selectedBrandFilter, searchTerm]);
 
   useEffect(() => {
     if ((activeTab === "import" || activeTab === "transfer" || activeTab === "adjust" || activeTab === "stocks") && token) {
@@ -50,14 +59,9 @@ export default function InventoryPage() {
   const fetchStocks = async (branchId = "") => {
     setLoading(true);
     try {
-      const url = branchId 
-        ? `${baseUrl}/admin/inventory/stocks?branch_id=${branchId}` 
-        : `${baseUrl}/admin/inventory/stocks`;
-        
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success) {
-        setStocks(data.data || []);
+      const res = await adminInventoryAPI.getStocks(token || "", branchId, searchTerm, selectedBrandFilter);
+      if (res.success) {
+        setStocks(res.data || []);
       } else {
         toast.error(data.message || "Lỗi khi tải dữ liệu tồn kho");
       }
@@ -71,7 +75,7 @@ export default function InventoryPage() {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const res = await adminInventoryAPI.getTransactions(token || "");
+      const res = await adminInventoryAPI.getTransactions(token || "", searchTerm, selectedBrandFilter);
       if (res.success) setTransactions(res.data.data || []);
     } catch (error) {}
     setLoading(false);
@@ -82,9 +86,14 @@ export default function InventoryPage() {
       const branchRes = await fetch(`${baseUrl}/admin/branches`, { headers: { Authorization: `Bearer ${token}` } });
       const branchData = await branchRes.json();
       if (branchData.success) {
-        // Fix lỗi mảng cho branch
         const branchArray = Array.isArray(branchData.data) ? branchData.data : (Array.isArray(branchData.data?.data) ? branchData.data.data : []);
         setBranches(branchArray);
+      }
+
+      const brandRes = await fetch(`${baseUrl}/admin/brands`, { headers: { Authorization: `Bearer ${token}` } });
+      const brandData = await brandRes.json();
+      if (brandData.success) {
+        setBrands(brandData.data || []);
       }
 
       const prodRes = await fetch(`${baseUrl}/admin/products?per_page=100`, { headers: { Authorization: `Bearer ${token}` } });
@@ -197,7 +206,51 @@ export default function InventoryPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Quản lý Kho hàng (Omnichannel)</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Quản lý Kho hàng (Omnichannel)</h1>
+          
+          {(activeTab === "stocks" || activeTab === "history") && (
+            <div className="relative group w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors" size={20} />
+              <input 
+                type="text" 
+                placeholder="Tìm sản phẩm, SKU..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white border border-gray-200 rounded-2xl py-2.5 pl-12 pr-4 focus:ring-2 focus:ring-black focus:border-transparent outline-none shadow-sm group-hover:border-gray-300 transition-all font-medium text-gray-900"
+              />
+            </div>
+          )}
+        </div>
+        
+        {/* Filter Bar - Visible for Stocks and History */}
+        {(activeTab === "stocks" || activeTab === "history") && (
+          <div className="bg-white p-4 rounded-xl border border-gray-200 mb-6 flex flex-wrap items-center gap-6 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="font-bold text-sm text-gray-700">Lọc theo kho:</span>
+              <select 
+                value={selectedBranchFilter} 
+                onChange={(e) => setSelectedBranchFilter(e.target.value)} 
+                className="border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black p-2 border bg-gray-50 hover:bg-white text-black font-bold text-sm min-w-[200px] transition-colors"
+              >
+                <option value="" className="text-blue-600 font-bold">🌟 Xem Tất cả các Kho</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.name} {b.is_main ? '(Kho Tổng)' : ''}</option>)}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="font-bold text-sm text-gray-700">Thương hiệu:</span>
+              <select 
+                value={selectedBrandFilter} 
+                onChange={(e) => setSelectedBrandFilter(e.target.value)} 
+                className="border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black p-2 border bg-gray-50 hover:bg-white text-black font-bold text-sm min-w-[180px] transition-colors"
+              >
+                <option value="">-- Tất cả thương hiệu --</option>
+                {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
 
         {/* Tabs - Dạng Segmented Controls Hiện Đại */}
         <div className="flex flex-wrap gap-2 mb-8 bg-gray-100 p-1.5 rounded-xl border border-gray-200">
@@ -225,18 +278,6 @@ export default function InventoryPage() {
         {/* TAB TỒN KHO HIỆN TẠI */}
         {activeTab === "stocks" && (
           <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
-            <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center gap-4">
-              <span className="font-bold text-sm text-gray-700">Lọc theo kho:</span>
-              <select 
-                value={selectedBranchFilter} 
-                onChange={(e) => setSelectedBranchFilter(e.target.value)} 
-                className="border-gray-300 rounded-md shadow-sm focus:ring-black focus:border-black p-2 border bg-white text-black font-bold text-sm min-w-[200px]"
-              >
-                <option value="" className="text-blue-600 font-bold">🌟 Xem Tất cả các Kho</option>
-                {branches.map(b => <option key={b.id} value={b.id}>{b.name} {b.is_main ? '(Kho Tổng)' : ''}</option>)}
-              </select>
-            </div>
-            
             <div className="px-4 py-5 sm:p-6">
               {loading ? (
                 <p className="text-gray-500 font-medium text-center py-4">Đang tải dữ liệu tồn kho...</p>

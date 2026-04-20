@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { adminProductAPI } from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
-import { Package, Plus, X, Upload, Edit, Trash2, Pipette } from "lucide-react";
+import { Package, Plus, X, Upload, Edit, Trash2, Pipette, Search } from "lucide-react";
 
 export default function ProductsPage() {
   const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // State cho Modal Thêm Sản phẩm
   const [showModal, setShowModal] = useState(false);
@@ -74,14 +75,21 @@ export default function ProductsPage() {
       setColorOptions([{ id: "1", name: "Trắng" }, { id: "2", name: "Đen" }, { id: "3", name: "Đỏ" }]);
       setSizeOptions([{ id: "1", name: "39" }, { id: "2", name: "40" }, { id: "3", name: "41" }, { id: "4", name: "42" }]);
     });
+  }, []);
 
-    if (token) fetchProducts();
-  }, [token]);
+  useEffect(() => {
+    if (token) {
+      const timer = setTimeout(() => {
+        fetchProducts();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [token, searchTerm]);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await adminProductAPI.getAll(token || "");
+      const res = await adminProductAPI.getAll(token || "", searchTerm);
       if (res.success) setProducts(res.data.data || []);
     } catch (error) {
       toast.error("Lỗi kết nối máy chủ");
@@ -302,6 +310,20 @@ export default function ProductsPage() {
           <h1 className="text-3xl font-black text-gray-900 uppercase flex items-center gap-3">
             <Package size={32} className="text-orange-600" /> Quản lý Sản phẩm
           </h1>
+          
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md mx-8 relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors" size={20} />
+            <input 
+              type="text" 
+              placeholder="Tìm theo tên, thương hiệu, danh mục..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && fetchProducts()}
+              className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-black focus:border-transparent outline-none shadow-sm group-hover:border-gray-300 transition-all font-medium text-gray-900"
+            />
+          </div>
+
           <button
             onClick={() => {
               setEditingId(null);
