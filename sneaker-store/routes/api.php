@@ -311,8 +311,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
         });
 
-        // Quản lý mã giảm giá (CHỈ SUPER-ADMIN)
-        Route::middleware(['role:super-admin,sanctum'])->group(function () {
+        // Quản lý mã giảm giá
+        Route::middleware(['permission:manage-discounts,sanctum'])->group(function () {
             Route::apiResource('discounts', DiscountController::class);
         });
 

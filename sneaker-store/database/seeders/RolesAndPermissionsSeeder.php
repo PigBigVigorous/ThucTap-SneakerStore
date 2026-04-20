@@ -34,6 +34,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'pos-sale',            // Truy cập máy tính tiền POS
             'manage-users',        // Quản lý nhân viên (Admin duy nhất)
             'view-staff',          // Xem danh sách nhân viên (Dành cho Manager & Admin)
+            'manage-discounts',    // Quản lý mã giảm giá, khuyến mãi
         ];
 
         foreach ($permissions as $permission) {
@@ -53,7 +54,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Quản lý cửa hàng (Xem báo cáo, đổi kho, bán hàng, xử lý khiếu nại - KHÔNG quản lý System Admin)
         $managerRole = Role::findOrCreate('store-manager', 'sanctum');
         $managerRole->syncPermissions([
-            'view-dashboard', 'manage-products', 'manage-inventory', 'manage-orders', 'pos-sale', 'view-staff'
+            'view-dashboard', 'manage-products', 'manage-inventory', 'manage-orders', 'pos-sale', 'view-staff', 'manage-discounts'
         ]);
 
         // Super Admin (Trùm cuối)

@@ -52,7 +52,7 @@ export default function AdminLinks() {
           </Link>
         )}
 
-        {hasRole('super-admin') && (
+        {hasPermission('manage-discounts') && (
           <Link href="/admin/discounts" className="flex items-center gap-3 px-4 py-3 text-sm text-gray-600 hover:bg-gray-50 hover:text-indigo-600 font-bold uppercase transition-colors">
             <Ticket size={16} /> Mã Giảm Giá
           </Link>
