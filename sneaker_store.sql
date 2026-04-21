@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th4 12, 2026 lúc 03:40 PM
+-- Thời gian đã tạo: Th4 20, 2026 lúc 10:00 PM
 -- Phiên bản máy phục vụ: 10.4.32-MariaDB
 -- Phiên bản PHP: 8.2.12
 
@@ -68,7 +68,8 @@ CREATE TABLE `brands` (
 INSERT INTO `brands` (`id`, `name`, `description`, `logo_url`, `created_at`, `updated_at`) VALUES
 (1, 'Nike', 'Just do it.', NULL, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
 (2, 'Adidas', 'Impossible is nothing.', NULL, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
-(3, 'Vans', 'Off the wall.', NULL, '2026-04-11 12:17:58', '2026-04-11 12:17:58');
+(3, 'Vans', 'Off the wall.', NULL, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
+(4, 'PUMA', NULL, NULL, '2026-04-18 21:02:19', '2026-04-18 21:02:19');
 
 -- --------------------------------------------------------
 
@@ -87,7 +88,7 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-spatie.permission.cache', 'a:3:{s:5:\"alias\";a:4:{s:1:\"a\";s:2:\"id\";s:1:\"b\";s:4:\"name\";s:1:\"c\";s:10:\"guard_name\";s:1:\"r\";s:5:\"roles\";}s:11:\"permissions\";a:6:{i:0;a:4:{s:1:\"a\";i:1;s:1:\"b\";s:14:\"view-dashboard\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:2:{i:0;i:3;i:1;i:4;}}i:1;a:4:{s:1:\"a\";i:2;s:1:\"b\";s:15:\"manage-products\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:3:{i:0;i:2;i:1;i:3;i:2;i:4;}}i:2;a:4:{s:1:\"a\";i:3;s:1:\"b\";s:16:\"manage-inventory\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:3:{i:0;i:2;i:1;i:3;i:2;i:4;}}i:3;a:4:{s:1:\"a\";i:4;s:1:\"b\";s:13:\"manage-orders\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:3:{i:0;i:1;i:1;i:3;i:2;i:4;}}i:4;a:4:{s:1:\"a\";i:5;s:1:\"b\";s:8:\"pos-sale\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:3:{i:0;i:1;i:1;i:3;i:2;i:4;}}i:5;a:4:{s:1:\"a\";i:6;s:1:\"b\";s:12:\"manage-users\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:1:{i:0;i:4;}}}s:5:\"roles\";a:4:{i:0;a:3:{s:1:\"a\";i:3;s:1:\"b\";s:13:\"store-manager\";s:1:\"c\";s:7:\"sanctum\";}i:1;a:3:{s:1:\"a\";i:4;s:1:\"b\";s:11:\"super-admin\";s:1:\"c\";s:7:\"sanctum\";}i:2;a:3:{s:1:\"a\";i:2;s:1:\"b\";s:17:\"warehouse-manager\";s:1:\"c\";s:7:\"sanctum\";}i:3;a:3:{s:1:\"a\";i:1;s:1:\"b\";s:7:\"cashier\";s:1:\"c\";s:7:\"sanctum\";}}}', 1776021692);
+('laravel-cache-spatie.permission.cache', 'a:3:{s:5:\"alias\";a:4:{s:1:\"a\";s:2:\"id\";s:1:\"b\";s:4:\"name\";s:1:\"c\";s:10:\"guard_name\";s:1:\"r\";s:5:\"roles\";}s:11:\"permissions\";a:8:{i:0;a:4:{s:1:\"a\";i:1;s:1:\"b\";s:14:\"view-dashboard\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:2:{i:0;i:3;i:1;i:4;}}i:1;a:4:{s:1:\"a\";i:2;s:1:\"b\";s:15:\"manage-products\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:3:{i:0;i:2;i:1;i:3;i:2;i:4;}}i:2;a:4:{s:1:\"a\";i:3;s:1:\"b\";s:16:\"manage-inventory\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:3:{i:0;i:2;i:1;i:3;i:2;i:4;}}i:3;a:4:{s:1:\"a\";i:4;s:1:\"b\";s:13:\"manage-orders\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:3:{i:0;i:1;i:1;i:3;i:2;i:4;}}i:4;a:4:{s:1:\"a\";i:5;s:1:\"b\";s:8:\"pos-sale\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:3:{i:0;i:1;i:1;i:3;i:2;i:4;}}i:5;a:4:{s:1:\"a\";i:6;s:1:\"b\";s:12:\"manage-users\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:1:{i:0;i:4;}}i:6;a:4:{s:1:\"a\";i:7;s:1:\"b\";s:10:\"view-staff\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:2:{i:0;i:3;i:1;i:4;}}i:7;a:4:{s:1:\"a\";i:8;s:1:\"b\";s:16:\"manage-discounts\";s:1:\"c\";s:7:\"sanctum\";s:1:\"r\";a:2:{i:0;i:3;i:1;i:4;}}}s:5:\"roles\";a:4:{i:0;a:3:{s:1:\"a\";i:3;s:1:\"b\";s:13:\"store-manager\";s:1:\"c\";s:7:\"sanctum\";}i:1;a:3:{s:1:\"a\";i:4;s:1:\"b\";s:11:\"super-admin\";s:1:\"c\";s:7:\"sanctum\";}i:2;a:3:{s:1:\"a\";i:2;s:1:\"b\";s:17:\"warehouse-manager\";s:1:\"c\";s:7:\"sanctum\";}i:3;a:3:{s:1:\"a\";i:1;s:1:\"b\";s:7:\"cashier\";s:1:\"c\";s:7:\"sanctum\";}}}', 1776794575);
 
 -- --------------------------------------------------------
 
@@ -124,7 +125,12 @@ INSERT INTO `categories` (`id`, `name`, `slug`, `parent_id`, `created_at`, `upda
 (1, 'Giày Nam', 'giay-nam', NULL, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
 (2, 'Giày Nữ', 'giay-nu', NULL, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
 (3, 'Sneaker Nam', 'sneaker-nam', 1, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
-(4, 'Giày Chạy Bộ', 'giay-chay-bo', 1, '2026-04-11 12:17:58', '2026-04-11 12:17:58');
+(4, 'Giày Chạy Bộ', 'giay-chay-bo', 1, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
+(5, 'Giày Bóng Đá', 'giay-bong-da', 1, '2026-04-18 21:02:57', '2026-04-18 21:02:57'),
+(6, 'Life Style', 'life-style', 1, '2026-04-18 21:25:32', '2026-04-18 21:25:32'),
+(7, 'Giày Bóng Đá', 'giay-bong-da-2', 2, '2026-04-18 21:25:43', '2026-04-18 21:25:43'),
+(8, 'Life Style', 'life-style-2', 2, '2026-04-18 21:25:51', '2026-04-18 21:25:51'),
+(9, 'Giày Chạy Bộ', 'giay-chay-bo-2', 2, '2026-04-18 21:26:27', '2026-04-18 21:26:27');
 
 -- --------------------------------------------------------
 
@@ -148,7 +154,11 @@ CREATE TABLE `colors` (
 INSERT INTO `colors` (`id`, `name`, `base_color`, `hex_code`, `created_at`, `updated_at`) VALUES
 (1, 'Trắng', 'Trắng', '#FFFFFF', NULL, NULL),
 (2, 'Đen', 'Đen', '#000000', NULL, NULL),
-(3, 'Đỏ', 'Đỏ', '#FF0000', NULL, NULL);
+(3, 'Đỏ', 'Đỏ', '#FF0000', NULL, NULL),
+(4, 'Yellow Alert-PUMA Black-Glowing Red-Lime Squeeze', NULL, '#b9e344', NULL, NULL),
+(5, 'Court Purple/Black/Metallic', NULL, '#5d456d', NULL, NULL),
+(6, 'Court Purple', NULL, '#57447b', NULL, NULL),
+(7, 'Jasmine Flower-Lucite-Almost Apricot', NULL, '#abc0c9', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -163,7 +173,9 @@ CREATE TABLE `discounts` (
   `value` decimal(12,2) NOT NULL,
   `min_order_value` decimal(15,2) DEFAULT NULL,
   `max_discount_value` decimal(15,2) DEFAULT NULL,
+  `category_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`category_ids`)),
   `usage_limit` int(11) DEFAULT NULL,
+  `usage_limit_per_user` int(11) DEFAULT NULL,
   `used_count` int(11) NOT NULL DEFAULT 0,
   `start_date` timestamp NULL DEFAULT NULL,
   `expiration_date` timestamp NULL DEFAULT NULL,
@@ -177,8 +189,9 @@ CREATE TABLE `discounts` (
 -- Đang đổ dữ liệu cho bảng `discounts`
 --
 
-INSERT INTO `discounts` (`id`, `code`, `type`, `value`, `min_order_value`, `max_discount_value`, `usage_limit`, `used_count`, `start_date`, `expiration_date`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'WELCOME2026', 'percent', 10.00, 2500000.00, 50000.00, 10, 0, '2026-04-11 13:01:00', '2026-04-12 13:01:00', 1, '2026-04-11 13:02:20', '2026-04-11 13:02:20', NULL);
+INSERT INTO `discounts` (`id`, `code`, `type`, `value`, `min_order_value`, `max_discount_value`, `category_ids`, `usage_limit`, `usage_limit_per_user`, `used_count`, `start_date`, `expiration_date`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'WELCOME2026', 'percent', 10.00, 2500000.00, 50000.00, NULL, 10, NULL, 0, '2026-04-11 13:01:00', '2026-04-12 13:01:00', 1, '2026-04-11 13:02:20', '2026-04-16 07:40:49', '2026-04-16 07:40:49'),
+(2, 'GK123', 'percent', 10.00, NULL, NULL, NULL, 2, NULL, 0, '2026-04-20 11:44:00', '2026-04-21 11:44:00', 1, '2026-04-20 11:44:13', '2026-04-20 11:44:13', NULL);
 
 -- --------------------------------------------------------
 
@@ -923,6 +936,13 @@ CREATE TABLE `failed_jobs` (
   `failed_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `failed_jobs`
+--
+
+INSERT INTO `failed_jobs` (`id`, `uuid`, `connection`, `queue`, `payload`, `exception`, `failed_at`) VALUES
+(1, '2d67a4a8-2faf-420d-9880-fd57ab29eac2', 'database', 'default', '{\"uuid\":\"2d67a4a8-2faf-420d-9880-fd57ab29eac2\",\"displayName\":\"App\\\\Mail\\\\OrderConfirmation\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":null,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":null,\"retryUntil\":null,\"data\":{\"commandName\":\"Illuminate\\\\Mail\\\\SendQueuedMailable\",\"command\":\"O:34:\\\"Illuminate\\\\Mail\\\\SendQueuedMailable\\\":17:{s:8:\\\"mailable\\\";O:26:\\\"App\\\\Mail\\\\OrderConfirmation\\\":5:{s:5:\\\"order\\\";O:45:\\\"Illuminate\\\\Contracts\\\\Database\\\\ModelIdentifier\\\":5:{s:5:\\\"class\\\";s:16:\\\"App\\\\Models\\\\Order\\\";s:2:\\\"id\\\";i:32;s:9:\\\"relations\\\";a:0:{}s:10:\\\"connection\\\";s:5:\\\"mysql\\\";s:15:\\\"collectionClass\\\";N;}s:14:\\\"formattedTotal\\\";s:9:\\\"2.530.000\\\";s:17:\\\"formattedShipping\\\";s:6:\\\"30.000\\\";s:2:\\\"to\\\";a:1:{i:0;a:2:{s:4:\\\"name\\\";N;s:7:\\\"address\\\";s:23:\\\"giakhang12704@gmail.com\\\";}}s:6:\\\"mailer\\\";s:4:\\\"smtp\\\";}s:5:\\\"tries\\\";N;s:7:\\\"timeout\\\";N;s:13:\\\"maxExceptions\\\";N;s:17:\\\"shouldBeEncrypted\\\";b:0;s:10:\\\"connection\\\";N;s:5:\\\"queue\\\";N;s:12:\\\"messageGroup\\\";N;s:12:\\\"deduplicator\\\";N;s:5:\\\"delay\\\";N;s:11:\\\"afterCommit\\\";N;s:10:\\\"middleware\\\";a:0:{}s:7:\\\"chained\\\";a:0:{}s:15:\\\"chainConnection\\\";N;s:10:\\\"chainQueue\\\";N;s:19:\\\"chainCatchCallbacks\\\";N;s:3:\\\"job\\\";N;}\",\"batchId\":null},\"createdAt\":1776591330,\"delay\":null}', 'Illuminate\\Queue\\MaxAttemptsExceededException: App\\Mail\\OrderConfirmation has been attempted too many times. in C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Queue\\MaxAttemptsExceededException.php:24\nStack trace:\n#0 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Queue\\Worker.php(862): Illuminate\\Queue\\MaxAttemptsExceededException::forJob(Object(Illuminate\\Queue\\Jobs\\DatabaseJob))\n#1 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Queue\\Worker.php(573): Illuminate\\Queue\\Worker->maxAttemptsExceededException(Object(Illuminate\\Queue\\Jobs\\DatabaseJob))\n#2 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Queue\\Worker.php(474): Illuminate\\Queue\\Worker->markJobAsFailedIfAlreadyExceedsMaxAttempts(\'database\', Object(Illuminate\\Queue\\Jobs\\DatabaseJob), 1)\n#3 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Queue\\Worker.php(435): Illuminate\\Queue\\Worker->process(\'database\', Object(Illuminate\\Queue\\Jobs\\DatabaseJob), Object(Illuminate\\Queue\\WorkerOptions))\n#4 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Queue\\Worker.php(201): Illuminate\\Queue\\Worker->runJob(Object(Illuminate\\Queue\\Jobs\\DatabaseJob), \'database\', Object(Illuminate\\Queue\\WorkerOptions))\n#5 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Queue\\Console\\WorkCommand.php(148): Illuminate\\Queue\\Worker->daemon(\'database\', \'default\', Object(Illuminate\\Queue\\WorkerOptions))\n#6 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Queue\\Console\\WorkCommand.php(131): Illuminate\\Queue\\Console\\WorkCommand->runWorker(\'database\', \'default\')\n#7 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\BoundMethod.php(36): Illuminate\\Queue\\Console\\WorkCommand->handle()\n#8 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Util.php(43): Illuminate\\Container\\BoundMethod::Illuminate\\Container\\{closure}()\n#9 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\BoundMethod.php(96): Illuminate\\Container\\Util::unwrapIfClosure(Object(Closure))\n#10 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\BoundMethod.php(35): Illuminate\\Container\\BoundMethod::callBoundMethod(Object(Illuminate\\Foundation\\Application), Array, Object(Closure))\n#11 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Container\\Container.php(799): Illuminate\\Container\\BoundMethod::call(Object(Illuminate\\Foundation\\Application), Array, Array, NULL)\n#12 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Console\\Command.php(211): Illuminate\\Container\\Container->call(Array)\n#13 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\symfony\\console\\Command\\Command.php(341): Illuminate\\Console\\Command->execute(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Illuminate\\Console\\OutputStyle))\n#14 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Console\\Command.php(180): Symfony\\Component\\Console\\Command\\Command->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Illuminate\\Console\\OutputStyle))\n#15 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\symfony\\console\\Application.php(1102): Illuminate\\Console\\Command->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))\n#16 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\symfony\\console\\Application.php(356): Symfony\\Component\\Console\\Application->doRunCommand(Object(Illuminate\\Queue\\Console\\WorkCommand), Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))\n#17 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\symfony\\console\\Application.php(195): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))\n#18 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Console\\Kernel.php(198): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))\n#19 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\vendor\\laravel\\framework\\src\\Illuminate\\Foundation\\Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))\n#20 C:\\THUCTAPCUOIKHOA\\DUAN\\sneaker-store\\artisan(16): Illuminate\\Foundation\\Application->handleCommand(Object(Symfony\\Component\\Console\\Input\\ArgvInput))\n#21 {main}', '2026-04-19 05:29:27');
+
 -- --------------------------------------------------------
 
 --
@@ -950,7 +970,53 @@ INSERT INTO `inventory_transactions` (`id`, `product_variant_id`, `transaction_t
 (1, 1, 'IMPORT', 1, 50, 'Nhập kho lần đầu vào Kho Tổng từ PO: PO-69DA9E9F711EE', '2026-04-11 12:18:55', NULL, 1, 'import'),
 (2, 2, 'IMPORT', 1, 50, 'Nhập kho lần đầu vào Kho Tổng từ PO: PO-69DA9E9F711EE', '2026-04-11 12:18:55', NULL, 1, 'import'),
 (3, 3, 'IMPORT', 1, 50, 'Nhập kho lần đầu vào Kho Tổng từ PO: PO-69DA9E9F711EE', '2026-04-11 12:18:55', NULL, 1, 'import'),
-(4, 4, 'IMPORT', 1, 50, 'Nhập kho lần đầu vào Kho Tổng từ PO: PO-69DA9E9F711EE', '2026-04-11 12:18:55', NULL, 1, 'import');
+(4, 4, 'IMPORT', 1, 50, 'Nhập kho lần đầu vào Kho Tổng từ PO: PO-69DA9E9F711EE', '2026-04-11 12:18:55', NULL, 1, 'import'),
+(5, 1, 'SALE', 1, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-TGFYDK', '2026-04-12 15:05:11', 1, NULL, 'import'),
+(6, 1, 'SALE', 2, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-8MA6XR', '2026-04-12 16:12:51', 1, NULL, 'import'),
+(7, 1, 'SALE', 3, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-6FLJQI', '2026-04-16 15:44:04', 1, NULL, 'import'),
+(8, 2, 'SALE', 4, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-B9KDEH', '2026-04-17 04:40:28', 1, NULL, 'import'),
+(9, 1, 'SALE', 4, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-B9KDEH', '2026-04-17 04:40:28', 1, NULL, 'import'),
+(10, 1, 'SALE', 5, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-7UI7DW', '2026-04-17 07:48:42', 1, NULL, 'import'),
+(11, 4, 'SALE', 6, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-OCOANS', '2026-04-17 07:51:02', 1, NULL, 'import'),
+(12, 1, 'SALE', 7, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-KSH2LF', '2026-04-17 08:36:00', 1, NULL, 'import'),
+(13, 1, 'SALE', 8, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-E6YNVW', '2026-04-17 08:38:23', 1, NULL, 'import'),
+(14, 1, 'SALE', 9, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-4UQECX', '2026-04-17 08:38:31', 1, NULL, 'import'),
+(15, 1, 'SALE', 10, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-EUV4S4', '2026-04-17 08:40:38', 1, NULL, 'import'),
+(16, 1, 'SALE', 11, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-ND5V3N', '2026-04-17 13:03:23', 1, NULL, 'import'),
+(17, 1, 'SALE', 12, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-QMRKWP', '2026-04-17 13:39:46', 1, NULL, 'import'),
+(18, 1, 'SALE', 13, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-8QPXZ9', '2026-04-17 13:56:45', 1, NULL, 'import'),
+(19, 1, 'SALE', 14, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-YAIIQZ', '2026-04-17 14:25:56', 1, NULL, 'import'),
+(20, 2, 'SALE', 15, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-QMMNUV', '2026-04-17 14:39:35', 1, NULL, 'import'),
+(21, 1, 'SALE', 16, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-GMDHHT', '2026-04-17 14:44:09', 1, NULL, 'import'),
+(22, 2, 'SALE', 17, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-C2P5U6', '2026-04-17 14:46:43', 1, NULL, 'import'),
+(23, 1, 'SALE', 17, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-C2P5U6', '2026-04-17 14:46:43', 1, NULL, 'import'),
+(24, 3, 'SALE', 18, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-JBGPAE', '2026-04-17 14:50:06', 1, NULL, 'import'),
+(25, 3, 'SALE', 19, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-T4LUJU', '2026-04-17 14:50:45', 1, NULL, 'import'),
+(26, 1, 'SALE', 20, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-XHQICW', '2026-04-17 14:51:33', 1, NULL, 'import'),
+(27, 1, 'SALE', 21, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-NZ1GI7', '2026-04-17 14:52:34', 1, NULL, 'import'),
+(28, 1, 'SALE', 22, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-KSQS6L', '2026-04-17 14:53:04', 1, NULL, 'import'),
+(29, 1, 'SALE', 23, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-CC7CVR', '2026-04-17 14:54:01', 1, NULL, 'import'),
+(30, 1, 'SALE', 24, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-R0SJRF', '2026-04-17 14:54:56', 1, NULL, 'import'),
+(31, 2, 'SALE', 24, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-R0SJRF', '2026-04-17 14:54:56', 1, NULL, 'import'),
+(32, 1, 'SALE', 25, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-D23F9Y', '2026-04-17 14:55:39', 1, NULL, 'import'),
+(33, 1, 'SALE', 26, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-N88ZLS', '2026-04-17 14:59:37', 1, NULL, 'import'),
+(34, 1, 'SALE', 27, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-3JTDDR', '2026-04-17 15:28:31', 1, NULL, 'import'),
+(35, 1, 'SALE', 28, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-2FQZC3', '2026-04-17 15:30:43', 1, NULL, 'import'),
+(36, 1, 'SALE', 29, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-QY5FIW', '2026-04-17 15:33:14', 1, NULL, 'import'),
+(37, 3, 'SALE', 30, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-DDGEEN', '2026-04-17 15:39:48', 1, NULL, 'import'),
+(38, 4, 'SALE', 31, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-XIPKLP', '2026-04-17 15:42:37', 1, NULL, 'import'),
+(39, 5, 'IMPORT', NULL, 50, 'Khởi tạo tồn kho ban đầu khi tạo sản phẩm', '2026-04-19 04:07:31', NULL, 1, 'import'),
+(40, 7, 'IMPORT', NULL, 50, 'Khởi tạo tồn kho ban đầu khi tạo sản phẩm', '2026-04-19 04:30:40', NULL, 1, 'import'),
+(41, 8, 'IMPORT', NULL, 50, 'Khởi tạo tồn kho ban đầu khi tạo sản phẩm', '2026-04-19 04:30:40', NULL, 1, 'import'),
+(42, 9, 'IMPORT', NULL, 50, 'Khởi tạo tồn kho ban đầu khi tạo sản phẩm', '2026-04-19 05:31:08', NULL, 1, 'import'),
+(43, 9, 'SALE', 32, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-RPICRM', '2026-04-19 09:35:29', 1, NULL, 'import'),
+(44, 1, 'SALE', 33, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-MISYMO', '2026-04-19 09:41:26', 1, NULL, 'import'),
+(45, 9, 'SALE', 34, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-C7PGHJ', '2026-04-19 09:44:55', 1, NULL, 'import'),
+(46, 1, 'SALE', 35, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-VGYV1M', '2026-04-19 09:46:31', 1, NULL, 'import'),
+(47, 9, 'SALE', 36, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-2DRMTJ', '2026-04-19 09:52:26', 1, NULL, 'import'),
+(48, 7, 'SALE', 37, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-U1CBYD', '2026-04-19 15:23:17', 1, NULL, 'import'),
+(49, 5, 'SALE', 38, -1, 'Xuất bán (ID Kho: 1) - Đơn: #ORD-ZOMOMW', '2026-04-20 10:14:25', 1, NULL, 'import'),
+(50, 6, 'IMPORT', NULL, 50, '[NHẬP LÔ HÀNG MỚI] Lô hàng mới', '2026-04-20 15:58:16', NULL, 1, 'import');
 
 -- --------------------------------------------------------
 
@@ -967,6 +1033,13 @@ CREATE TABLE `jobs` (
   `available_at` int(10) UNSIGNED NOT NULL,
   `created_at` int(10) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `jobs`
+--
+
+INSERT INTO `jobs` (`id`, `queue`, `payload`, `attempts`, `reserved_at`, `available_at`, `created_at`) VALUES
+(18, 'default', '{\"uuid\":\"83cb98ce-3cf4-455b-b1ea-109963dee809\",\"displayName\":\"App\\\\Mail\\\\OrderConfirmation\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":null,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":null,\"retryUntil\":null,\"data\":{\"commandName\":\"Illuminate\\\\Mail\\\\SendQueuedMailable\",\"command\":\"O:34:\\\"Illuminate\\\\Mail\\\\SendQueuedMailable\\\":17:{s:8:\\\"mailable\\\";O:26:\\\"App\\\\Mail\\\\OrderConfirmation\\\":5:{s:5:\\\"order\\\";O:45:\\\"Illuminate\\\\Contracts\\\\Database\\\\ModelIdentifier\\\":5:{s:5:\\\"class\\\";s:16:\\\"App\\\\Models\\\\Order\\\";s:2:\\\"id\\\";i:38;s:9:\\\"relations\\\";a:0:{}s:10:\\\"connection\\\";s:5:\\\"mysql\\\";s:15:\\\"collectionClass\\\";N;}s:14:\\\"formattedTotal\\\";s:9:\\\"2.530.000\\\";s:17:\\\"formattedShipping\\\";s:6:\\\"40.000\\\";s:2:\\\"to\\\";a:1:{i:0;a:2:{s:4:\\\"name\\\";N;s:7:\\\"address\\\";s:23:\\\"giakhang12704@gmail.com\\\";}}s:6:\\\"mailer\\\";s:4:\\\"smtp\\\";}s:5:\\\"tries\\\";N;s:7:\\\"timeout\\\";N;s:13:\\\"maxExceptions\\\";N;s:17:\\\"shouldBeEncrypted\\\";b:0;s:10:\\\"connection\\\";N;s:5:\\\"queue\\\";N;s:12:\\\"messageGroup\\\";N;s:12:\\\"deduplicator\\\";N;s:5:\\\"delay\\\";N;s:11:\\\"afterCommit\\\";N;s:10:\\\"middleware\\\";a:0:{}s:7:\\\"chained\\\";a:0:{}s:15:\\\"chainConnection\\\";N;s:10:\\\"chainQueue\\\";N;s:19:\\\"chainCatchCallbacks\\\";N;s:3:\\\"job\\\";N;}\",\"batchId\":null},\"createdAt\":1776680065,\"delay\":null}', 0, NULL, 1776680065, 1776680065);
 
 -- --------------------------------------------------------
 
@@ -1036,7 +1109,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (30, '2026_04_10_092937_add_logo_url_to_brands_table', 1),
 (31, '2026_04_11_185723_create_districts_table', 1),
 (32, '2026_04_11_195118_create_discounts_table', 2),
-(33, '2026_04_11_195123_add_discount_fields_to_orders_table', 2);
+(33, '2026_04_11_195123_add_discount_fields_to_orders_table', 2),
+(34, '2026_04_12_134958_add_performance_indexes_to_tables', 3),
+(35, '2026_04_12_154718_add_is_active_to_users_table', 4),
+(36, '2026_04_16_091200_add_category_ids_to_discounts_table', 5),
+(37, '2026_04_20_083245_add_usage_limit_per_user_to_discounts_table', 5);
 
 -- --------------------------------------------------------
 
@@ -1070,8 +1147,7 @@ INSERT INTO `model_has_roles` (`role_id`, `model_type`, `model_id`) VALUES
 (1, 'App\\Models\\User', 3),
 (2, 'App\\Models\\User', 4),
 (3, 'App\\Models\\User', 5),
-(4, 'App\\Models\\User', 1),
-(5, 'App\\Models\\User', 2);
+(4, 'App\\Models\\User', 1);
 
 -- --------------------------------------------------------
 
@@ -1105,6 +1181,50 @@ CREATE TABLE `orders` (
   `discount_amount` decimal(15,2) NOT NULL DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Đang đổ dữ liệu cho bảng `orders`
+--
+
+INSERT INTO `orders` (`id`, `order_tracking_code`, `user_id`, `status`, `payment_method`, `payment_status`, `transaction_id`, `total_amount`, `shipping_fee`, `customer_name`, `customer_phone`, `customer_email`, `province`, `district`, `ward`, `address_detail`, `created_at`, `updated_at`, `sales_channel_id`, `branch_id`, `cashier_id`, `discount_id`, `discount_amount`) VALUES
+(1, '#ORD-TGFYDK', 1, 'delivered', 'cod', 'paid', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'khangvaphuc3@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-12 08:05:11', '2026-04-12 18:15:26', 1, 1, NULL, NULL, 0.00),
+(2, '#ORD-8MA6XR', 1, 'delivered', 'cod', 'paid', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'khangvaphuc3@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-12 09:12:51', '2026-04-12 18:15:26', 1, 1, NULL, NULL, 0.00),
+(3, '#ORD-6FLJQI', 1, 'delivered', 'cod', 'paid', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'khangvaphuc3@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-16 08:44:04', '2026-04-16 21:09:09', 1, 1, NULL, NULL, 0.00),
+(4, '#ORD-B9KDEH', NULL, 'delivered', 'cod', 'paid', NULL, 5000000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-16 21:40:28', '2026-04-16 21:40:28', 3, 1, 1, NULL, 0.00),
+(5, '#ORD-7UI7DW', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 00:48:42', '2026-04-17 00:48:42', 3, 1, 1, NULL, 0.00),
+(6, '#ORD-OCOANS', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 00:51:02', '2026-04-17 00:51:02', 3, 1, 1, NULL, 0.00),
+(7, '#ORD-KSH2LF', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'khangvaphuc3@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 01:36:00', '2026-04-17 01:36:00', 1, 1, NULL, NULL, 0.00),
+(8, '#ORD-E6YNVW', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'khangvaphuc3@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 01:38:23', '2026-04-17 01:38:23', 1, 1, NULL, NULL, 0.00),
+(9, '#ORD-4UQECX', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'khangvaphuc3@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 01:38:31', '2026-04-17 01:38:31', 1, 1, NULL, NULL, 0.00),
+(10, '#ORD-EUV4S4', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'khangvaphuc3@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 01:40:38', '2026-04-17 01:40:38', 1, 1, NULL, NULL, 0.00),
+(11, '#ORD-ND5V3N', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 06:03:23', '2026-04-17 06:03:23', 1, 1, NULL, NULL, 0.00),
+(12, '#ORD-QMRKWP', 1, 'delivered', 'cod', 'paid', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 06:39:46', '2026-04-17 06:50:18', 1, 1, NULL, NULL, 0.00),
+(13, '#ORD-8QPXZ9', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '78729844', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 06:56:45', '2026-04-17 06:56:45', 1, 1, NULL, NULL, 0.00),
+(14, '#ORD-YAIIQZ', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 07:25:56', '2026-04-17 07:25:56', 1, 1, NULL, NULL, 0.00),
+(15, '#ORD-QMMNUV', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 07:39:35', '2026-04-17 07:39:35', 1, 1, NULL, NULL, 0.00),
+(16, '#ORD-GMDHHT', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 07:44:09', '2026-04-17 07:44:09', 1, 1, NULL, NULL, 0.00),
+(17, '#ORD-C2P5U6', 1, 'pending', 'cod', 'pending', NULL, 5000000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 07:46:43', '2026-04-17 07:46:43', 1, 1, NULL, NULL, 0.00),
+(18, '#ORD-JBGPAE', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:50:06', '2026-04-17 07:50:06', 3, 1, 1, NULL, 0.00),
+(19, '#ORD-T4LUJU', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:50:45', '2026-04-17 07:50:45', 3, 1, 1, NULL, 0.00),
+(20, '#ORD-XHQICW', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:51:33', '2026-04-17 07:51:33', 3, 1, 1, NULL, 0.00),
+(21, '#ORD-NZ1GI7', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:52:34', '2026-04-17 07:52:34', 3, 1, 1, NULL, 0.00),
+(22, '#ORD-KSQS6L', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:53:04', '2026-04-17 07:53:04', 3, 1, 1, NULL, 0.00),
+(23, '#ORD-CC7CVR', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:54:01', '2026-04-17 07:54:01', 3, 1, 1, NULL, 0.00),
+(24, '#ORD-R0SJRF', NULL, 'delivered', 'cod', 'paid', NULL, 5000000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:54:56', '2026-04-17 07:54:56', 3, 1, 1, NULL, 0.00),
+(25, '#ORD-D23F9Y', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:55:39', '2026-04-17 07:55:39', 3, 1, 1, NULL, 0.00),
+(26, '#ORD-N88ZLS', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Khách lẻ', NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-17 07:59:37', '2026-04-17 07:59:37', 3, 1, 1, NULL, 0.00),
+(27, '#ORD-3JTDDR', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 08:28:31', '2026-04-17 08:28:31', 1, 1, NULL, NULL, 0.00),
+(28, '#ORD-2FQZC3', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 08:30:43', '2026-04-17 08:30:43', 1, 1, NULL, NULL, 0.00),
+(29, '#ORD-QY5FIW', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 08:33:14', '2026-04-17 08:33:14', 1, 1, NULL, NULL, 0.00),
+(30, '#ORD-DDGEEN', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 08:39:48', '2026-04-17 08:39:48', 1, 1, NULL, NULL, 0.00),
+(31, '#ORD-XIPKLP', 1, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '0354518017', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-17 08:42:37', '2026-04-17 08:42:37', 1, 1, NULL, NULL, 0.00),
+(32, '#ORD-RPICRM', 5, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '78729844', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-19 02:35:29', '2026-04-19 02:35:29', 1, 1, NULL, NULL, 0.00),
+(33, '#ORD-MISYMO', NULL, 'pending', 'cod', 'pending', NULL, 2500000, 30000, 'Test', '0901234567', 'test@test.com', 'Ho Chi Minh', 'Quan 1', 'Ben Nghe', '123 Test', '2026-04-19 02:41:26', '2026-04-19 02:41:26', 1, 1, NULL, NULL, 0.00),
+(34, '#ORD-C7PGHJ', NULL, 'pending', 'cod', 'pending', NULL, 2500000, 0, 'Nguyen Van Test', '0901234567', 'test@example.com', 'Hà Nội', 'Ba Đình', 'Phúc Xá', '123 Duong Test', '2026-04-19 02:44:55', '2026-04-19 02:44:55', 1, 1, NULL, NULL, 0.00),
+(35, '#ORD-VGYV1M', NULL, 'pending', 'cod', 'pending', NULL, 2500000, 0, 'Nguyen Van Test', '0901234567', 'test@example.com', 'Hà Nội', 'Ba Đình', 'Phúc Xá', '123 Duong Test', '2026-04-19 02:46:31', '2026-04-19 02:46:31', 1, 1, NULL, NULL, 0.00),
+(36, '#ORD-2DRMTJ', NULL, 'delivered', 'cod', 'paid', NULL, 2500000, 0, 'Nguyen Van Test', '0901234567', 'test@example.com', 'Hà Nội', 'Ba Đình', 'Phúc Xá', '123 Duong Test', '2026-04-19 02:52:26', '2026-04-19 05:40:35', 1, 1, NULL, NULL, 0.00),
+(37, '#ORD-U1CBYD', NULL, 'pending', 'cod', 'pending', NULL, 2530000, 30000, 'Trần Nguyễn Gia Khang', '78729844', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-19 08:23:17', '2026-04-19 08:23:17', 1, 1, NULL, NULL, 0.00),
+(38, '#ORD-ZOMOMW', 1, 'pending', 'cod', 'pending', NULL, 2530000, 40000, 'Trần Nguyễn Gia Khang', '78729844', 'giakhang12704@gmail.com', 'An Giang', 'Chợ Mới', 'Nhơn Mỹ', '931, Nhơn An', '2026-04-20 03:14:25', '2026-04-20 03:14:25', 1, 1, NULL, NULL, 0.00);
+
 -- --------------------------------------------------------
 
 --
@@ -1118,6 +1238,53 @@ CREATE TABLE `order_items` (
   `quantity` int(11) NOT NULL,
   `unit_price` bigint(20) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `order_items`
+--
+
+INSERT INTO `order_items` (`id`, `order_id`, `product_variant_id`, `quantity`, `unit_price`) VALUES
+(1, 1, 1, 1, 2500000),
+(2, 2, 1, 1, 2500000),
+(3, 3, 1, 1, 2500000),
+(4, 4, 2, 1, 2500000),
+(5, 4, 1, 1, 2500000),
+(6, 5, 1, 1, 2500000),
+(7, 6, 4, 1, 2500000),
+(8, 7, 1, 1, 2500000),
+(9, 8, 1, 1, 2500000),
+(10, 9, 1, 1, 2500000),
+(11, 10, 1, 1, 2500000),
+(12, 11, 1, 1, 2500000),
+(13, 12, 1, 1, 2500000),
+(14, 13, 1, 1, 2500000),
+(15, 14, 1, 1, 2500000),
+(16, 15, 2, 1, 2500000),
+(17, 16, 1, 1, 2500000),
+(18, 17, 2, 1, 2500000),
+(19, 17, 1, 1, 2500000),
+(20, 18, 3, 1, 2500000),
+(21, 19, 3, 1, 2500000),
+(22, 20, 1, 1, 2500000),
+(23, 21, 1, 1, 2500000),
+(24, 22, 1, 1, 2500000),
+(25, 23, 1, 1, 2500000),
+(26, 24, 1, 1, 2500000),
+(27, 24, 2, 1, 2500000),
+(28, 25, 1, 1, 2500000),
+(29, 26, 1, 1, 2500000),
+(30, 27, 1, 1, 2500000),
+(31, 28, 1, 1, 2500000),
+(32, 29, 1, 1, 2500000),
+(33, 30, 3, 1, 2500000),
+(34, 31, 4, 1, 2500000),
+(35, 32, 9, 1, 2500000),
+(36, 33, 1, 1, 2500000),
+(37, 34, 9, 1, 2500000),
+(38, 35, 1, 1, 2500000),
+(39, 36, 9, 1, 2500000),
+(40, 37, 7, 1, 2500000),
+(41, 38, 5, 1, 2500000);
 
 -- --------------------------------------------------------
 
@@ -1150,12 +1317,14 @@ CREATE TABLE `permissions` (
 --
 
 INSERT INTO `permissions` (`id`, `name`, `guard_name`, `created_at`, `updated_at`) VALUES
-(1, 'view-dashboard', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(2, 'manage-products', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(3, 'manage-inventory', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(4, 'manage-orders', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(5, 'pos-sale', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(6, 'manage-users', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56');
+(1, 'view-dashboard', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(2, 'manage-products', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(3, 'manage-inventory', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(4, 'manage-orders', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(5, 'pos-sale', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(6, 'manage-users', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(7, 'view-staff', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(8, 'manage-discounts', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27');
 
 -- --------------------------------------------------------
 
@@ -1184,7 +1353,26 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (1, 'App\\Models\\User', 1, 'test', '4662c4e53f1fcfeb71b1b92a1d8ca937ab40516f064f2b639037a8db743ce59d', '[\"*\"]', '2026-04-11 12:21:39', NULL, '2026-04-11 12:21:25', '2026-04-11 12:21:39'),
 (2, 'App\\Models\\User', 3, 'auth_token', '289f32e9cda79c38ad10e726b016513c2ea45e58d8fa7aa87688be203aa7ca0b', '[\"*\"]', '2026-04-11 12:24:37', NULL, '2026-04-11 12:24:28', '2026-04-11 12:24:37'),
 (3, 'App\\Models\\User', 4, 'auth_token', '6e599c70c090f2b59b3f39c1f789a497fcfa0968ca337fcd1c5aa13868e7e160', '[\"*\"]', '2026-04-11 12:56:02', NULL, '2026-04-11 12:24:49', '2026-04-11 12:56:02'),
-(4, 'App\\Models\\User', 1, 'auth_token', 'deede837bb453c313ebe4b70e94032a0f62e5c2f0847942f7b1c062ab393410e', '[\"*\"]', '2026-04-11 13:10:06', NULL, '2026-04-11 13:00:48', '2026-04-11 13:10:06');
+(4, 'App\\Models\\User', 1, 'auth_token', 'deede837bb453c313ebe4b70e94032a0f62e5c2f0847942f7b1c062ab393410e', '[\"*\"]', '2026-04-12 08:51:13', NULL, '2026-04-11 13:00:48', '2026-04-12 08:51:13'),
+(5, 'App\\Models\\User', 1, 'auth_token', '7ece7ae273c365221e14b746f79f4b2268a4439119a4703052cf00744bb66dfb', '[\"*\"]', '2026-04-12 08:51:26', NULL, '2026-04-12 08:51:22', '2026-04-12 08:51:26'),
+(6, 'App\\Models\\User', 1, 'auth_token', '30584a3f99e74c8faab80981e6b20aa43ab6ac07fbe3eb07b2da8bbfa7e8b97b', '[\"*\"]', '2026-04-12 08:54:31', NULL, '2026-04-12 08:54:10', '2026-04-12 08:54:31'),
+(7, 'App\\Models\\User', 1, 'auth_token', '65766fd788cc28bcd21d6cedacd5de0a84658cd5555d635e862bfa28fc7864bf', '[\"*\"]', '2026-04-17 09:25:11', NULL, '2026-04-12 08:54:40', '2026-04-17 09:25:11'),
+(8, 'App\\Models\\User', 1, 'auth_token', '1a9a91316471a5203a3919f426417ed763fb2b25d785eb09a307bf63e1b35bcc', '[\"*\"]', '2026-04-19 01:53:42', NULL, '2026-04-17 09:38:15', '2026-04-19 01:53:42'),
+(9, 'App\\Models\\User', 5, 'auth_token', '43a6899cd87e6720161134d1accac96cfa6a5832f0e4068b97611bbadbb48314', '[\"*\"]', '2026-04-19 07:51:01', NULL, '2026-04-19 02:16:50', '2026-04-19 07:51:01'),
+(10, 'App\\Models\\User', 3, 'auth_token', '59e156ad6c6c475c373bcf9b2594e06a16bc34d0972da98b6afe9f2cfb5fe9b1', '[\"*\"]', '2026-04-19 07:53:19', NULL, '2026-04-19 07:52:18', '2026-04-19 07:53:19'),
+(11, 'App\\Models\\User', 4, 'auth_token', 'c439944954acb85f803189ee84a1673c3681cc4cf691dafe914e8ff84b09348b', '[\"*\"]', '2026-04-19 08:06:45', NULL, '2026-04-19 08:01:49', '2026-04-19 08:06:45'),
+(12, 'App\\Models\\User', 1, 'auth_token', 'ed856d6bcadb0315bcaaa84dc6e56af03acd124e70036af1f88cebea2eedc671', '[\"*\"]', '2026-04-19 18:36:20', NULL, '2026-04-19 08:28:24', '2026-04-19 18:36:20'),
+(13, 'App\\Models\\User', 3, 'auth_token', '0120208bc0f680e78997067029b14b5cbbf22f66e10362dea5e961e7708d3814', '[\"*\"]', '2026-04-19 18:37:12', NULL, '2026-04-19 18:37:07', '2026-04-19 18:37:12'),
+(14, 'App\\Models\\User', 4, 'auth_token', 'e341dd88f4e54cf676eeaa6fe78145127dd208704b42df069a9332f68ff0a98b', '[\"*\"]', '2026-04-19 18:37:54', NULL, '2026-04-19 18:37:22', '2026-04-19 18:37:54'),
+(15, 'App\\Models\\User', 1, 'auth_token', 'a5195d1c736fd361b346efda9feebc12dba4d20f687ca39e539b523e4bce0c87', '[\"*\"]', '2026-04-20 02:41:55', NULL, '2026-04-19 20:31:48', '2026-04-20 02:41:55'),
+(16, 'App\\Models\\User', 1, 'auth_token', 'b43b7ca96ee8456fc5a0ec6e75ee30607125705e77f74a992baa72920c9f4069', '[\"*\"]', '2026-04-20 10:17:40', NULL, '2026-04-20 03:03:28', '2026-04-20 10:17:40'),
+(17, 'App\\Models\\User', 5, 'auth_token', 'db9c511ed74e829ec39c05a7a84e5c5e135a37e963d66b8a6b3440914ae73bf1', '[\"*\"]', '2026-04-20 10:18:30', NULL, '2026-04-20 10:18:23', '2026-04-20 10:18:30'),
+(18, 'App\\Models\\User', 4, 'auth_token', '2e02fb6e3182a11d414fb86f91462bf54d20fb7e581ca9aabab79a01b0254cb7', '[\"*\"]', '2026-04-20 11:00:07', NULL, '2026-04-20 10:54:10', '2026-04-20 11:00:07'),
+(19, 'App\\Models\\User', 1, 'auth_token', '7fd9c19a1a1bcb1dfa886316137bb3097fdbd6a62f978ca3e1216c62f39a2206', '[\"*\"]', '2026-04-20 11:00:19', NULL, '2026-04-20 11:00:15', '2026-04-20 11:00:19'),
+(20, 'App\\Models\\User', 3, 'auth_token', 'c358ca70f463efe7d09db824a709da901f4c423aa1290066a1d7391201f4ad1d', '[\"*\"]', '2026-04-20 11:00:34', NULL, '2026-04-20 11:00:31', '2026-04-20 11:00:34'),
+(21, 'App\\Models\\User', 3, 'auth_token', '964383d721c3221cf9399cbf5ec85f6a1718b805344afc8516cf35613ffe6f0e', '[\"*\"]', '2026-04-20 11:02:55', NULL, '2026-04-20 11:02:40', '2026-04-20 11:02:55'),
+(22, 'App\\Models\\User', 4, 'auth_token', '84dc206aec086229f5894bd17fbd1dc1ab5ccf689429b3b64176724652e96e4e', '[\"*\"]', '2026-04-20 11:03:53', NULL, '2026-04-20 11:03:45', '2026-04-20 11:03:53'),
+(23, 'App\\Models\\User', 1, 'auth_token', '41117851eefe2eecba84bef71ddff530c11f279faddff5f37293aa2e2e8c4f14', '[\"*\"]', '2026-04-20 11:44:13', NULL, '2026-04-20 11:22:58', '2026-04-20 11:44:13');
 
 -- --------------------------------------------------------
 
@@ -1211,7 +1399,10 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `slug`, `description`, `brand_id`, `category_id`, `base_image_url`, `is_active`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'Nike Air Force 1 Low', 'nike-air-force-1-low', 'Huyền thoại đường phố không bao giờ lỗi thời.', 1, 3, 'https://static.nike.com/a/images/t_PDP_1728_v1/f_auto,q_auto:eco/b7d9211c-26e7-431a-ac24-b0540fb3c00f/AIR+FORCE+1+%2707.png', 1, '2026-04-11 12:18:55', '2026-04-11 12:18:55', NULL);
+(1, 'Nike Air Force 1 Low', 'nike-air-force-1-low', 'Huyền thoại đường phố không bao giờ lỗi thời.', 1, 3, 'http://127.0.0.1:8000/storage/products/vip5P3nHi6RejfGG399Hf2RaeP0jYZwi9n0Qn74w.avif', 1, '2026-04-11 12:18:55', '2026-04-18 20:45:09', NULL),
+(2, 'ULTRA 6 PLAY TT Unisex', 'ultra-6-play-tt-unisex-1776571651', 'Tăng tốc với ULTRA 6, hiện có phần trên bằng lưới được thiết kế mới. Khung hỗ trợ nhẹ tăng thêm độ ổn định, trong khi đế ngoài thấp giúp giày bóng đá này phù hợp để sử dụng trên các bề mặt cứng tự nhiên và cỏ nhân tạo (2G). Dù bạn chơi ở đâu, hãy cứ chơi hết mình.', 4, 5, 'http://127.0.0.1:8000/storage/products/W9XR4ADeZaEXywzg0zLPVklhRqUq77yGTA92lX8j.avif', 1, '2026-04-18 21:07:31', '2026-04-18 21:07:31', NULL),
+(3, 'Nike Shox TL', 'nike-shox-tl-1776573040', 'The Nike Shox TL takes mechanical cushioning to the next level. A recrafted version of the 2003 icon, it features breathable mesh in the upper, with full-length Nike Shox technology for optimal impact absorption and a bold look on the streets.', 1, 6, 'http://127.0.0.1:8000/storage/products/EnOCtV2NsBE8rPqvBKVY27kfP6mNpWuO7bRoy4qi.avif', 1, '2026-04-18 21:30:40', '2026-04-18 21:30:40', NULL),
+(4, 'Deviate NITRO™ Elite 4 Nữ', 'deviate-nitro-elite-4-nu-1776576668', 'Khi chỉ nhanh thôi là chưa đủ, bạn cần phải bứt phá hơn nữa. Giày Deviate NITRO™ Elite 4 được thiết kế cho ngày thi đấu – những khoảnh khắc mà từng giây đều quý giá. Công nghệ NITROFOAM™ ELITE được nâng cấp mang lại khả năng phản hồi đỉnh cao cho tốc độ vượt trội, trong khi tấm PWRPLATE được tái thiết kế giúp dẫn truyền toàn bộ năng lượng về phía trước. Nhẹ hơn 12% so với phiên bản trước, Deviate Elite 4 giúp đôi chân bạn nhẹ nhàng, thanh thoát và bám sát nhịp độ mục tiêu. Mọi chi tiết đều được thiết kế để đưa bạn vượt xa giới hạn của tốc độ.', 4, 9, 'http://127.0.0.1:8000/storage/products/XqB3gJgXeW2MQKZXtNQYZntHUAnqE6AuC6SciPuw.avif', 1, '2026-04-18 22:31:08', '2026-04-18 22:31:08', NULL);
 
 -- --------------------------------------------------------
 
@@ -1228,6 +1419,59 @@ CREATE TABLE `product_images` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Đang đổ dữ liệu cho bảng `product_images`
+--
+
+INSERT INTO `product_images` (`id`, `product_id`, `color_id`, `image_url`, `sort_order`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 'http://127.0.0.1:8000/storage/products/gallery/k4bnnOXW49gJ6mmDHRfLZeMQxRAMU0QvrOROtSGW.avif', 0, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(2, 1, 1, 'http://127.0.0.1:8000/storage/products/gallery/N1xN4NfaBlc7CjtBwMLHTxwZLfMhmb2nm2I5zes8.avif', 1, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(3, 1, 1, 'http://127.0.0.1:8000/storage/products/gallery/q0oYsRj2Z1PlofkVwjQTPlrfUtJv7lzFjdY7LfMC.avif', 2, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(4, 1, 1, 'http://127.0.0.1:8000/storage/products/gallery/O4AFGu1z8n57IXeLKsKEhx6TCvKqgZiTHldBZzxe.avif', 3, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(5, 1, 1, 'http://127.0.0.1:8000/storage/products/gallery/LIbsG014toYD69pJNdLmWDcBVPVltTokXIPU3anP.avif', 4, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(6, 1, 1, 'http://127.0.0.1:8000/storage/products/gallery/PVGPlOqb69bP3aMgzRQdjic7jmx14OSCRUsJGVBm.avif', 5, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(7, 1, 1, 'http://127.0.0.1:8000/storage/products/gallery/fgoYMFY4mCqUxdXDyOP7dFiTg9zO8tp8EoVflnZn.avif', 6, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(8, 1, 1, 'http://127.0.0.1:8000/storage/products/gallery/l1JbVuGq4gkXc8tvXcrZK86WppuZAzZNSoBlrM3l.avif', 7, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(9, 1, 2, 'http://127.0.0.1:8000/storage/products/gallery/ERWcmnnoDEMrMBERcCqgBlvmBlTmfwkrwyzMExU8.avif', 0, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(10, 1, 2, 'http://127.0.0.1:8000/storage/products/gallery/Ll8sraTpwyeP1LkoURH1mdE1JnFpI0cz3kDTS5Ap.avif', 1, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(11, 1, 2, 'http://127.0.0.1:8000/storage/products/gallery/SkpMNxdbLhuSpbGSOFYwQlPfE3Py9o6Hy4x3J1yb.avif', 2, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(12, 1, 2, 'http://127.0.0.1:8000/storage/products/gallery/Wj4YdkZhfbKX3Aas6EupqSKzVaFYV91iWXj49AYB.avif', 3, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(13, 1, 2, 'http://127.0.0.1:8000/storage/products/gallery/ipSAkAbFvNnBerxiavZHQiisgU9xBdU4gbuk7htw.avif', 4, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(14, 1, 2, 'http://127.0.0.1:8000/storage/products/gallery/MjO0y9Pz2Gpqte3YPjrVFEHRSeui15UuQACfNBj9.avif', 5, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(15, 1, 2, 'http://127.0.0.1:8000/storage/products/gallery/wRjtIhIdGGGRhZTnPnGjSrjURMyXTpn9EQmyGdhZ.avif', 6, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(16, 1, 2, 'http://127.0.0.1:8000/storage/products/gallery/wFNE8R9zOIdvHAvPTAIYGqFWcwqG7jtupJ4IXcf8.avif', 7, '2026-04-18 20:45:09', '2026-04-18 20:45:09'),
+(17, 2, 1, 'http://127.0.0.1:8000/storage/products/gallery/tBIktCNcnkl22HVdtyKUQhhDd8hcUY4xMeGVdOO2.avif', 0, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(18, 2, 4, 'http://127.0.0.1:8000/storage/products/gallery/V3tMRcxr6y1J9mCh3VZY7Hkk9zDrIcwkCiEXjhr6.avif', 0, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(19, 2, 4, 'http://127.0.0.1:8000/storage/products/gallery/ckNmPXGWSZzx38REKKIXPTqQuq9IFlD5MVHWQDyc.avif', 1, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(20, 2, 4, 'http://127.0.0.1:8000/storage/products/gallery/A3mNAoQtt87WUNQLTYoUjl71AglUwIqaUx2GpctF.avif', 2, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(21, 2, 4, 'http://127.0.0.1:8000/storage/products/gallery/78xXp8RSypZ0xTsmowaOUXhcwRrqR3FA3Yx6835J.avif', 3, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(22, 2, 4, 'http://127.0.0.1:8000/storage/products/gallery/6Yk6LEJs93O22CJjHv1MU9pO1MDdvj7t1IG67GZq.avif', 4, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(23, 2, 4, 'http://127.0.0.1:8000/storage/products/gallery/bFmsoVFeX1rakXY23cC82ABMlKCtt5plxh5oyRCq.avif', 5, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(24, 3, 1, 'http://127.0.0.1:8000/storage/products/gallery/NNs9sz6xNbYp3VKl8sFLuV3nxLK1Wv0uKar4zdJv.avif', 0, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(25, 3, 5, 'http://127.0.0.1:8000/storage/products/gallery/yM1POBTg1vSk0bJysgNON1H7yrNe1QMItKj9UuN3.avif', 0, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(26, 3, 5, 'http://127.0.0.1:8000/storage/products/gallery/tZuLiZPsLFhuvth9tGrKHalPLsr0k5t8wTYIWsiJ.avif', 1, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(27, 3, 5, 'http://127.0.0.1:8000/storage/products/gallery/eRGTgIThEvRnf4MlQwIZsHPa837KPGH4EMjtoQsD.avif', 2, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(28, 3, 5, 'http://127.0.0.1:8000/storage/products/gallery/fGrFFI6HEt5flOiNjT5cdavDPmPjwEVKGbwAWPNA.avif', 3, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(29, 3, 5, 'http://127.0.0.1:8000/storage/products/gallery/qA2Eo1qWUJ3r4KHJ7Zmf47a46aHedoacs8N1sX0E.avif', 4, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(30, 3, 5, 'http://127.0.0.1:8000/storage/products/gallery/escjjaJmfIrpVSzYC7Iw8dbjrclZn1BSmXJP54cx.avif', 5, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(31, 3, 5, 'http://127.0.0.1:8000/storage/products/gallery/SqHYLkPCEmeiswHLSzFbbHxZdIx0PxAgIPOHjLou.avif', 6, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(32, 3, 5, 'http://127.0.0.1:8000/storage/products/gallery/7Ux4B91TSAz6JlT0CVDmEVyJ0qKWATFynbf9gfgL.avif', 7, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(33, 3, 6, 'http://127.0.0.1:8000/storage/products/gallery/BHCIg885CMTRhtczdsRb50wavWSnVD5sKePlP38y.avif', 0, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(34, 3, 6, 'http://127.0.0.1:8000/storage/products/gallery/YJ4710nWJAH518Zh4xfNmWwjiPeEUdCZjhYkVfbO.avif', 1, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(35, 3, 6, 'http://127.0.0.1:8000/storage/products/gallery/RUNwA8rQ6FG7e8d1jhFRxdz7PmwTgrdWIW4WGiQp.avif', 2, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(36, 3, 6, 'http://127.0.0.1:8000/storage/products/gallery/F7DrTmmrX0ZQhVuD65ieyGyihAOcBFfNLSMprEY6.avif', 3, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(37, 3, 6, 'http://127.0.0.1:8000/storage/products/gallery/Bw7rqud8vk1YWWlksTo1sq1an6gsQ3spHwddhvaB.avif', 4, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(38, 3, 6, 'http://127.0.0.1:8000/storage/products/gallery/CnrBEt9cuCkNcZbqnXdYjgvqKxU0Yiw70dWVnrl8.avif', 5, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(39, 3, 6, 'http://127.0.0.1:8000/storage/products/gallery/gwqyWMVIHR2RzoOEnZoO8cgaCcscbt6BXGvlJVY7.avif', 6, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(40, 3, 6, 'http://127.0.0.1:8000/storage/products/gallery/wFEi5FV7VaMPlF5cUWHYxyiS0HdOsJcLQ35vdCrx.avif', 7, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(41, 4, 1, 'http://127.0.0.1:8000/storage/products/gallery/9m6cw6ZMStkfWuIJKk0q7xFXYaXelwgYAqR4oYPE.avif', 0, '2026-04-18 22:31:08', '2026-04-18 22:31:08'),
+(42, 4, 7, 'http://127.0.0.1:8000/storage/products/gallery/hDf2TvCZ0HoKVM0AU6WG0NqFKy12RdoHNxLxUe2G.avif', 0, '2026-04-18 22:31:08', '2026-04-18 22:31:08'),
+(43, 4, 7, 'http://127.0.0.1:8000/storage/products/gallery/UibAAWj6VQUxofTrB2lTQPKg1jyM0WF2uz7mBlrC.avif', 1, '2026-04-18 22:31:08', '2026-04-18 22:31:08'),
+(44, 4, 7, 'http://127.0.0.1:8000/storage/products/gallery/2Z76evlhbsntH89Rr6inj9FG2WDf9RQO2FOWjgSj.avif', 2, '2026-04-18 22:31:08', '2026-04-18 22:31:08'),
+(45, 4, 7, 'http://127.0.0.1:8000/storage/products/gallery/kfUN2ENAEPFa5iQcxZTUCPEqkteTjAP9lofYwSx4.avif', 3, '2026-04-18 22:31:08', '2026-04-18 22:31:08'),
+(46, 4, 7, 'http://127.0.0.1:8000/storage/products/gallery/ifIZpWmMDEIvOpR9WgECdOX0beJ6M7LbaL8Rc7Ho.avif', 4, '2026-04-18 22:31:08', '2026-04-18 22:31:08'),
+(47, 4, 7, 'http://127.0.0.1:8000/storage/products/gallery/DDYwRWat21MMxyMUmtKEe0JLNOfDPWy6ShlwqLEe.avif', 5, '2026-04-18 22:31:08', '2026-04-18 22:31:08');
 
 -- --------------------------------------------------------
 
@@ -1269,10 +1513,16 @@ CREATE TABLE `product_variants` (
 --
 
 INSERT INTO `product_variants` (`id`, `product_id`, `sku`, `size_id`, `color_id`, `colorway_name`, `price`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 'NK-AF1-TRA-40', 2, 1, NULL, 2500000, '2026-04-11 12:18:55', '2026-04-11 12:18:55', NULL),
-(2, 1, 'NK-AF1-TRA-41', 3, 1, NULL, 2500000, '2026-04-11 12:18:55', '2026-04-11 12:18:55', NULL),
-(3, 1, 'NK-AF1-DEN-40', 2, 2, NULL, 2500000, '2026-04-11 12:18:55', '2026-04-11 12:18:55', NULL),
-(4, 1, 'NK-AF1-DEN-41', 3, 2, NULL, 2500000, '2026-04-11 12:18:55', '2026-04-11 12:18:55', NULL);
+(1, 1, 'NK-AF1-TRA-40', 2, 1, '', 2500000, '2026-04-11 12:18:55', '2026-04-18 20:45:09', NULL),
+(2, 1, 'NK-AF1-TRA-41', 3, 1, '', 2500000, '2026-04-11 12:18:55', '2026-04-18 20:45:09', NULL),
+(3, 1, 'NK-AF1-DEN-40', 2, 2, '', 2500000, '2026-04-11 12:18:55', '2026-04-18 20:45:09', NULL),
+(4, 1, 'NK-AF1-DEN-41', 3, 2, '', 2500000, '2026-04-11 12:18:55', '2026-04-18 20:45:09', NULL),
+(5, 2, 'HS4O94M2', 1, 4, '', 2500000, '2026-04-18 21:07:31', '2026-04-18 21:07:31', NULL),
+(6, 2, 'PESUDOYN', 2, 4, '', 2500000, '2026-04-18 21:07:31', '2026-04-18 21:07:31', NULL),
+(7, 3, 'A8EMFJUA', 1, 6, 'Court Purple/Black/Metallic', 2500000, '2026-04-18 21:30:40', '2026-04-18 21:30:40', NULL),
+(8, 3, 'WSX5QRZ3', 2, 6, 'Court Purple/Black/Metallic', 2500000, '2026-04-18 21:30:40', '2026-04-18 21:30:40', NULL),
+(9, 4, 'RHUUFXA4', 1, 7, 'Jasmine Flower-Lucite-Almost Apricot', 2500000, '2026-04-18 22:31:08', '2026-04-18 22:31:08', NULL),
+(10, 4, 'QWLTHQJI', 2, 7, 'Jasmine Flower-Lucite-Almost Apricot', 2500000, '2026-04-18 22:31:08', '2026-04-18 22:31:08', NULL);
 
 -- --------------------------------------------------------
 
@@ -1424,11 +1674,11 @@ CREATE TABLE `roles` (
 --
 
 INSERT INTO `roles` (`id`, `name`, `guard_name`, `created_at`, `updated_at`) VALUES
-(1, 'cashier', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(2, 'warehouse-manager', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(3, 'store-manager', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(4, 'super-admin', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56'),
-(5, 'customer', 'sanctum', '2026-04-11 12:17:56', '2026-04-11 12:17:56');
+(1, 'cashier', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(2, 'warehouse-manager', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(3, 'store-manager', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(4, 'super-admin', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27'),
+(5, 'customer', 'sanctum', '2026-04-20 11:01:27', '2026-04-20 11:01:27');
 
 -- --------------------------------------------------------
 
@@ -1460,7 +1710,11 @@ INSERT INTO `role_has_permissions` (`permission_id`, `role_id`) VALUES
 (5, 1),
 (5, 3),
 (5, 4),
-(6, 4);
+(6, 4),
+(7, 3),
+(7, 4),
+(8, 3),
+(8, 4);
 
 -- --------------------------------------------------------
 
@@ -1483,7 +1737,8 @@ CREATE TABLE `sales_channels` (
 
 INSERT INTO `sales_channels` (`id`, `name`, `type`, `is_active`, `created_at`, `updated_at`) VALUES
 (1, 'Website Chính Thức', 'online', 1, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
-(2, 'POS - Cửa Hàng Quận 1', 'offline', 1, '2026-04-11 12:17:58', '2026-04-11 12:17:58');
+(2, 'POS - Cửa Hàng Quận 1', 'offline', 1, '2026-04-11 12:17:58', '2026-04-11 12:17:58'),
+(3, 'Bán tại quầy (POS)', 'pos', 1, '2026-04-16 21:40:28', '2026-04-16 21:40:28');
 
 -- --------------------------------------------------------
 
@@ -1556,6 +1811,7 @@ CREATE TABLE `users` (
   `role` varchar(255) NOT NULL DEFAULT 'customer',
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1566,12 +1822,12 @@ CREATE TABLE `users` (
 -- Đang đổ dữ liệu cho bảng `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `role`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'Quản trị viên', 'admin@sneaker.com', 'customer', NULL, '$2y$12$aeGMEjPhaFA8pBM7XFKPLOrUOISn7RTrkVmWV5NDmV59c08oQdGge', NULL, '2026-04-11 12:17:57', '2026-04-11 12:17:57', NULL),
-(2, 'Khách hàng VIP', 'khachhang@gmail.com', 'customer', NULL, '$2y$12$kqh.001HjCxcfS1X2BuyR.2WmVLjvUzf4ICmqrluXHbUw4yoVf50u', NULL, '2026-04-11 12:17:57', '2026-04-11 12:17:57', NULL),
-(3, 'Thu ngân', 'thungan@gmail.com', 'customer', NULL, '$2y$12$63sY3BrwjjyW81aqbMOnWegswW3.655BiE0UquubnY7/wJc1qCaVy', NULL, '2026-04-11 12:17:57', '2026-04-11 12:17:57', NULL),
-(4, 'Thủ kho', 'thukho@gmail.com', 'customer', NULL, '$2y$12$M0hbJTPeR3rOZpJt4K8pKuK12UnPv05nKK1RigOCUITMTsB.WHZnW', NULL, '2026-04-11 12:17:58', '2026-04-11 12:17:58', NULL),
-(5, 'Quản lý Cửa hàng', 'quanly@gmail.com', 'customer', NULL, '$2y$12$rQXvppYTpWUtL.8gb9b.p./ZDhtdCdgQiwlsBp5pJ9ADjYHfNXR1S', NULL, '2026-04-11 12:17:58', '2026-04-11 12:17:58', NULL);
+INSERT INTO `users` (`id`, `name`, `email`, `role`, `email_verified_at`, `password`, `is_active`, `remember_token`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'Quản trị viên', 'admin@sneaker.com', 'admin', NULL, '$2y$12$aeGMEjPhaFA8pBM7XFKPLOrUOISn7RTrkVmWV5NDmV59c08oQdGge', 1, NULL, '2026-04-11 12:17:57', '2026-04-20 11:01:27', NULL),
+(2, 'Khách hàng VIP', 'khachhang@gmail.com', 'customer', NULL, '$2y$12$kqh.001HjCxcfS1X2BuyR.2WmVLjvUzf4ICmqrluXHbUw4yoVf50u', 1, NULL, '2026-04-11 12:17:57', '2026-04-11 12:17:57', NULL),
+(3, 'Thu ngân', 'thungan@gmail.com', 'staff', NULL, '$2y$12$63sY3BrwjjyW81aqbMOnWegswW3.655BiE0UquubnY7/wJc1qCaVy', 1, NULL, '2026-04-11 12:17:57', '2026-04-20 11:01:27', NULL),
+(4, 'Thủ kho', 'thukho@gmail.com', 'staff', NULL, '$2y$12$M0hbJTPeR3rOZpJt4K8pKuK12UnPv05nKK1RigOCUITMTsB.WHZnW', 1, NULL, '2026-04-11 12:17:58', '2026-04-20 11:01:27', NULL),
+(5, 'Quản lý Cửa hàng', 'quanly@gmail.com', 'staff', NULL, '$2y$12$rQXvppYTpWUtL.8gb9b.p./ZDhtdCdgQiwlsBp5pJ9ADjYHfNXR1S', 1, NULL, '2026-04-11 12:17:58', '2026-04-20 11:01:27', NULL);
 
 -- --------------------------------------------------------
 
@@ -1593,10 +1849,22 @@ CREATE TABLE `variant_branch_stocks` (
 --
 
 INSERT INTO `variant_branch_stocks` (`id`, `variant_id`, `branch_id`, `stock`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 50, '2026-04-11 12:18:55', '2026-04-11 12:18:55'),
-(2, 2, 1, 50, '2026-04-11 12:18:55', '2026-04-11 12:18:55'),
-(3, 3, 1, 50, '2026-04-11 12:18:55', '2026-04-11 12:18:55'),
-(4, 4, 1, 50, '2026-04-11 12:18:55', '2026-04-11 12:18:55');
+(1, 1, 1, 23, '2026-04-11 12:18:55', '2026-04-19 02:46:31'),
+(2, 2, 1, 46, '2026-04-11 12:18:55', '2026-04-17 07:54:56'),
+(3, 3, 1, 47, '2026-04-11 12:18:55', '2026-04-17 08:39:48'),
+(4, 4, 1, 48, '2026-04-11 12:18:55', '2026-04-17 08:42:37'),
+(5, 5, 1, 49, '2026-04-18 21:07:31', '2026-04-20 03:14:25'),
+(6, 5, 2, 0, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(7, 6, 1, 50, '2026-04-18 21:07:31', '2026-04-20 08:58:16'),
+(8, 6, 2, 0, '2026-04-18 21:07:31', '2026-04-18 21:07:31'),
+(9, 7, 1, 49, '2026-04-18 21:30:40', '2026-04-19 08:23:17'),
+(10, 7, 2, 0, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(11, 8, 1, 50, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(12, 8, 2, 0, '2026-04-18 21:30:40', '2026-04-18 21:30:40'),
+(13, 9, 1, 47, '2026-04-18 22:31:08', '2026-04-19 02:52:26'),
+(14, 9, 2, 0, '2026-04-18 22:31:08', '2026-04-18 22:31:08'),
+(15, 10, 1, 0, '2026-04-18 22:31:08', '2026-04-18 22:31:08'),
+(16, 10, 2, 0, '2026-04-18 22:31:08', '2026-04-18 22:31:08');
 
 -- --------------------------------------------------------
 
@@ -12352,7 +12620,9 @@ ALTER TABLE `orders`
   ADD KEY `orders_sales_channel_id_foreign` (`sales_channel_id`),
   ADD KEY `orders_branch_id_foreign` (`branch_id`),
   ADD KEY `orders_cashier_id_foreign` (`cashier_id`),
-  ADD KEY `orders_discount_id_foreign` (`discount_id`);
+  ADD KEY `orders_discount_id_foreign` (`discount_id`),
+  ADD KEY `orders_status_index` (`status`),
+  ADD KEY `orders_created_at_index` (`created_at`);
 
 --
 -- Chỉ mục cho bảng `order_items`
@@ -12391,7 +12661,8 @@ ALTER TABLE `products`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `products_slug_unique` (`slug`),
   ADD KEY `products_brand_id_foreign` (`brand_id`),
-  ADD KEY `products_category_id_foreign` (`category_id`);
+  ADD KEY `products_category_id_foreign` (`category_id`),
+  ADD KEY `products_is_active_deleted_at_index` (`is_active`,`deleted_at`);
 
 --
 -- Chỉ mục cho bảng `product_images`
@@ -12416,7 +12687,8 @@ ALTER TABLE `product_variants`
   ADD PRIMARY KEY (`id`),
   ADD KEY `product_variants_product_id_foreign` (`product_id`),
   ADD KEY `product_variants_size_id_foreign` (`size_id`),
-  ADD KEY `product_variants_color_id_foreign` (`color_id`);
+  ADD KEY `product_variants_color_id_foreign` (`color_id`),
+  ADD KEY `product_variants_deleted_at_index` (`deleted_at`);
 
 --
 -- Chỉ mục cho bảng `provinces`
@@ -12486,7 +12758,8 @@ ALTER TABLE `suppliers`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `users_email_unique` (`email`);
+  ADD UNIQUE KEY `users_email_unique` (`email`),
+  ADD KEY `users_deleted_at_index` (`deleted_at`);
 
 --
 -- Chỉ mục cho bảng `variant_branch_stocks`
@@ -12517,25 +12790,25 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT cho bảng `brands`
 --
 ALTER TABLE `brands`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT cho bảng `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT cho bảng `colors`
 --
 ALTER TABLE `colors`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT cho bảng `discounts`
 --
 ALTER TABLE `discounts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT cho bảng `districts`
@@ -12547,61 +12820,61 @@ ALTER TABLE `districts`
 -- AUTO_INCREMENT cho bảng `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT cho bảng `inventory_transactions`
 --
 ALTER TABLE `inventory_transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT cho bảng `jobs`
 --
 ALTER TABLE `jobs`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT cho bảng `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT cho bảng `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT cho bảng `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT cho bảng `permissions`
 --
 ALTER TABLE `permissions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT cho bảng `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT cho bảng `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT cho bảng `product_images`
 --
 ALTER TABLE `product_images`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT cho bảng `product_reviews`
@@ -12613,7 +12886,7 @@ ALTER TABLE `product_reviews`
 -- AUTO_INCREMENT cho bảng `product_variants`
 --
 ALTER TABLE `product_variants`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT cho bảng `provinces`
@@ -12643,7 +12916,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT cho bảng `sales_channels`
 --
 ALTER TABLE `sales_channels`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT cho bảng `sizes`
@@ -12667,7 +12940,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT cho bảng `variant_branch_stocks`
 --
 ALTER TABLE `variant_branch_stocks`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT cho bảng `wards`
