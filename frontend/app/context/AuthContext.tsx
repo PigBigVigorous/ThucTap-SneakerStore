@@ -13,6 +13,10 @@ export type User = {
   roles?: { name: string }[];
   permissions?: { name: string }[];
   points?: number;
+  avatar?: string;
+  gender?: 'male' | 'female' | 'other';
+  dob?: string;
+  phone?: string;
 };
 
 type AuthContextType = {

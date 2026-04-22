@@ -21,6 +21,10 @@ class User extends Authenticatable
         'is_active', // Thêm trạng thái hoạt động
         'role', // Thêm role vào fillable để có thể gán giá trị khi tạo người dùng
         'points',
+        'avatar',
+        'gender',
+        'dob',
+        'phone',
     ];
 
     protected $hidden = [

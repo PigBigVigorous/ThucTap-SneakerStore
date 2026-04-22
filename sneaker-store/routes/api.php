@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Admin\ReportController;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\Api\UserAddressController;
+use App\Http\Controllers\Api\UserProfileController;
 
 //Route của khách hàng chưa đăng nhập
 Route::post('/register', [AuthController::class, 'register']);
@@ -117,6 +119,17 @@ Route::middleware('auth:sanctum')->group(function () {
         
         return response()->json(['success' => true, 'data' => $user]);
     });
+
+    // User Profile
+    Route::get('/user/profile', [UserProfileController::class, 'show']);
+    Route::put('/user/profile', [UserProfileController::class, 'update']);
+
+    // User Addresses
+    Route::get('/user/addresses', [UserAddressController::class, 'index']);
+    Route::post('/user/addresses', [UserAddressController::class, 'store']);
+    Route::put('/user/addresses/{id}', [UserAddressController::class, 'update']);
+    Route::delete('/user/addresses/{id}', [UserAddressController::class, 'destroy']);
+    Route::patch('/user/addresses/{id}/set-default', [UserAddressController::class, 'setDefault']);
 
     // Routes for admin
     Route::prefix('admin')->group(function () {

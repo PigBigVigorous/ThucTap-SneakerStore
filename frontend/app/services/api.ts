@@ -3,6 +3,18 @@
 // ===================================
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+export const BACKEND_URL = "http://127.0.0.1:8000";
+
+/**
+ * Chuyển đổi path từ backend thành full URL
+ * @param path ví dụ: /storage/avatars/abc.jpg
+ */
+export const getFileUrl = (path?: string | null) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${BACKEND_URL}${cleanPath}`;
+};
 
 // ==========================================
 // TYPE DEFINITIONS
@@ -13,10 +25,28 @@ export type User = {
   name: string;
   email: string;
   role: string;
-  // 👇 THÊM 2 DÒNG NÀY VÀO ĐỂ NHẬN QUYỀN TỪ BACKEND
   roles?: { name: string }[];
   permissions?: { name: string }[];
   points?: number;
+  avatar?: string;
+  gender?: 'male' | 'female' | 'other';
+  dob?: string;
+  phone?: string;
+};
+
+export type UserAddress = {
+  id: number;
+  user_id: number;
+  receiver_name: string;
+  phone_number: string;
+  province_id: number;
+  district_id: number;
+  ward_id: number;
+  address_detail: string;
+  is_default: boolean;
+  province?: { name: string; code: string };
+  district?: { name: string; code: string };
+  ward?: { name: string; code: string };
 };
 
 export type AuthResponse = {
@@ -158,6 +188,86 @@ export const authAPI = {
         "Accept": "application/json",
       },
       body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  // Cập nhật hồ sơ (FormData để hỗ trợ upload ảnh)
+  updateProfile: async (formData: FormData, token: string) => {
+    // Để Laravel nhận diện là PUT khi gửi qua POST
+    formData.append("_method", "PUT");
+    
+    const res = await fetch(`${API_URL}/user/profile`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: formData,
+    });
+    return res.json();
+  },
+};
+
+// ==========================================
+// 🏠 USER ADDRESS ENDPOINTS
+// ==========================================
+
+export const addressAPI = {
+  getAll: async (token: string) => {
+    const res = await fetch(`${API_URL}/user/addresses`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    return res.json();
+  },
+
+  create: async (data: any, token: string) => {
+    const res = await fetch(`${API_URL}/user/addresses`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  update: async (id: number, data: any, token: string) => {
+    const res = await fetch(`${API_URL}/user/addresses/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  delete: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/user/addresses/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    return res.json();
+  },
+
+  setDefault: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/user/addresses/${id}/set-default`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
     });
     return res.json();
   },

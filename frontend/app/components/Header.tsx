@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import { getFileUrl } from "../services/api";
 import { useCartStore } from "../store/useCartStore";
 import { useFavoritesStore } from "../store/useFavoritesStore";
 import MegaMenu from "./MegaMenu";
@@ -111,8 +112,12 @@ function UserMenu() {
       >
         {/* Avatar initials */}
         <div className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center
-                        text-[12px] font-black uppercase shrink-0">
-          {user.name?.[0] ?? "U"}
+                        text-[12px] font-black uppercase shrink-0 overflow-hidden border border-gray-100">
+          {user.avatar ? (
+            <img src={getFileUrl(user.avatar) || ""} alt={user.name} className="w-full h-full object-cover" />
+          ) : (
+            user.name?.[0] ?? "U"
+          )}
         </div>
         <span className="text-[13px] font-semibold text-gray-700 max-w-[100px] truncate hidden sm:block">
           {user.name}
@@ -130,6 +135,14 @@ function UserMenu() {
             </div>
             <div className="py-1">
               <Link
+                href="/user/profile"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-semibold text-gray-700
+                           hover:bg-gray-50 hover:text-orange-600 transition-colors"
+              >
+                <User size={15} /> Hồ sơ của tôi
+              </Link>
+              <Link
                 href="/favorites"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-semibold text-gray-700
@@ -138,7 +151,7 @@ function UserMenu() {
                 <Heart size={15} /> Yêu thích
               </Link>
               <Link
-                href="/my-orders"
+                href="/user/purchase"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-semibold text-gray-700
                            hover:bg-gray-50 hover:text-blue-600 transition-colors"
