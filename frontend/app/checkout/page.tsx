@@ -7,6 +7,9 @@ import { useCartStore } from "../store/useCartStore";
 import { Check, Lock, Package, ChevronRight, Truck, CreditCard, MapPin, User, ShieldCheck, Ticket, Banknote } from "lucide-react";
 import toast from "react-hot-toast";
 import { orderAPI, discountAPI, shippingAPI } from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import AuthRequiredModal from "../components/AuthRequiredModal";
+import { Coins } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
@@ -84,8 +87,18 @@ export default function CheckoutPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number; id: number } | null>(null);
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
 
+  // Loyalty Points State
+  const { user, isAuthenticated } = useAuth();
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState(0);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const totalOriginal = subtotal + shippingFee;
-  const total = Math.max(0, totalOriginal - (appliedDiscount?.amount || 0));
+  const pointDiscountValue = usePoints ? pointsToUse * 1000 : 0;
+  const total = Math.max(0, totalOriginal - (appliedDiscount?.amount || 0) - pointDiscountValue);
+
+  // Calculate potential points earned (100k = 1 point)
+  const potentialPoints = Math.floor((subtotal - (appliedDiscount?.amount || 0) - pointDiscountValue) / 100000);
 
   // Load provinces
   useEffect(() => {
@@ -100,7 +113,7 @@ export default function CheckoutPage() {
       setShippingFee(0);
       return;
     }
-    
+
     // Chỉ tính phí khi đã chọn đủ Tỉnh và Huyện
     if (formData.province && formData.district) {
       const fetchShippingFee = async () => {
@@ -179,9 +192,30 @@ export default function CheckoutPage() {
     toast.success("Đã gỡ mã giảm giá");
   };
 
+  const handleTogglePoints = () => {
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    if (!usePoints) {
+      if (!user?.points || user.points <= 0) {
+        toast.error("Bạn không có điểm tích lũy để sử dụng.");
+        return;
+      }
+      setPointsToUse(user.points || 0);
+      setUsePoints(true);
+      toast.success(`Đã áp dụng ${user.points || 0} điểm tích lũy!`);
+    } else {
+      setUsePoints(false);
+      setPointsToUse(0);
+      toast.success("Đã hủy dùng điểm tích lũy");
+    }
+  };
+
   const handlePreSubmit = () => {
     if (!isFormValid) { toast.error("Vui lòng điền đầy đủ thông tin giao hàng!"); return; }
-    
+
     if (paymentMethod === "qr") {
       setQrModalData({
         amount: total,
@@ -213,6 +247,7 @@ export default function CheckoutPage() {
         address_detail: formData.addressDetail, shipping_fee: shippingFee, total_amount: totalOriginal,
         discount_code: appliedDiscount ? appliedDiscount.code : null,
         payment_method: paymentMethod,
+        points_used: usePoints ? pointsToUse : 0,
         items: cart.map(i => ({ variant_id: i.variant_id, quantity: i.quantity }))
       }, token);
 
@@ -368,6 +403,63 @@ export default function CheckoutPage() {
                 </label>
               </div>
             </div>
+
+            {/* Loyalty Points Section */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110 duration-500 opacity-50"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-gray-900 flex items-center gap-2.5">
+                    <span className="w-7 h-7 rounded-full bg-amber-500 text-white text-xs flex items-center justify-center font-bold">
+                      <Coins size={14} />
+                    </span>
+                    Điểm tích lũy (Loyalty)
+                  </h2>
+                  {isAuthenticated && (
+                    <span className="text-sm font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                      Hiện có: {user?.points || 0} điểm
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <div className="flex-1">
+                    <p className="text-[15px] font-semibold text-gray-900 mb-1">
+                      {usePoints ? "Đang sử dụng điểm" : "Sử dụng điểm tích lũy?"}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {usePoints
+                        ? `Bạn đang dùng ${pointsToUse} điểm để được giảm ${(pointsToUse * 1000).toLocaleString('vi-VN')} ₫`
+                        : "Quy đổi: 1 điểm = 1.000 ₫. Giảm trực tiếp vào hóa đơn."
+                      }
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleTogglePoints}
+                    className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap shadow-sm ${usePoints
+                        ? 'bg-white text-rose-500 border border-rose-100 hover:bg-rose-50'
+                        : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
+                      }`}
+                  >
+                    {usePoints ? 'Hủy dùng điểm' : 'Dùng điểm ngay'}
+                  </button>
+                </div>
+
+                {!isAuthenticated && (
+                  <p className="mt-3 text-xs text-gray-400 text-center font-medium">
+                    Hãy <button onClick={() => setIsAuthModalOpen(true)} className="text-amber-600 hover:underline">đăng nhập</button> để xem và sử dụng điểm tích lũy của bạn.
+                  </p>
+                )}
+
+                {potentialPoints > 0 && (
+                  <div className="mt-4 flex items-center gap-2 text-xs font-bold text-green-600 bg-green-50 w-fit px-3 py-1.5 rounded-lg border border-green-100">
+                    <Check size={12} />
+                    Bạn sẽ nhận được +{potentialPoints} điểm khi hoàn thành đơn này!
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="w-full lg:w-[42%]">
@@ -406,6 +498,12 @@ export default function CheckoutPage() {
                     <div className="flex justify-between text-sm font-bold text-indigo-600">
                       <span>Voucher "{appliedDiscount.code}"</span>
                       <span>-{appliedDiscount.amount.toLocaleString('vi-VN')} ₫</span>
+                    </div>
+                  )}
+                  {usePoints && (
+                    <div className="flex justify-between text-sm font-bold text-amber-600">
+                      <span>Điểm tích lũy ({pointsToUse}đ)</span>
+                      <span>-{(pointsToUse * 1000).toLocaleString('vi-VN')} ₫</span>
                     </div>
                   )}
                 </div>
@@ -448,13 +546,12 @@ export default function CheckoutPage() {
                 <button
                   onClick={handlePreSubmit}
                   disabled={isLoading || !isFormValid || orderPlaced}
-                  className={`w-full py-4 rounded-2xl text-base font-bold transition-all shadow-lg ${
-                    orderPlaced
+                  className={`w-full py-4 rounded-2xl text-base font-bold transition-all shadow-lg ${orderPlaced
                       ? 'bg-green-500 text-white cursor-not-allowed'
                       : isLoading || !isFormValid
                         ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                         : 'bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] shadow-gray-900/20'
-                  }`}
+                    }`}
                 >
                   {orderPlaced ? (
                     <span className="flex items-center justify-center gap-2">
@@ -503,13 +600,13 @@ export default function CheckoutPage() {
             </div>
 
             <button
-               onClick={executeOrder}
-               disabled={isLoading}
-               className="w-full px-6 py-3.5 bg-gray-900 hover:bg-blue-600 disabled:bg-gray-400 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+              onClick={executeOrder}
+              disabled={isLoading}
+              className="w-full px-6 py-3.5 bg-gray-900 hover:bg-blue-600 disabled:bg-gray-400 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
-                  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
                   Đang xử lý...
                 </>
               ) : "Tôi đã thanh toán"}
@@ -517,6 +614,12 @@ export default function CheckoutPage() {
           </div>
         </div>
       )}
+
+      {/* Render Modal Yêu cầu đăng nhập */}
+      <AuthRequiredModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
     </div>
   );
 }

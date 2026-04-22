@@ -105,6 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // Route của khách hang đã đăng nhập
 Route::middleware('auth:sanctum')->group(function () {
     
+    Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/my-orders', [OrderController::class, 'myOrders']);
 

@@ -91,6 +91,21 @@ class AuthController extends Controller
     }
 
     /**
+     * LẤY THÔNG TIN NGƯỜI DÙNG (PROFILE)
+     */
+    public function me(Request $request)
+    {
+        $user = $request->user();
+        $user->load('roles');
+        $user->setRelation('permissions', $user->getAllPermissions());
+
+        return response()->json([
+            'success' => true,
+            'data' => $user
+        ]);
+    }
+
+    /**
      * ĐĂNG XUẤT (LOGOUT)
      */
     public function logout(Request $request)

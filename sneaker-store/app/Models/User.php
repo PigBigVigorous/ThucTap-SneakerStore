@@ -20,6 +20,7 @@ class User extends Authenticatable
         'password',
         'is_active', // Thêm trạng thái hoạt động
         'role', // Thêm role vào fillable để có thể gán giá trị khi tạo người dùng
+        'points',
     ];
 
     protected $hidden = [
@@ -42,5 +43,10 @@ class User extends Authenticatable
     public function posOrders()
     {
         return $this->hasMany(Order::class, 'cashier_id');
+    }
+
+    public function pointTransactions()
+    {
+        return $this->hasMany(PointTransaction::class);
     }
 }

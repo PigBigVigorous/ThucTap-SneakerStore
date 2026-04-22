@@ -122,6 +122,21 @@ class OrderController extends Controller
                 // Tự động mark Đã thanh toán khi Đã giao hàng thành công
                 if ($newStatus === 'delivered') {
                     $order->payment_status = 'paid';
+
+                    // CỘNG ĐIỂM TÍCH LŨY KHI GIAO HÀNG THÀNH CÔNG
+                    if ($order->user_id && $order->points_earned > 0 && $oldStatus !== 'delivered') {
+                        $user = \App\Models\User::find($order->user_id);
+                        if ($user) {
+                            $user->increment('points', $order->points_earned);
+                            \App\Models\PointTransaction::create([
+                                'user_id' => $user->id,
+                                'amount' => $order->points_earned,
+                                'type' => 'earn',
+                                'reason' => "Tích điểm từ đơn hàng " . $order->order_tracking_code,
+                                'order_id' => $order->id
+                            ]);
+                        }
+                    }
                 }
 
                 $order->save();

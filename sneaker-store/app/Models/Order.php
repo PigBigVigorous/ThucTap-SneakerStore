@@ -25,7 +25,9 @@ class Order extends Model
     'payment_status', // Nên thêm cả trường này nếu chưa có
     'transaction_id',
     'discount_id',
-    'discount_amount'
+    'discount_amount',
+    'points_used',
+    'points_earned',
 ];
 
     protected $casts = [

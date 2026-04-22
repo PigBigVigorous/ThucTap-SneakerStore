@@ -236,9 +236,45 @@ class InventoryService
                 }
             }
 
-            // 4. CẬP NHẬT TIỀN (BAO GỒM PHÍ SHIP VÀ TRỪ DISCOUNT)
+            // 4. XỬ LÝ ĐIỂM TÍCH LŨY (LOYALTY POINTS)
+            $pointsUsed = $isPos ? 0 : ($customerData['points_used'] ?? 0);
+            $pointDiscount = 0;
+
+            if ($pointsUsed > 0 && $userId) {
+                $user = \App\Models\User::find($userId);
+                if ($user && $user->points >= $pointsUsed) {
+                    // Quy đổi: 1 điểm = 1,000 VNĐ (Có thể cấu hình ở .env hoặc DB sau)
+                    $pointDiscount = $pointsUsed * 1000;
+                    
+                    if ($pointDiscount > ($totalAmount + $shippingFee - $discountAmount)) {
+                        $pointDiscount = max(0, $totalAmount + $shippingFee - $discountAmount);
+                        // Tính lại số điểm thực tế dùng nếu giảm kịch sàn về 0
+                        $pointsUsed = ceil($pointDiscount / 1000);
+                    }
+
+                    // Trừ điểm user
+                    $user->decrement('points', $pointsUsed);
+
+                    // Lưu lịch sử trừ điểm
+                    \App\Models\PointTransaction::create([
+                        'user_id' => $userId,
+                        'amount' => -$pointsUsed,
+                        'type' => 'spend',
+                        'reason' => "Sử dụng điểm cho đơn hàng " . $orderCode,
+                        'order_id' => $order->id
+                    ]);
+                } else {
+                    $pointsUsed = 0; // Reset nếu không đủ điểm
+                }
+            }
+
+            // Tính số điểm sẽ nhận được: 100,000 VNĐ = 1 điểm
+            $pointsEarned = floor(($totalAmount - $discountAmount - $pointDiscount) / 100000);
+            if ($pointsEarned < 0) $pointsEarned = 0;
+
+            // 5. CẬP NHẬT TIỀN (BAO GỒM PHÍ SHIP VÀ TRỪ DISCOUNT, POINT DISCOUNT)
             $shippingFee = $isPos ? 0 : ($customerData['shipping_fee'] ?? 0);
-            $finalTotal = $totalAmount + $shippingFee - $discountAmount;
+            $finalTotal = $totalAmount + $shippingFee - $discountAmount - $pointDiscount;
             
             // Đảm bảo Total > 0
             if ($finalTotal < 0) {
@@ -248,7 +284,9 @@ class InventoryService
             $order->update([
                 'total_amount' => $finalTotal,
                 'discount_id' => $discountId,
-                'discount_amount' => $discountAmount
+                'discount_amount' => $discountAmount,
+                'points_used' => $pointsUsed,
+                'points_earned' => $pointsEarned
             ]);
 
             return $order;
@@ -286,9 +324,23 @@ class InventoryService
                     'to_branch_id' => $order->branch_id,
                     'reference_id' => $order->id,
                     'quantity_change' => $item->quantity, 
-                    'note' => "Hoàn kho do hủy đơn hàng: " . $order->order_tracking_code,
                     'created_at' => now(),
                 ]);
+            }
+
+            // Hoàn lại điểm đã sử dụng (nếu có)
+            if ($order->user_id && $order->points_used > 0) {
+                $user = \App\Models\User::find($order->user_id);
+                if ($user) {
+                    $user->increment('points', $order->points_used);
+                    \App\Models\PointTransaction::create([
+                        'user_id' => $user->id,
+                        'amount' => $order->points_used,
+                        'type' => 'earn',
+                        'reason' => "Hoàn điểm do hủy đơn hàng: " . $order->order_tracking_code,
+                        'order_id' => $order->id
+                    ]);
+                }
             }
 
             return true;
@@ -468,6 +520,21 @@ class InventoryService
                         'note' => 'Khách trả hàng (Mã đơn: ' . $order->order_tracking_code . ')',
                         'to_branch_id' => $order->branch_id, // Hàng chạy thẳng vào chi nhánh
                         'created_at' => now(),
+                    ]);
+                }
+            }
+
+            // Hoàn lại điểm đã sử dụng (nếu có)
+            if ($order->user_id && $order->points_used > 0) {
+                $user = \App\Models\User::find($order->user_id);
+                if ($user) {
+                    $user->increment('points', $order->points_used);
+                    \App\Models\PointTransaction::create([
+                        'user_id' => $user->id,
+                        'amount' => $order->points_used,
+                        'type' => 'earn',
+                        'reason' => "Hoàn điểm do trả hàng: " . $order->order_tracking_code,
+                        'order_id' => $order->id
                     ]);
                 }
             }

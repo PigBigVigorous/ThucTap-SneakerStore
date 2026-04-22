@@ -16,6 +16,7 @@ export type User = {
   // 👇 THÊM 2 DÒNG NÀY VÀO ĐỂ NHẬN QUYỀN TỪ BACKEND
   roles?: { name: string }[];
   permissions?: { name: string }[];
+  points?: number;
 };
 
 export type AuthResponse = {
@@ -224,6 +225,7 @@ export interface OrderPayload {
   payment_method: string;
   items: { variant_id: number; quantity: number; }[];
   user_id?: number | null; // Thêm trường này để Backend biết đơn của user nào
+  points_used?: number;    // Thêm trường này để trừ điểm tích lũy
 }
 
 // ==========================================

@@ -88,13 +88,23 @@ class Product extends Model
             $query->where('name', 'like', '%' . $name . '%');
         }
 
+        // Lọc theo thương hiệu (brand)
+        if (!empty($params['brand'])) {
+            $brand = $params['brand'];
+            $query->whereHas('brand', function ($q) use ($brand) {
+                $q->where('name', 'like', '%' . $brand . '%');
+            });
+        }
+
         // Lọc theo danh mục
         if (!empty($params['category'])) {
             $cat = $params['category'];
-            $query->whereHas('category', function ($q) use ($cat) {
-                $q->where('name', 'like', '%' . $cat . '%');
-            })->orWhereHas('category.parent', function ($q) use ($cat) {
-                $q->where('name', 'like', '%' . $cat . '%');
+            $query->where(function ($q) use ($cat) {
+                $q->whereHas('category', function ($q2) use ($cat) {
+                    $q2->where('name', 'like', '%' . $cat . '%');
+                })->orWhereHas('category.parent', function ($q2) use ($cat) {
+                    $q2->where('name', 'like', '%' . $cat . '%');
+                });
             });
         }
 

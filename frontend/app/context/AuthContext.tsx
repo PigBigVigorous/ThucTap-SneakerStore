@@ -12,6 +12,7 @@ export type User = {
   role: string;
   roles?: { name: string }[];
   permissions?: { name: string }[];
+  points?: number;
 };
 
 type AuthContextType = {
@@ -21,6 +22,7 @@ type AuthContextType = {
   logout: () => void;
   hasRole: (roleName: string) => boolean;
   hasPermission: (permissionName: string) => boolean;
+  isAuthenticated: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -125,7 +127,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, hasRole, hasPermission }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      login, 
+      logout, 
+      hasRole, 
+      hasPermission,
+      isAuthenticated: !!user && !!token
+    }}>
       {children}
     </AuthContext.Provider>
   );
