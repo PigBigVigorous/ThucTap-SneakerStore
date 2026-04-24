@@ -53,4 +53,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(PointTransaction::class);
     }
+
+    public function vouchers()
+    {
+        return $this->belongsToMany(Discount::class, 'discount_user')->withPivot('is_used')->withTimestamps();
+    }
 }

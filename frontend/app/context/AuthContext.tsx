@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import toast from "react-hot-toast";
 import { useCartStore } from "../store/useCartStore"; // 🚨 Đã móc nối với Giỏ hàng
 import { useFavoritesStore } from "../store/useFavoritesStore";
+import { authAPI } from "../services/api";
 
 export type User = {
   id: number;
@@ -24,6 +25,7 @@ type AuthContextType = {
   token: string | null;
   login: (userData: User, authToken: string) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   hasRole: (roleName: string) => boolean;
   hasPermission: (permissionName: string) => boolean;
   isAuthenticated: boolean;
@@ -42,24 +44,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
       setToken(storedToken);
-
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
-      fetch(`${API_URL}/user`, {
-        headers: {
-          "Authorization": `Bearer ${storedToken}`,
-          "Accept": "application/json",
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.data) {
-            setUser(data.data);
-            localStorage.setItem("user", JSON.stringify(data.data));
-          }
-        })
-        .catch((err) => console.error("Lỗi đồng bộ dữ liệu User:", err));
+      // Gọi refresh để đồng bộ data mới nhất từ server (ví dụ: điểm vừa được cộng)
+      refreshUser();
     }
   }, []);
+
+  const refreshUser = async () => {
+    const storedToken = token || localStorage.getItem("token");
+    if (!storedToken) return;
+
+    try {
+      const data = await authAPI.getCurrentUser(storedToken);
+      if (data && data.success && data.data) {
+        setUser(data.data);
+        localStorage.setItem("user", JSON.stringify(data.data));
+      }
+    } catch (err: any) {
+      console.warn("Làm mới dữ liệu user thất bại:", err.message);
+      // Nếu là lỗi 'Failed to fetch', có thể do server backend chưa khởi động
+    }
+  };
 
   const login = (userData: User, authToken: string) => {
     setUser(userData);
@@ -136,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token, 
       login, 
       logout, 
+      refreshUser,
       hasRole, 
       hasPermission,
       isAuthenticated: !!user && !!token

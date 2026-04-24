@@ -31,4 +31,9 @@ class Discount extends Model
         'is_active' => 'boolean',
         'category_ids' => 'array',
     ];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'discount_user')->withPivot('is_used')->withTimestamps();
+    }
 }

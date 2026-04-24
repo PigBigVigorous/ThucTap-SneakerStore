@@ -139,7 +139,14 @@ class OrderController extends Controller
      */
     public function show($trackingCode)
     {
-        $order = Order::with(['salesChannel', 'branch', 'items.variant.product', 'items.variant.color', 'items.variant.size'])
+        $order = Order::with([
+            'salesChannel', 
+            'branch.province', 
+            'items.variant.product', 
+            'items.variant.color', 
+            'items.variant.size',
+            'discount'
+        ])
             ->where('order_tracking_code', $trackingCode)
             ->first();
 
@@ -184,10 +191,11 @@ class OrderController extends Controller
         // Lấy các đơn hàng có user_id trùng với ID của người dùng đang giữ Token
         $orders = Order::with([
             'salesChannel',
-            'branch',
+            'branch.province',
             'items.variant.product', 
             'items.variant.color', 
-            'items.variant.size'
+            'items.variant.size',
+            'discount'
         ])
         ->where('user_id', $request->user()->id)
         ->orderBy('created_at', 'desc')
@@ -198,5 +206,50 @@ class OrderController extends Controller
             'message' => 'Lấy danh sách đơn hàng thành công!',
             'data' => $orders
         ]);
+    }
+
+    /**
+     * Hủy đơn hàng (User)
+     */
+    public function cancel($id)
+    {
+        $order = Order::where('user_id', auth()->id())->findOrFail($id);
+
+        if ($order->status !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'Chỉ có thể hủy đơn hàng đang chờ xác nhận.'], 400);
+        }
+
+        $order->status = 'cancelled';
+        $order->save();
+
+        // Hoàn kho và hoàn điểm
+        $this->inventoryService->cancelOrder($order);
+
+        return response()->json(['success' => true, 'message' => 'Đã hủy đơn hàng thành công!']);
+    }
+
+    /**
+     * Trả hàng (User)
+     */
+    public function return(Request $request, $id)
+    {
+        $order = Order::where('user_id', auth()->id())->findOrFail($id);
+
+        if ($order->status !== 'completed') {
+            return response()->json(['success' => false, 'message' => 'Chỉ có thể trả hàng cho đơn hàng đã hoàn thành.'], 400);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $order->status = 'returned';
+        $order->return_reason = $request->reason;
+        $order->save();
+
+        // Hoàn kho và hoàn điểm
+        $this->inventoryService->returnOrder($order);
+
+        return response()->json(['success' => true, 'message' => 'Yêu cầu trả hàng đã được xử lý!']);
     }
 }

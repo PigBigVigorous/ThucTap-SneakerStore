@@ -7,9 +7,10 @@ import {
   Heart, X, SlidersHorizontal, ChevronDown,
   ArrowUpDown, Search, ChevronLeft, ChevronRight,
   RotateCcw, Loader2, ShieldCheck, RefreshCcw, Truck, Star,
-  TrendingUp, Zap,
+  TrendingUp, Zap, Ticket
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "./context/AuthContext";
 import { useFavoritesStore } from "./store/useFavoritesStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -48,6 +49,9 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 const PER_PAGE = 20;
 
 // ─── Feature highlights ───────────────────────────────────────────────────────
+
+import { discountAPI, Discount } from "./services/api";
+import VoucherCard from "./components/VoucherCard";
 
 const FEATURES = [
   { icon: Truck, label: "Miễn phí vận chuyển", desc: "Đơn hàng nội thành" },
@@ -175,8 +179,6 @@ function FilterBadge({ label, onRemove }: { label: string; onRemove: () => void 
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function ClientHome({
   initialProducts, initialMeta, activeCategory,
   activeBrand, allBrands, priceRange,
@@ -188,6 +190,22 @@ export default function ClientHome({
   allBrands: { id: number; name: string }[];
   priceRange: { min: number; max: number; buckets: { min: number; max: number }[] };
 }) {
+  const { user, isAuthenticated } = useAuth();
+  const [vouchers, setVouchers] = useState<Discount[]>([]);
+
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const token = localStorage.getItem("token") || undefined;
+        const res = await discountAPI.getActive(token);
+        if (res.success) setVouchers(res.data);
+      } catch (err) {
+        console.error("Lỗi tải voucher:", err);
+      }
+    };
+    fetchVouchers();
+  }, [isAuthenticated]);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -488,6 +506,36 @@ export default function ClientHome({
           </div>
         </div>
       </section>
+
+      {/* ── VOUCHERS ── */}
+      {vouchers.length > 0 && (
+        <section className="bg-gray-50/50 py-10 border-b border-gray-100">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight flex items-center gap-2">
+                  <Ticket className="text-red-500" /> Siêu ưu đãi từ Sneaker Store
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">Lưu voucher ngay để nhận ưu đãi cực hời khi thanh toán</p>
+              </div>
+              <Link href="/user/vouchers" className="text-sm font-bold text-red-600 hover:underline">Ví voucher của tôi →</Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+              {vouchers.map((v) => (
+                <div key={v.id} className="w-[320px] shrink-0">
+                  <VoucherCard
+                    voucher={v}
+                    isAuthenticated={isAuthenticated}
+                    onSaved={() => {
+                      // Cập nhật lại state voucher nếu cần
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── BRAND QUICK FILTER ── */}
       {allBrands.length > 0 && (

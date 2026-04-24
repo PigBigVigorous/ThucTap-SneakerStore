@@ -330,17 +330,7 @@ class InventoryService
 
             // Hoàn lại điểm đã sử dụng (nếu có)
             if ($order->user_id && $order->points_used > 0) {
-                $user = \App\Models\User::find($order->user_id);
-                if ($user) {
-                    $user->increment('points', $order->points_used);
-                    \App\Models\PointTransaction::create([
-                        'user_id' => $user->id,
-                        'amount' => $order->points_used,
-                        'type' => 'earn',
-                        'reason' => "Hoàn điểm do hủy đơn hàng: " . $order->order_tracking_code,
-                        'order_id' => $order->id
-                    ]);
-                }
+                app(\App\Services\PointService::class)->refundPointsForOrder($order);
             }
 
             return true;
@@ -524,18 +514,18 @@ class InventoryService
                 }
             }
 
-            // Hoàn lại điểm đã sử dụng (nếu có)
-            if ($order->user_id && $order->points_used > 0) {
-                $user = \App\Models\User::find($order->user_id);
-                if ($user) {
-                    $user->increment('points', $order->points_used);
-                    \App\Models\PointTransaction::create([
-                        'user_id' => $user->id,
-                        'amount' => $order->points_used,
-                        'type' => 'earn',
-                        'reason' => "Hoàn điểm do trả hàng: " . $order->order_tracking_code,
-                        'order_id' => $order->id
-                    ]);
+            // Hoàn lại điểm đã sử dụng & Thu hồi điểm đã tích (nếu có)
+            if ($order->user_id) {
+                $pointService = app(\App\Services\PointService::class);
+                
+                // 1. Nếu có dùng điểm -> Hoàn lại
+                if ($order->points_used > 0) {
+                    $pointService->refundPointsForOrder($order);
+                }
+                
+                // 2. Nếu đã tích điểm -> Thu hồi
+                if ($order->points_earned > 0) {
+                    $pointService->deductEarnedPointsForReturn($order);
                 }
             }
         });

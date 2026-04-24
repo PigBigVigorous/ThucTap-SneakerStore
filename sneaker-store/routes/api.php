@@ -36,6 +36,7 @@ Route::get('/products/price-range', [ProductController::class, 'priceRange']);
 Route::get('/products/{slug}', [ProductController::class, 'show']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{tracking_code}', [OrderController::class, 'show']);
+Route::get('/discounts/active', [DiscountController::class, 'getActiveVouchers']);
 Route::post('/discounts/apply', [DiscountController::class, 'apply']);
 Route::get('/payment/vnpay-ipn', [App\Http\Controllers\Api\PaymentController::class, 'vnpayIpn']);
 Route::get('/payment/vnpay-callback', [PaymentController::class, 'vnpayCallback']);
@@ -130,6 +131,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/user/addresses/{id}', [UserAddressController::class, 'update']);
     Route::delete('/user/addresses/{id}', [UserAddressController::class, 'destroy']);
     Route::patch('/user/addresses/{id}/set-default', [UserAddressController::class, 'setDefault']);
+
+    // User Vouchers
+    Route::get('/user/vouchers', [DiscountController::class, 'getUserVouchers']);
+    Route::post('/user/vouchers/{id}/save', [DiscountController::class, 'saveUserVoucher']);
+
+    // User Points
+    Route::get('/user/points', [App\Http\Controllers\Api\PointController::class, 'index']);
+
+    // Order Actions
+    Route::put('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+    Route::post('/orders/{id}/return', [OrderController::class, 'return']);
 
     // Routes for admin
     Route::prefix('admin')->group(function () {

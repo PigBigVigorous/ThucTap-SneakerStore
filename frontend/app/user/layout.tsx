@@ -45,10 +45,24 @@ const SidebarItem = ({
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Tránh Hydration Mismatch bằng cách chờ mounted mới render logic phụ thuộc Auth
+  if (!mounted) {
+    return (
+      <div className="bg-[#f5f5f5] min-h-screen pt-24 pb-12 flex items-center justify-center">
+         <div className="w-8 h-8 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[60vh]" suppressHydrationWarning>
         <p className="text-gray-500">Vui lòng đăng nhập để xem thông tin cá nhân.</p>
       </div>
     );

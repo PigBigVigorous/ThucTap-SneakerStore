@@ -9,8 +9,13 @@ class Branch extends Model
     protected $table = 'branches';
 
     protected $fillable = [
-        'name', 'address', 'phone', 'is_active', 'is_main'
+        'name', 'address', 'province_code', 'phone', 'is_active', 'is_main'
     ];
+
+    public function province()
+    {
+        return $this->belongsTo(Province::class, 'province_code', 'code');
+    }
 
     public function variantStocks()
     {

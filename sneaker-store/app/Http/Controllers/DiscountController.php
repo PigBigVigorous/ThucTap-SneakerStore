@@ -266,4 +266,84 @@ class DiscountController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Lấy danh sách các voucher đang active cho Trang chủ
+     */
+    public function getActiveVouchers()
+    {
+        $now = Carbon::now();
+        $discounts = Discount::where('is_active', true)
+            ->where(function ($q) use ($now) {
+                $q->whereNull('start_date')->orWhere('start_date', '<=', $now);
+            })
+            ->where(function ($q) use ($now) {
+                $q->whereNull('expiration_date')->orWhere('expiration_date', '>=', $now);
+            })
+            ->where(function ($q) {
+                $q->whereNull('usage_limit')->orWhereRaw('used_count < usage_limit');
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Nếu user đã đăng nhập, đánh dấu voucher nào đã lưu
+        $user = auth('sanctum')->user();
+        if ($user) {
+            $savedVoucherIds = $user->vouchers()->pluck('discounts.id')->toArray();
+            foreach ($discounts as $discount) {
+                $discount->is_saved = in_array($discount->id, $savedVoucherIds);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $discounts,
+        ]);
+    }
+
+    /**
+     * Lưu voucher vào ví cá nhân
+     */
+    public function saveUserVoucher($id)
+    {
+        $user = auth('sanctum')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Vui lòng đăng nhập để lưu voucher.'], 401);
+        }
+
+        $discount = Discount::findOrFail($id);
+
+        // Kiểm tra xem đã lưu chưa
+        if ($user->vouchers()->where('discount_id', $id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'Bạn đã lưu voucher này rồi.'], 400);
+        }
+
+        $user->vouchers()->attach($id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã lưu voucher vào ví của bạn!',
+        ]);
+    }
+
+    /**
+     * Lấy danh sách voucher đã lưu của User
+     */
+    public function getUserVouchers()
+    {
+        $user = auth('sanctum')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Vui lòng đăng nhập.'], 401);
+        }
+
+        $vouchers = $user->vouchers()
+            ->withPivot('is_used')
+            ->orderBy('discount_user.created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $vouchers,
+        ]);
+    }
 }

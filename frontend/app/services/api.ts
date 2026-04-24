@@ -102,6 +102,7 @@ export type Discount = {
   expiration_date?: string | null;
   is_active: boolean;
   category_ids?: number[] | null;
+  is_saved?: boolean; // 🟢 Thêm trạng thái đã lưu
 };
 
 export type Category = {
@@ -360,7 +361,39 @@ export const discountAPI = {
       throw new Error(result.message || "Không thể áp dụng mã giảm giá");
     }
     return result;
-  }
+  },
+
+  // Lấy danh sách voucher active cho trang chủ
+  getActive: async (token?: string) => {
+    const headers: Record<string, string> = { "Accept": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    
+    const res = await fetch(`${API_URL}/discounts/active`, { headers });
+    return res.json();
+  },
+
+  // Lưu voucher vào ví
+  save: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/user/vouchers/${id}/save`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    return res.json();
+  },
+
+  // Lấy ví voucher của user
+  getUserVouchers: async (token: string) => {
+    const res = await fetch(`${API_URL}/user/vouchers`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    return res.json();
+  },
 }
 
 
@@ -390,6 +423,23 @@ export const shippingAPI = {
       body: JSON.stringify({ province, district, ward }),
     });
     if (!res.ok) throw new Error("Lỗi khi tính phí vận chuyển");
+    return res.json();
+  },
+};
+
+// ==========================================
+// 🪙 POINT ENDPOINTS (Customer)
+// ==========================================
+
+export const pointAPI = {
+  getHistory: async (token: string) => {
+    const res = await fetch(`${API_URL}/user/points`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    if (!res.ok) throw new Error("Lỗi khi tải lịch sử điểm");
     return res.json();
   },
 };
@@ -460,6 +510,32 @@ export const orderAPI = {
       },
     });
     if (!res.ok) throw new Error("Lỗi khi tải đơn hàng");
+    return res.json();
+  },
+
+  // Hủy đơn hàng
+  cancel: async (id: number, token: string) => {
+    const res = await fetch(`${API_URL}/orders/${id}/cancel`, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    return res.json();
+  },
+
+  // Trả hàng
+  return: async (id: number, reason: string, token: string) => {
+    const res = await fetch(`${API_URL}/orders/${id}/return`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ reason }),
+    });
     return res.json();
   },
 };

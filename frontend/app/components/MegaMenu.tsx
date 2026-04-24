@@ -32,12 +32,13 @@ const CLOSE_DELAY_MS = 120;
 
 function NavSkeleton() {
   return (
-    <div className="flex items-center gap-6 h-full px-4 animate-pulse">
+    <div className="flex items-center gap-6 h-full px-4 animate-pulse" suppressHydrationWarning>
       {[80, 100, 72, 90].map((w, i) => (
         <div
           key={i}
           className="h-4 bg-gray-200 rounded"
           style={{ width: w }}
+          suppressHydrationWarning
         />
       ))}
     </div>

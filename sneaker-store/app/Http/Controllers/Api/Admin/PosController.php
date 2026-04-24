@@ -103,6 +103,7 @@ class PosController extends Controller
             'items.*.variant_id' => 'required|integer|exists:product_variants,id',
             'items.*.quantity' => 'required|integer|min:1',
             'branch_id' => 'nullable|integer|exists:branches,id',
+            'user_id' => 'nullable|integer|exists:users,id',
         ]);
 
         try {
@@ -117,10 +118,11 @@ class PosController extends Controller
                 }
                 // 2. Set branch ID (default to 1, or from request)
                 $branchId = $validatedData['branch_id'] ?? 1;
+                $userId = $validatedData['user_id'] ?? null;
 
-                // 3. Place order using InventoryService (user_id is null for walk-in guests)
+                // 3. Place order using InventoryService
                 $order = $this->inventoryService->placeOrder(
-                    null, // Walk-in customer (no user account)
+                    $userId, 
                     'Khách mua tại quầy', // Fixed address for POS
                     $validatedData['items'],
                     $posChannel->id,
@@ -128,14 +130,18 @@ class PosController extends Controller
                 );
 
                 // 4. Update order status to 'delivered' (immediate payment at counter)
-                // and set cashier_id to the logged-in admin/staff
                 $order->update([
                     'status' => 'delivered',
                     'payment_status' => 'paid',
                     'cashier_id' => $request->user()->id,
                 ]);
 
-                // 5. Reload with relationships for response
+                // 5. CỘNG ĐIỂM NGAY LẬP TỨC CHO ĐƠN POS
+                if ($order->user_id) {
+                    app(\App\Services\PointService::class)->awardPointsForOrder($order);
+                }
+
+                // 6. Reload with relationships for response
                 $order->load(['salesChannel', 'branch', 'cashier', 'items.variant.product']);
 
                 return response()->json([

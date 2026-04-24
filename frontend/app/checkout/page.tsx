@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "../store/useCartStore";
 import { Check, Lock, Package, ChevronRight, Truck, CreditCard, MapPin, User, ShieldCheck, Ticket, Banknote } from "lucide-react";
 import toast from "react-hot-toast";
-import { orderAPI, discountAPI, shippingAPI } from "../services/api";
+import { orderAPI, discountAPI, shippingAPI, addressAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import AuthRequiredModal from "../components/AuthRequiredModal";
 import { Coins } from "lucide-react";
@@ -77,6 +77,10 @@ export default function CheckoutPage() {
     province: "", district: "", ward: "", addressDetail: ""
   });
 
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | "new">("new");
+  const [showNewAddressForm, setShowNewAddressForm] = useState(true);
+
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const subtotal = cart.reduce((t, i) => t + i.price * i.quantity, 0);
   const FREESHIP_THRESHOLD = 5000000;
@@ -88,10 +92,58 @@ export default function CheckoutPage() {
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
 
   // Loyalty Points State
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshUser } = useAuth();
   const [usePoints, setUsePoints] = useState(false);
   const [pointsToUse, setPointsToUse] = useState(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  // Fetch addresses if logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      const token = localStorage.getItem("token") || "";
+      addressAPI.getAll(token).then((res: any) => {
+        if (res && Array.isArray(res)) {
+          setAddresses(res);
+          if (res.length > 0) {
+            const defaultAddr = res.find((a: any) => a.is_default) || res[0];
+            setSelectedAddressId(defaultAddr.id);
+            applySelectedAddress(defaultAddr);
+            setShowNewAddressForm(false);
+          }
+        }
+      });
+    }
+  }, [isAuthenticated]);
+
+  const applySelectedAddress = (addr: any) => {
+    setFormData({
+      name: addr.receiver_name,
+      phone: addr.phone_number,
+      email: user?.email || "",
+      province: addr.province?.name || "",
+      district: addr.district?.name || "",
+      ward: addr.ward?.name || "",
+      addressDetail: addr.address_detail
+    });
+    // Cần set code để fetch tiếp Districts/Wards nếu muốn (nhưng ở đây chỉ hiển thị text)
+    // Tuy nhiên API tính phí ship cần Province/District name
+  };
+
+  const handleSelectAddress = (addrId: number | "new") => {
+    setSelectedAddressId(addrId);
+    if (addrId === "new") {
+      setShowNewAddressForm(true);
+      setFormData({
+        name: user?.name || "", phone: user?.phone || "", email: user?.email || "",
+        province: "", district: "", ward: "", addressDetail: ""
+      });
+      setSelectedProvinceCode(""); setSelectedDistrictCode(""); setSelectedWardCode("");
+    } else {
+      setShowNewAddressForm(false);
+      const addr = addresses.find(a => a.id === addrId);
+      if (addr) applySelectedAddress(addr);
+    }
+  };
 
   const totalOriginal = subtotal + shippingFee;
   const pointDiscountValue = usePoints ? pointsToUse * 1000 : 0;
@@ -240,6 +292,26 @@ export default function CheckoutPage() {
     );
 
     try {
+      // 🟢 PHẦN 1: Tự động lưu địa chỉ nếu là user thành viên và chọn "Thêm mới"
+      if (isAuthenticated && selectedAddressId === "new") {
+        const addressData = {
+          receiver_name: formData.name,
+          phone_number: formData.phone,
+          province_id: parseInt(selectedProvinceCode),
+          district_id: parseInt(selectedDistrictCode),
+          ward_id: parseInt(selectedWardCode),
+          address_detail: formData.addressDetail,
+          is_default: addresses.length === 0 // Mặc định nếu là địa chỉ đầu tiên
+        };
+
+        try {
+          await addressAPI.create(addressData, token);
+        } catch (addrErr) {
+          console.error("Lỗi lưu địa chỉ:", addrErr);
+          // Vẫn cho phép đặt hàng tiếp dù lưu địa chỉ lỗi
+        }
+      }
+
       const data = await orderAPI.create({
         user_id: user?.id || null,
         customer_name: formData.name, customer_phone: formData.phone, customer_email: formData.email,
@@ -269,6 +341,7 @@ export default function CheckoutPage() {
         // Đánh dấu đã đặt xong TRƯỚC khi clear cart để tránh flash "giỏ trống"
         setOrderPlaced(true);
         setOrderSuccess(true);
+        refreshUser();
         setQrModalData(null);
         clearSelectedItems();
         setTimeout(() => router.push(user ? "/my-orders" : "/"), 3500);
@@ -333,25 +406,56 @@ export default function CheckoutPage() {
                 <span className="w-7 h-7 rounded-full bg-gray-900 text-white text-xs flex items-center justify-center font-bold">2</span>
                 Địa chỉ giao hàng
               </h2>
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <CustomSelect label="Tỉnh / Thành phố *" value={selectedProvinceCode} onChange={handleProvinceChange} options={provinces} defaultOption="Chọn Tỉnh/Thành phố" icon={<MapPin size={15} />} />
-                  <CustomSelect label="Quận / Huyện *" value={selectedDistrictCode} onChange={handleDistrictChange} options={districts} disabled={!selectedProvinceCode} defaultOption={selectedProvinceCode ? "Chọn Quận/Huyện" : "Chọn Tỉnh trước"} />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <CustomSelect label="Phường / Xã *" value={selectedWardCode} onChange={handleWardChange} options={wards} disabled={!selectedDistrictCode} defaultOption={selectedDistrictCode ? "Chọn Phường/Xã" : "Chọn Huyện trước"} />
-                  <FloatingInput name="addressDetail" label="Số nhà, Tên đường *" value={formData.addressDetail} onChange={handleInputChange} />
-                </div>
-                {formData.district && (
-                  <div className={`flex items-center gap-2.5 p-3 rounded-xl text-sm font-semibold mt-1 transition-all ${shippingFee === 0 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                    <Truck size={16} />
-                    {shippingFee === 0
-                      ? subtotal >= FREESHIP_THRESHOLD ? "🎉 Miễn phí giao hàng cho đơn từ 5.000.000đ!" : "🎉 Miễn phí giao hàng nội thành!"
-                      : `Phí giao hàng: ${shippingFee.toLocaleString('vi-VN')} ₫ (Ngoại thành / Tỉnh)`
-                    }
+
+              {isAuthenticated && addresses.length > 0 && (
+                <div className="mb-6 space-y-3">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Chọn từ địa chỉ đã lưu:</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {addresses.map((addr) => (
+                      <label
+                        key={addr.id}
+                        className={`flex items-start gap-3 p-3 border rounded-xl cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-gray-900 bg-gray-50' : 'border-gray-100 hover:border-gray-300'}`}
+                        onClick={() => handleSelectAddress(addr.id)}
+                      >
+                        <input type="radio" name="address" checked={selectedAddressId === addr.id} readOnly className="mt-1" />
+                        <div className="text-sm">
+                          <p className="font-bold">{addr.receiver_name} <span className="font-normal text-gray-500">| {addr.phone_number}</span></p>
+                          <p className="text-gray-600 mt-0.5">{addr.address_detail}, {addr.ward?.name}, {addr.district?.name}, {addr.province?.name}</p>
+                        </div>
+                      </label>
+                    ))}
+                    <button
+                      onClick={() => handleSelectAddress("new")}
+                      className={`flex items-center justify-center gap-2 p-3 border border-dashed rounded-xl text-sm font-bold transition-all ${selectedAddressId === 'new' ? 'border-gray-900 bg-gray-50 text-gray-900' : 'border-gray-200 text-gray-500 hover:border-gray-400'}`}
+                    >
+                      + Thêm địa chỉ mới
+                    </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {showNewAddressForm && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <CustomSelect label="Tỉnh / Thành phố *" value={selectedProvinceCode} onChange={handleProvinceChange} options={provinces} defaultOption="Chọn Tỉnh/Thành phố" icon={<MapPin size={15} />} />
+                    <CustomSelect label="Quận / Huyện *" value={selectedDistrictCode} onChange={handleDistrictChange} options={districts} disabled={!selectedProvinceCode} defaultOption={selectedProvinceCode ? "Chọn Quận/Huyện" : "Chọn Tỉnh trước"} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <CustomSelect label="Phường / Xã *" value={selectedWardCode} onChange={handleWardChange} options={wards} disabled={!selectedDistrictCode} defaultOption={selectedDistrictCode ? "Chọn Phường/Xã" : "Chọn Huyện trước"} />
+                    <FloatingInput name="addressDetail" label="Số nhà, Tên đường *" value={formData.addressDetail} onChange={handleInputChange} />
+                  </div>
+                </div>
+              )}
+
+              {formData.district && (
+                <div className={`flex items-center gap-2.5 p-3 rounded-xl text-sm font-semibold mt-4 transition-all ${shippingFee === 0 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                  <Truck size={16} />
+                  {shippingFee === 0
+                    ? subtotal >= FREESHIP_THRESHOLD ? "🎉 Miễn phí giao hàng cho đơn từ 5.000.000đ!" : "🎉 Miễn phí giao hàng nội thành!"
+                    : `Phí giao hàng: ${shippingFee.toLocaleString('vi-VN')} ₫ (Ngoại thành / Tỉnh)`
+                  }
+                </div>
+              )}
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -438,8 +542,8 @@ export default function CheckoutPage() {
                   <button
                     onClick={handleTogglePoints}
                     className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap shadow-sm ${usePoints
-                        ? 'bg-white text-rose-500 border border-rose-100 hover:bg-rose-50'
-                        : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
+                      ? 'bg-white text-rose-500 border border-rose-100 hover:bg-rose-50'
+                      : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
                       }`}
                   >
                     {usePoints ? 'Hủy dùng điểm' : 'Dùng điểm ngay'}
@@ -547,10 +651,10 @@ export default function CheckoutPage() {
                   onClick={handlePreSubmit}
                   disabled={isLoading || !isFormValid || orderPlaced}
                   className={`w-full py-4 rounded-2xl text-base font-bold transition-all shadow-lg ${orderPlaced
-                      ? 'bg-green-500 text-white cursor-not-allowed'
-                      : isLoading || !isFormValid
-                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] shadow-gray-900/20'
+                    ? 'bg-green-500 text-white cursor-not-allowed'
+                    : isLoading || !isFormValid
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-900 text-white hover:bg-gray-800 active:scale-[0.98] shadow-gray-900/20'
                     }`}
                 >
                   {orderPlaced ? (
