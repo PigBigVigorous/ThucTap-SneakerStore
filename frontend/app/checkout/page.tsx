@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "../store/useCartStore";
@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import { orderAPI, discountAPI, shippingAPI, addressAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import AuthRequiredModal from "../components/AuthRequiredModal";
-import AddressSection from "./components/AddressSection";
+import ShippingAddressSection from "./components/ShippingAddressSection";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
@@ -73,8 +73,13 @@ export default function CheckoutPage() {
   const [selectedWardCode, setSelectedWardCode] = useState("");
 
   const [formData, setFormData] = useState({
-    name: "", phone: "", email: "",
-    province: "", district: "", ward: "", addressDetail: ""
+    email: "",
+    province: "", 
+    district: "", 
+    ward: "", 
+    addressDetail: "",
+    shipping_name: "",
+    shipping_phone: ""
   });
 
   const [addresses, setAddresses] = useState<any[]>([]);
@@ -99,26 +104,36 @@ export default function CheckoutPage() {
 
   // Removed old address fetching logic, handled in AddressSection component
 
-  const handleAddressSelect = (data: any) => {
+  const handleAddressSelect = useCallback((data: any) => {
     setSelectedAddressId(data.addressId || null);
     setFormData(f => ({
       ...f,
-      name: data.manualData?.receiver_name || data.displayInfo.split('|')[0].trim(),
-      phone: data.manualData?.phone_number || data.displayInfo.split('|')[1].split('\n')[0].trim(),
+      shipping_name: data.contactInfo.name,
+      shipping_phone: data.contactInfo.phone,
+      email: data.contactInfo.email || f.email,
       province: data.shippingData.province,
       district: data.shippingData.district,
       ward: data.shippingData.ward,
-      addressDetail: data.manualData?.address_detail || data.displayInfo.split('\n')[1].split(',')[0].trim()
+      addressDetail: data.detailAddress || data.manualData?.detail_address || ""
     }));
     setAddressDisplay(data.displayInfo);
-  };
+  }, []);
 
-  const totalOriginal = subtotal + shippingFee;
-  const pointDiscountValue = usePoints ? pointsToUse * 1000 : 0;
-  const total = Math.max(0, totalOriginal - (appliedDiscount?.amount || 0) - pointDiscountValue);
-
-  // Calculate potential points earned (100k = 1 point)
-  const potentialPoints = Math.floor((subtotal - (appliedDiscount?.amount || 0) - pointDiscountValue) / 100000);
+  // Centralized calculations
+  const { totalOriginal, pointDiscountValue, total, potentialPoints } = useMemo(() => {
+    const original = subtotal + shippingFee;
+    const pointValue = usePoints ? pointsToUse * 1000 : 0;
+    const discount = appliedDiscount?.amount || 0;
+    const final = Math.max(0, original - discount - pointValue);
+    const potential = Math.floor((subtotal - discount - pointValue) / 100000);
+    
+    return {
+      totalOriginal: original,
+      pointDiscountValue: pointValue,
+      total: final,
+      potentialPoints: potential
+    };
+  }, [subtotal, shippingFee, usePoints, pointsToUse, appliedDiscount]);
 
   // Load provinces
   useEffect(() => {
@@ -152,35 +167,10 @@ export default function CheckoutPage() {
     }
   }, [formData.province, formData.district, formData.ward, subtotal]);
 
-  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const code = e.target.value;
-    const name = e.target.options[e.target.selectedIndex].text;
-    setSelectedProvinceCode(code); setSelectedDistrictCode(""); setSelectedWardCode("");
-    setFormData(f => ({ ...f, province: name, district: "", ward: "" }));
-    setDistricts([]); setWards([]);
-    if (code) fetch(`${API_BASE_URL}/districts/${code}`).then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setDistricts(d); else if (d?.data) setDistricts(d.data); });
-  };
-
-  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const code = e.target.value;
-    const name = e.target.options[e.target.selectedIndex].text;
-    setSelectedDistrictCode(code); setSelectedWardCode("");
-    setFormData(f => ({ ...f, district: name, ward: "" }));
-    setWards([]);
-    if (code) fetch(`${API_BASE_URL}/wards/${code}`).then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setWards(d); else if (d?.data) setWards(d.data); });
-  };
-
-  const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedWardCode(e.target.value);
-    setFormData(f => ({ ...f, ward: e.target.options[e.target.selectedIndex].text }));
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
 
-  const isFormValid = formData.name && formData.phone && formData.province && formData.district && formData.ward && formData.addressDetail;
+  const isFormValid = formData.shipping_name && formData.shipping_phone && formData.province && formData.district && formData.ward && formData.addressDetail && (isAuthenticated || formData.email);
 
   const handleApplyDiscount = async () => {
     if (!discountCode.trim()) return;
@@ -239,7 +229,7 @@ export default function CheckoutPage() {
     if (paymentMethod === "qr") {
       setQrModalData({
         amount: total,
-        description: `SDT ${formData.phone}`,
+        description: `SDT ${formData.shipping_phone}`,
         name: "SNEAKER STORE"
       });
     } else {
@@ -264,7 +254,7 @@ export default function CheckoutPage() {
       const data = await orderAPI.create({
         user_id: user?.id || null,
         address_id: selectedAddressId,
-        customer_name: formData.name, customer_phone: formData.phone, customer_email: formData.email,
+        customer_name: formData.shipping_name, customer_phone: formData.shipping_phone, customer_email: formData.email,
         province: formData.province, district: formData.district, ward: formData.ward,
         address_detail: formData.addressDetail, shipping_fee: shippingFee, total_amount: totalOriginal,
         discount_code: appliedDiscount ? appliedDiscount.code : null,
@@ -305,7 +295,30 @@ export default function CheckoutPage() {
     }
   };
 
-  if (cart.length === 0 && !orderSuccess && !orderPlaced) {
+  if (orderSuccess) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
+        <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-8 relative">
+           <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-25"></div>
+           <Check size={48} className="text-emerald-600 relative z-10" />
+        </div>
+        <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-4 uppercase italic">Đặt hàng thành công!</h1>
+        <p className="text-gray-500 max-w-md mx-auto mb-10 font-medium leading-relaxed">
+          Cảm ơn bạn đã tin tưởng chọn Sneaker Store. Đơn hàng của bạn đang được xử lý và sẽ sớm được giao đến bạn.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+          <Link href={isAuthenticated ? "/my-orders" : "/"} className="flex-1 px-8 py-4 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-gray-900/20 active:scale-95">
+            {isAuthenticated ? "Xem đơn hàng của tôi" : "Về trang chủ"}
+          </Link>
+          <Link href="/" className="flex-1 px-8 py-4 border-2 border-gray-100 rounded-2xl font-black text-sm text-gray-900 uppercase tracking-widest hover:bg-gray-50 transition-all active:scale-95">
+            Tiếp tục mua sắm
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (cart.length === 0 && !orderPlaced) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-4">
         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-2">
@@ -331,20 +344,20 @@ export default function CheckoutPage() {
             <span className="text-xl font-black text-gray-900 tracking-tighter uppercase italic">Sneaker Store</span>
           </Link>
           
-          <div className="hidden md:flex items-center gap-8">
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
-              <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px]">1</div>
-              Giỏ hàng
+          <div className="hidden md:flex items-center gap-10">
+            <div className="flex items-center gap-3 text-sm font-black text-gray-900 group">
+              <div className="w-8 h-8 rounded-xl bg-gray-900 text-white flex items-center justify-center text-xs shadow-lg shadow-gray-900/20 group-hover:rotate-6 transition-transform">1</div>
+              <span className="uppercase tracking-widest">Giỏ hàng</span>
             </div>
-            <div className="w-8 h-px bg-gray-200"></div>
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
-              <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]">2</div>
-              Thanh toán
+            <div className="w-12 h-0.5 bg-gray-100 rounded-full"></div>
+            <div className="flex items-center gap-3 text-sm font-black text-blue-600 group">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs shadow-lg shadow-blue-600/20 group-hover:rotate-6 transition-transform">2</div>
+              <span className="uppercase tracking-widest">Thanh toán</span>
             </div>
-            <div className="w-8 h-px bg-gray-200"></div>
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
-              <div className="w-6 h-6 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-[10px]">3</div>
-              Hoàn tất
+            <div className="w-12 h-0.5 bg-gray-100 rounded-full"></div>
+            <div className="flex items-center gap-3 text-sm font-black text-gray-300 group">
+              <div className="w-8 h-8 rounded-xl bg-gray-100 text-gray-300 flex items-center justify-center text-xs">3</div>
+              <span className="uppercase tracking-widest">Hoàn tất</span>
             </div>
           </div>
 
@@ -360,59 +373,19 @@ export default function CheckoutPage() {
           {/* Left Column: Checkout Form */}
           <div className="w-full lg:w-[62%] space-y-8">
             
-            {/* 1. Thông tin người nhận */}
+            {/* 1 & 2. Thông tin nhận hàng & Địa chỉ */}
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-xl bg-gray-900 text-white text-xs flex items-center justify-center font-bold shadow-lg shadow-gray-900/20">1</span>
-                Thông tin người nhận
+                Thông tin giao hàng
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Họ tên *</label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: Nguyễn Văn A"
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/5 focus:border-gray-900 transition-all font-medium"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Số điện thoại *</label>
-                  <input
-                    type="tel"
-                    placeholder="Ví dụ: 0912345678"
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/5 focus:border-gray-900 transition-all font-medium"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Email (để nhận thông báo đơn hàng)</label>
-                  <input
-                    type="email"
-                    placeholder="example@gmail.com"
-                    className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/5 focus:border-gray-900 transition-all font-medium"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 2. Địa chỉ giao hàng */}
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <h2 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-xl bg-gray-900 text-white text-xs flex items-center justify-center font-bold shadow-lg shadow-gray-900/20">2</span>
-                Địa chỉ giao hàng
-              </h2>
-              
-              <AddressSection 
+              <ShippingAddressSection 
                 isLoggedIn={isAuthenticated} 
                 onAddressSelect={handleAddressSelect} 
               />
               
+
               {formData.district && (
                 <div className="mt-6 flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-700 text-sm animate-in zoom-in-95 duration-300">
                   <Truck size={18} />
@@ -426,63 +399,62 @@ export default function CheckoutPage() {
               )}
             </div>
 
-            {/* 3. Phương thức thanh toán */}
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-              <h2 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-xl bg-gray-900 text-white text-xs flex items-center justify-center font-bold shadow-lg shadow-gray-900/20">3</span>
-                Phương thức thanh toán
-              </h2>
+            {/* Payment Section */}
+            <div className="bg-white rounded-[2rem] p-10 shadow-sm border border-gray-100/80 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+              <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-xl font-black text-gray-900 flex items-center gap-4">
+                    <span className="w-10 h-10 rounded-2xl bg-gray-900 text-white text-sm flex items-center justify-center font-bold shadow-xl shadow-gray-900/20">2</span>
+                    Phương thức thanh toán
+                  </h2>
+                  <div className="hidden sm:flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                      <Lock size={12} className="text-green-500" /> Thanh toán an toàn
+                  </div>
+              </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                <label className={`group flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 ${paymentMethod === 'cod' ? 'border-gray-900 bg-gray-50' : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`} onClick={() => setPaymentMethod('cod')}>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${paymentMethod === 'cod' ? 'border-gray-900' : 'border-gray-200'}`}>
-                    {paymentMethod === 'cod' && <div className="w-3 h-3 rounded-full bg-gray-900 animate-in zoom-in duration-200" />}
-                  </div>
-                  <div className="flex items-center gap-4 w-full">
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-110 transition-transform">
-                      <Banknote size={24} className={paymentMethod === 'cod' ? "text-gray-900" : "text-gray-400"} />
+              <div className="grid grid-cols-1 gap-5">
+                {[
+                  { id: 'cod', title: 'Thanh toán khi nhận hàng (COD)', desc: 'Thanh toán bằng tiền mặt khi shipper giao hàng', icon: <Banknote size={24} />, activeClass: 'border-gray-900 bg-gray-50/50 shadow-gray-900/5', ringClass: 'border-gray-900 bg-gray-900', iconColor: 'text-gray-900' },
+                  { id: 'vnpay', title: 'Thanh toán thẻ (VNPay)', desc: 'ATM / Visa / Mastercard / JCB / ...', icon: <CreditCard size={24} />, activeClass: 'border-blue-600 bg-blue-50/50 shadow-blue-600/5', ringClass: 'border-blue-600 bg-blue-600', iconColor: 'text-blue-600' },
+                  { id: 'qr', title: 'Chuyển khoản QR Code', desc: 'Quét mã QR qua ứng dụng ngân hàng của bạn', icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                      <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                  ), activeClass: 'border-indigo-600 bg-indigo-50/50 shadow-indigo-600/5', ringClass: 'border-indigo-600 bg-indigo-600', iconColor: 'text-indigo-600' }
+                ].map((method) => (
+                  <label 
+                    key={method.id}
+                    className={`group relative flex items-center gap-5 p-6 border-2 rounded-[1.5rem] cursor-pointer transition-all duration-500 overflow-hidden ${
+                      paymentMethod === method.id 
+                        ? `${method.activeClass} shadow-lg` 
+                        : 'border-gray-50 hover:border-gray-200 hover:bg-gray-50'
+                    }`} 
+                    onClick={() => setPaymentMethod(method.id)}
+                  >
+                    {paymentMethod === method.id && (
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] rounded-full -mr-12 -mt-12 animate-in zoom-in-50 duration-700"></div>
+                    )}
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300 ${
+                      paymentMethod === method.id ? method.ringClass : 'border-gray-200 bg-white'
+                    }`}>
+                      {paymentMethod === method.id && <Check size={12} className="text-white animate-in zoom-in duration-300" />}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-gray-900 text-sm">Thanh toán khi nhận hàng (COD)</span>
-                      <span className="text-gray-400 text-xs mt-0.5 font-medium">Thanh toán bằng tiền mặt khi shipper giao hàng</span>
+                    <div className="flex items-center gap-5 w-full relative z-10">
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 transition-all duration-300 ${
+                        paymentMethod === method.id ? 'bg-white scale-105 shadow-md' : 'bg-white group-hover:scale-105'
+                      }`}>
+                        <div className={paymentMethod === method.id ? method.iconColor : "text-gray-400"}>
+                          {method.icon}
+                        </div>
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <span className={`font-black text-[15px] transition-colors ${paymentMethod === method.id ? 'text-gray-900' : 'text-gray-500'}`}>
+                          {method.title}
+                        </span>
+                        <span className="text-gray-400 text-xs mt-1 font-bold tracking-tight">{method.desc}</span>
+                      </div>
                     </div>
-                  </div>
-                </label>
-
-                <label className={`group flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 ${paymentMethod === 'vnpay' ? 'border-blue-600 bg-blue-50/50' : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`} onClick={() => setPaymentMethod('vnpay')}>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${paymentMethod === 'vnpay' ? 'border-blue-600' : 'border-gray-200'}`}>
-                    {paymentMethod === 'vnpay' && <div className="w-3 h-3 rounded-full bg-blue-600 animate-in zoom-in duration-200" />}
-                  </div>
-                  <div className="flex items-center gap-4 w-full">
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-110 transition-transform">
-                      <CreditCard size={24} className={paymentMethod === 'vnpay' ? "text-blue-600" : "text-gray-400"} />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-gray-900 text-sm">Thanh toán thẻ (VNPay)</span>
-                      <span className="text-gray-400 text-xs mt-0.5 font-medium">ATM / Visa / Mastercard / JCB / ...</span>
-                    </div>
-                  </div>
-                </label>
-
-                <label className={`group flex items-center gap-4 p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 ${paymentMethod === 'qr' ? 'border-indigo-600 bg-indigo-50/50' : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`} onClick={() => setPaymentMethod('qr')}>
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${paymentMethod === 'qr' ? 'border-indigo-600' : 'border-gray-200'}`}>
-                    {paymentMethod === 'qr' && <div className="w-3 h-3 rounded-full bg-indigo-600 animate-in zoom-in duration-200" />}
-                  </div>
-                  <div className="flex items-center gap-4 w-full">
-                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-100 group-hover:scale-110 transition-transform">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`w-6 h-6 ${paymentMethod === 'qr' ? "text-indigo-600" : "text-gray-400"}`}>
-                        <rect x="3" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="3" width="7" height="7"></rect>
-                        <rect x="14" y="14" width="7" height="7"></rect>
-                        <rect x="3" y="14" width="7" height="7"></rect>
-                      </svg>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-gray-900 text-sm">Chuyển khoản QR Code</span>
-                      <span className="text-gray-400 text-xs mt-0.5 font-medium">Quét mã QR qua ứng dụng ngân hàng của bạn</span>
-                    </div>
-                  </div>
-                </label>
+                  </label>
+                ))}
               </div>
             </div>
 
@@ -697,8 +669,8 @@ export default function CheckoutPage() {
 
             <div className="w-full bg-gray-50 rounded-xl p-4 text-center border border-gray-100 space-y-2 mb-6">
               <div className="text-xs text-gray-400 uppercase tracking-widest font-semibold">Tổng tiền thanh toán</div>
-              <div className="text-2xl font-black text-blue-600">{(qrModalData.amount).toLocaleString('vi-VN')} ₫</div>
-              <div className="text-sm text-gray-600 border-t border-dashed border-gray-300 pt-2 mt-2 font-medium">Nội dung CK: <strong className="text-gray-900">{qrModalData.description}</strong></div>
+              <div className="text-2xl font-black text-blue-600">{(qrModalData?.amount || 0).toLocaleString('vi-VN')} ₫</div>
+              <div className="text-sm text-gray-600 border-t border-dashed border-gray-300 pt-2 mt-2 font-medium">Nội dung CK: <strong className="text-gray-900">{qrModalData?.description || ""}</strong></div>
             </div>
 
             <button
