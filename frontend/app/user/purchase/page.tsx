@@ -180,9 +180,11 @@ export default function UserPurchasePage() {
               <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-red-500 mr-1">Sneaker Store</span>
-                  <span className="text-xs text-gray-400 border-l pl-2">
-                    Chi nhánh {order.branch?.province?.name || order.branch?.name || 'Hệ thống'}
-                  </span>
+                  {(order.sales_channel?.type === 'pos' || order.salesChannel?.type === 'pos') && (
+                    <span className="text-xs text-gray-400 border-l pl-2">
+                      Chi nhánh {order.branch?.province?.name || order.branch?.name || 'Hệ thống'}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                    <div className="flex items-center text-red-600 text-sm gap-1 font-bold">

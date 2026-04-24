@@ -39,8 +39,27 @@ class OrderController extends Controller
     public function store(\App\Http\Requests\StoreOrderRequest $request)
     {
         $validatedData = $request->validated();
-
         $userId = auth('sanctum')->check() ? auth('sanctum')->id() : null;
+        
+        // Nếu có address_id, lấy thông tin từ DB và ghi đè vào validatedData
+        if (!empty($validatedData['address_id'])) {
+            $address = \App\Models\UserAddress::where('user_id', $userId)
+                ->where('id', $validatedData['address_id'])
+                ->with(['province', 'district', 'ward'])
+                ->first();
+
+            if (!$address) {
+                return response()->json(['success' => false, 'message' => 'Địa chỉ không hợp lệ hoặc không thuộc về bạn.'], 400);
+            }
+
+            $validatedData['customer_name'] = $address->receiver_name;
+            $validatedData['customer_phone'] = $address->phone_number;
+            $validatedData['customer_email'] = auth('sanctum')->user()->email;
+            $validatedData['province'] = $address->province->name;
+            $validatedData['district'] = $address->district->name;
+            $validatedData['ward'] = $address->ward->name;
+            $validatedData['address_detail'] = $address->address_detail;
+        }
 
         try {
             // Lấy ID Kênh Web

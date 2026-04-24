@@ -336,6 +336,7 @@ export interface OrderPayload {
   payment_method: string;
   items: { variant_id: number; quantity: number; }[];
   user_id?: number | null; // Thêm trường này để Backend biết đơn của user nào
+  address_id?: number | null; // ID địa chỉ từ sổ địa chỉ
   points_used?: number;    // Thêm trường này để trừ điểm tích lũy
 }
 

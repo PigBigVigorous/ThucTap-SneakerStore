@@ -24,13 +24,14 @@ class StoreOrderRequest extends FormRequest
     public function rules()
     {
         return [
-            'customer_name' => 'required|string|max:255',
-            'customer_phone' => 'required|string|max:20',
-            'customer_email' => 'required|email|max:255',
-            'province' => 'required|string|max:255',
-            'district' => 'required|string|max:255',
-            'ward' => 'required|string|max:255',
-            'address_detail' => 'required|string|max:255',
+            'address_id' => 'nullable|exists:user_addresses,id',
+            'customer_name' => 'required_without:address_id|nullable|string|max:255',
+            'customer_phone' => 'required_without:address_id|nullable|string|max:20',
+            'customer_email' => 'required_without:address_id|nullable|email|max:255',
+            'province' => 'required_without:address_id|nullable|string|max:255',
+            'district' => 'required_without:address_id|nullable|string|max:255',
+            'ward' => 'required_without:address_id|nullable|string|max:255',
+            'address_detail' => 'required_without:address_id|nullable|string|max:255',
             'shipping_fee' => 'required|numeric|min:0', 
             'payment_method' => 'required|string', 
             'items' => 'required|array|min:1',

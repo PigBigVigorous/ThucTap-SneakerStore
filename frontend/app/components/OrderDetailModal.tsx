@@ -101,9 +101,9 @@ export default function OrderDetailModal({ isOpen, onClose, orderId, trackingCod
                   <p className="text-gray-600">
                     {order.address_detail}, {order.ward}, {order.district}, {order.province}
                   </p>
-                    {order.branch && (
+                    {order.branch && (order.sales_channel?.type === 'pos' || order.salesChannel?.type === 'pos') && (
                       <p className="text-xs text-indigo-600 font-semibold mt-2">
-                        Được xử lý bởi: Sneaker Store - Chi nhánh {order.branch.province?.name || order.branch.name || 'Hệ thống'}
+                        Được mua tại: Sneaker Store - Chi nhánh {order.branch.province?.name || order.branch.name || 'Hệ thống'}
                       </p>
                     )}
                 </div>
