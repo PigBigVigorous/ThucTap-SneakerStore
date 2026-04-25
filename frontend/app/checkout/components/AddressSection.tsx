@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MapPin, Phone, User, Check, Plus, ChevronRight, Truck, Landmark, Edit2, Trash2 } from "lucide-react";
 import { addressAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -114,7 +114,11 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
         province: addr.province?.name || "",
         district: addr.district?.name || "",
         ward: addr.ward?.name || ""
-      }
+      },
+      // @ts-ignore
+      contactInfo: { name: addr.receiver_name, phone: addr.phone_number, email: "" },
+      // @ts-ignore
+      detailAddress: addr.address_detail
     });
     setViewMode("selected");
   };
@@ -146,6 +150,27 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
+
+  // useEffect thay thế form onChange để tránh stale closure
+  const syncGuestDataToParent = useCallback(() => {
+    if (isLoggedIn) return;
+    const provinceName = provinces.find(p => p.code === selectedProvinceCode)?.name || "";
+    const districtName = districts.find(d => d.code === selectedDistrictCode)?.name || "";
+    const wardName = wards.find(w => w.code === selectedWardCode)?.name || "";
+    onAddressSelect({
+      manualData: { ...formData, province: provinceName, district: districtName, ward: wardName },
+      displayInfo: `${formData.receiver_name} | ${formData.phone_number}\n${formData.address_detail}, ${wardName}, ${districtName}, ${provinceName}`,
+      shippingData: { province: provinceName, district: districtName, ward: wardName },
+      // @ts-ignore
+      contactInfo: { name: formData.receiver_name, phone: formData.phone_number, email: "" },
+      // @ts-ignore
+      detailAddress: formData.address_detail
+    });
+  }, [isLoggedIn, formData, selectedProvinceCode, selectedDistrictCode, selectedWardCode, provinces, districts, wards, onAddressSelect]);
+
+  useEffect(() => {
+    syncGuestDataToParent();
+  }, [syncGuestDataToParent]);
 
   const handleSubmitNew = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,19 +223,7 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
           <span className="w-7 h-7 rounded-full bg-gray-900 text-white text-xs flex items-center justify-center font-bold">2</span>
           Địa chỉ giao hàng
         </h2>
-        <form className="space-y-3" onChange={() => {
-           // Update parent on any change for guest
-           const provinceName = provinces.find(p => p.code === selectedProvinceCode)?.name || "";
-           const districtName = districts.find(d => d.code === selectedDistrictCode)?.name || "";
-           const wardName = wards.find(w => w.code === selectedWardCode)?.name || "";
-           if (formData.receiver_name && formData.phone_number && provinceName && districtName && wardName && formData.address_detail) {
-             onAddressSelect({
-                manualData: { ...formData, province: provinceName, district: districtName, ward: wardName },
-                displayInfo: `${formData.receiver_name} | ${formData.phone_number}\n${formData.address_detail}, ${wardName}, ${districtName}, ${provinceName}`,
-                shippingData: { province: provinceName, district: districtName, ward: wardName }
-             });
-           }
-        }}>
+        <form className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FloatingInput name="receiver_name" label="Người nhận *" value={formData.receiver_name} onChange={handleInputChange} icon={<User size={16} />} />
             <FloatingInput name="phone_number" label="Số điện thoại *" value={formData.phone_number} onChange={handleInputChange} icon={<Phone size={16} />} />

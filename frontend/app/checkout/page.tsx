@@ -108,9 +108,9 @@ export default function CheckoutPage() {
     setSelectedAddressId(data.addressId || null);
     setFormData(f => ({
       ...f,
-      shipping_name: data.contactInfo.name,
-      shipping_phone: data.contactInfo.phone,
-      email: data.contactInfo.email || f.email,
+      shipping_name: data.contactInfo?.name || data.manualData?.receiver_name || "",
+      shipping_phone: data.contactInfo?.phone || data.manualData?.phone_number || "",
+      email: data.contactInfo?.email || data.manualData?.email || f.email,
       province: data.shippingData.province,
       district: data.shippingData.district,
       ward: data.shippingData.ward,
@@ -223,8 +223,33 @@ export default function CheckoutPage() {
     }
   };
 
+  // Thêm useEffect để debug các state khiến nút bị khóa
+  useEffect(() => {
+    console.log('Disabled reasons:', {
+      isLoading,
+      orderPlaced,
+      isFormValid,
+      missingFields: {
+        shipping_name: !formData.shipping_name,
+        shipping_phone: !formData.shipping_phone,
+        province: !formData.province,
+        district: !formData.district,
+        ward: !formData.ward,
+        addressDetail: !formData.addressDetail,
+        email: !isAuthenticated && !formData.email
+      }
+    });
+  }, [isLoading, orderPlaced, isFormValid, formData, isAuthenticated]);
+
   const handlePreSubmit = () => {
-    if (!isFormValid) { toast.error("Vui lòng điền đầy đủ thông tin giao hàng!"); return; }
+    // Hiển thị lỗi chi tiết thay vì chặn nút "im lặng"
+    if (!formData.shipping_name) { toast.error("Vui lòng nhập tên người nhận!"); return; }
+    if (!formData.shipping_phone) { toast.error("Vui lòng nhập số điện thoại!"); return; }
+    if (!isAuthenticated && !formData.email) { toast.error("Vui lòng nhập email liên hệ!"); return; }
+    if (!formData.province) { toast.error("Vui lòng chọn Tỉnh/Thành phố!"); return; }
+    if (!formData.district) { toast.error("Vui lòng chọn Quận/Huyện!"); return; }
+    if (!formData.ward) { toast.error("Vui lòng chọn Phường/Xã!"); return; }
+    if (!formData.addressDetail) { toast.error("Vui lòng nhập địa chỉ cụ thể!"); return; }
 
     if (paymentMethod === "qr") {
       setQrModalData({
@@ -617,11 +642,11 @@ export default function CheckoutPage() {
               <div className="mt-8 space-y-4 relative z-10">
                 <button
                   onClick={handlePreSubmit}
-                  disabled={isLoading || !isFormValid || orderPlaced}
+                  disabled={isLoading || orderPlaced}
                   className={`w-full py-5 rounded-2xl text-base font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${
                     orderPlaced
                       ? 'bg-emerald-500 text-white cursor-not-allowed shadow-emerald-500/20'
-                      : isLoading || !isFormValid
+                      : isLoading
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-gray-900 text-white hover:bg-blue-600 shadow-gray-900/20 hover:shadow-blue-600/20'
                   }`}
