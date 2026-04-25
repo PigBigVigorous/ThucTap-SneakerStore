@@ -74,9 +74,9 @@ export default function CheckoutPage() {
 
   const [formData, setFormData] = useState({
     email: "",
-    province: "", 
-    district: "", 
-    ward: "", 
+    province: "",
+    district: "",
+    ward: "",
     addressDetail: "",
     shipping_name: "",
     shipping_phone: ""
@@ -108,15 +108,15 @@ export default function CheckoutPage() {
     setSelectedAddressId(data.addressId || null);
     setFormData(f => ({
       ...f,
-      shipping_name: data.contactInfo?.name || data.manualData?.receiver_name || "",
-      shipping_phone: data.contactInfo?.phone || data.manualData?.phone_number || "",
-      email: data.contactInfo?.email || data.manualData?.email || f.email,
-      province: data.shippingData.province,
-      district: data.shippingData.district,
-      ward: data.shippingData.ward,
-      addressDetail: data.detailAddress || data.manualData?.detail_address || ""
+      shipping_name: data.contactInfo?.name || "",
+      shipping_phone: data.contactInfo?.phone || "",
+      email: data.contactInfo?.email || f.email,
+      province: data.shippingData?.province || "",
+      district: data.shippingData?.district || "",
+      ward: data.shippingData?.ward || "",
+      addressDetail: data.detailAddress || ""
     }));
-    setAddressDisplay(data.displayInfo);
+    setAddressDisplay(data.displayInfo || "");
   }, []);
 
   // Centralized calculations
@@ -126,7 +126,7 @@ export default function CheckoutPage() {
     const discount = appliedDiscount?.amount || 0;
     const final = Math.max(0, original - discount - pointValue);
     const potential = Math.floor((subtotal - discount - pointValue) / 100000);
-    
+
     return {
       totalOriginal: original,
       pointDiscountValue: pointValue,
@@ -170,7 +170,7 @@ export default function CheckoutPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
 
-  const isFormValid = formData.shipping_name && formData.shipping_phone && formData.province && formData.district && formData.ward && formData.addressDetail && (isAuthenticated || formData.email);
+  const isFormValid = formData.shipping_name && formData.shipping_phone && formData.province && formData.district && formData.ward && formData.addressDetail;
 
   const handleApplyDiscount = async () => {
     if (!discountCode.trim()) return;
@@ -223,33 +223,15 @@ export default function CheckoutPage() {
     }
   };
 
-  // Thêm useEffect để debug các state khiến nút bị khóa
-  useEffect(() => {
-    console.log('Disabled reasons:', {
-      isLoading,
-      orderPlaced,
-      isFormValid,
-      missingFields: {
-        shipping_name: !formData.shipping_name,
-        shipping_phone: !formData.shipping_phone,
-        province: !formData.province,
-        district: !formData.district,
-        ward: !formData.ward,
-        addressDetail: !formData.addressDetail,
-        email: !isAuthenticated && !formData.email
-      }
-    });
-  }, [isLoading, orderPlaced, isFormValid, formData, isAuthenticated]);
-
   const handlePreSubmit = () => {
-    // Hiển thị lỗi chi tiết thay vì chặn nút "im lặng"
+    // Kiểm tra lần lượt từng điều kiện và hiển thị thông báo lỗi cụ thể
     if (!formData.shipping_name) { toast.error("Vui lòng nhập tên người nhận!"); return; }
     if (!formData.shipping_phone) { toast.error("Vui lòng nhập số điện thoại!"); return; }
-    if (!isAuthenticated && !formData.email) { toast.error("Vui lòng nhập email liên hệ!"); return; }
-    if (!formData.province) { toast.error("Vui lòng chọn Tỉnh/Thành phố!"); return; }
-    if (!formData.district) { toast.error("Vui lòng chọn Quận/Huyện!"); return; }
-    if (!formData.ward) { toast.error("Vui lòng chọn Phường/Xã!"); return; }
-    if (!formData.addressDetail) { toast.error("Vui lòng nhập địa chỉ cụ thể!"); return; }
+    if (!formData.province) { toast.error("Vui lòng chọn Tỉnh / Thành phố!"); return; }
+    if (!formData.district) { toast.error("Vui lòng chọn Quận / Huyện!"); return; }
+    if (!formData.ward) { toast.error("Vui lòng chọn Phường / Xã!"); return; }
+    if (!formData.addressDetail) { toast.error("Vui lòng nhập số nhà, tên đường cụ thể!"); return; }
+    if (!isAuthenticated && !formData.email) { toast.error("Vui lòng nhập email để nhận thông báo đơn hàng!"); return; }
 
     if (paymentMethod === "qr") {
       setQrModalData({
@@ -324,8 +306,8 @@ export default function CheckoutPage() {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
         <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-8 relative">
-           <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-25"></div>
-           <Check size={48} className="text-emerald-600 relative z-10" />
+          <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-25"></div>
+          <Check size={48} className="text-emerald-600 relative z-10" />
         </div>
         <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-4 uppercase italic">Đặt hàng thành công!</h1>
         <p className="text-gray-500 max-w-md mx-auto mb-10 font-medium leading-relaxed">
@@ -368,7 +350,7 @@ export default function CheckoutPage() {
             </div>
             <span className="text-xl font-black text-gray-900 tracking-tighter uppercase italic">Sneaker Store</span>
           </Link>
-          
+
           <div className="hidden md:flex items-center gap-10">
             <div className="flex items-center gap-3 text-sm font-black text-gray-900 group">
               <div className="w-8 h-8 rounded-xl bg-gray-900 text-white flex items-center justify-center text-xs shadow-lg shadow-gray-900/20 group-hover:rotate-6 transition-transform">1</div>
@@ -397,25 +379,25 @@ export default function CheckoutPage() {
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
           {/* Left Column: Checkout Form */}
           <div className="w-full lg:w-[62%] space-y-8">
-            
+
             {/* 1 & 2. Thông tin nhận hàng & Địa chỉ */}
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-xl bg-gray-900 text-white text-xs flex items-center justify-center font-bold shadow-lg shadow-gray-900/20">1</span>
                 Thông tin giao hàng
               </h2>
-              
-              <ShippingAddressSection 
-                isLoggedIn={isAuthenticated} 
-                onAddressSelect={handleAddressSelect} 
+
+              <ShippingAddressSection
+                isLoggedIn={isAuthenticated}
+                onAddressSelect={handleAddressSelect}
               />
-              
+
 
               {formData.district && (
                 <div className="mt-6 flex items-center gap-3 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-blue-700 text-sm animate-in zoom-in-95 duration-300">
                   <Truck size={18} />
                   <p className="font-medium">
-                    Phí vận chuyển cho <strong>{formData.district}, {formData.province}</strong>: 
+                    Phí vận chuyển cho <strong>{formData.district}, {formData.province}</strong>:
                     <span className="ml-1 text-blue-800 font-bold">
                       {shippingFee === 0 ? "Miễn phí" : `${shippingFee.toLocaleString('vi-VN')} ₫`}
                     </span>
@@ -427,46 +409,45 @@ export default function CheckoutPage() {
             {/* Payment Section */}
             <div className="bg-white rounded-[2rem] p-10 shadow-sm border border-gray-100/80 animate-in fade-in slide-in-from-bottom-6 duration-1000">
               <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-xl font-black text-gray-900 flex items-center gap-4">
-                    <span className="w-10 h-10 rounded-2xl bg-gray-900 text-white text-sm flex items-center justify-center font-bold shadow-xl shadow-gray-900/20">2</span>
-                    Phương thức thanh toán
-                  </h2>
-                  <div className="hidden sm:flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                      <Lock size={12} className="text-green-500" /> Thanh toán an toàn
-                  </div>
+                <h2 className="text-xl font-black text-gray-900 flex items-center gap-4">
+                  <span className="w-10 h-10 rounded-2xl bg-gray-900 text-white text-sm flex items-center justify-center font-bold shadow-xl shadow-gray-900/20">2</span>
+                  Phương thức thanh toán
+                </h2>
+                <div className="hidden sm:flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                  <Lock size={12} className="text-green-500" /> Thanh toán an toàn
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-5">
                 {[
                   { id: 'cod', title: 'Thanh toán khi nhận hàng (COD)', desc: 'Thanh toán bằng tiền mặt khi shipper giao hàng', icon: <Banknote size={24} />, activeClass: 'border-gray-900 bg-gray-50/50 shadow-gray-900/5', ringClass: 'border-gray-900 bg-gray-900', iconColor: 'text-gray-900' },
                   { id: 'vnpay', title: 'Thanh toán thẻ (VNPay)', desc: 'ATM / Visa / Mastercard / JCB / ...', icon: <CreditCard size={24} />, activeClass: 'border-blue-600 bg-blue-50/50 shadow-blue-600/5', ringClass: 'border-blue-600 bg-blue-600', iconColor: 'text-blue-600' },
-                  { id: 'qr', title: 'Chuyển khoản QR Code', desc: 'Quét mã QR qua ứng dụng ngân hàng của bạn', icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-                      <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
-                    </svg>
-                  ), activeClass: 'border-indigo-600 bg-indigo-50/50 shadow-indigo-600/5', ringClass: 'border-indigo-600 bg-indigo-600', iconColor: 'text-indigo-600' }
+                  {
+                    id: 'qr', title: 'Chuyển khoản QR Code', desc: 'Quét mã QR qua ứng dụng ngân hàng của bạn', icon: (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                        <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+                      </svg>
+                    ), activeClass: 'border-indigo-600 bg-indigo-50/50 shadow-indigo-600/5', ringClass: 'border-indigo-600 bg-indigo-600', iconColor: 'text-indigo-600'
+                  }
                 ].map((method) => (
-                  <label 
+                  <label
                     key={method.id}
-                    className={`group relative flex items-center gap-5 p-6 border-2 rounded-[1.5rem] cursor-pointer transition-all duration-500 overflow-hidden ${
-                      paymentMethod === method.id 
-                        ? `${method.activeClass} shadow-lg` 
-                        : 'border-gray-50 hover:border-gray-200 hover:bg-gray-50'
-                    }`} 
+                    className={`group relative flex items-center gap-5 p-6 border-2 rounded-[1.5rem] cursor-pointer transition-all duration-500 overflow-hidden ${paymentMethod === method.id
+                      ? `${method.activeClass} shadow-lg`
+                      : 'border-gray-50 hover:border-gray-200 hover:bg-gray-50'
+                      }`}
                     onClick={() => setPaymentMethod(method.id)}
                   >
                     {paymentMethod === method.id && (
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] rounded-full -mr-12 -mt-12 animate-in zoom-in-50 duration-700"></div>
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.03] rounded-full -mr-12 -mt-12 animate-in zoom-in-50 duration-700"></div>
                     )}
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300 ${
-                      paymentMethod === method.id ? method.ringClass : 'border-gray-200 bg-white'
-                    }`}>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300 ${paymentMethod === method.id ? method.ringClass : 'border-gray-200 bg-white'
+                      }`}>
                       {paymentMethod === method.id && <Check size={12} className="text-white animate-in zoom-in duration-300" />}
                     </div>
                     <div className="flex items-center gap-5 w-full relative z-10">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 transition-all duration-300 ${
-                        paymentMethod === method.id ? 'bg-white scale-105 shadow-md' : 'bg-white group-hover:scale-105'
-                      }`}>
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-gray-100 transition-all duration-300 ${paymentMethod === method.id ? 'bg-white scale-105 shadow-md' : 'bg-white group-hover:scale-105'
+                        }`}>
                         <div className={paymentMethod === method.id ? method.iconColor : "text-gray-400"}>
                           {method.icon}
                         </div>
@@ -545,7 +526,7 @@ export default function CheckoutPage() {
           <div className="w-full lg:w-[38%] lg:sticky lg:top-24">
             <div className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-900/5 border border-gray-100 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-110 transition-transform duration-700"></div>
-              
+
               <h2 className="text-lg font-black text-gray-900 mb-8 flex items-center justify-between relative z-10">
                 Tóm tắt đơn hàng
                 <span className="text-[10px] font-black text-gray-400 bg-gray-100 px-3 py-1 rounded-full uppercase tracking-widest">{cart.length} sản phẩm</span>
@@ -582,14 +563,13 @@ export default function CheckoutPage() {
                       onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
                     />
                   </div>
-                  <button 
+                  <button
                     onClick={handleApplyDiscount}
                     disabled={!discountCode || !!appliedDiscount}
-                    className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                      appliedDiscount 
-                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                        : 'bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400'
-                    }`}
+                    className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${appliedDiscount
+                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                      : 'bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400'
+                      }`}
                   >
                     {appliedDiscount ? 'Đã áp dụng' : 'Áp dụng'}
                   </button>
@@ -612,7 +592,7 @@ export default function CheckoutPage() {
                   <span>Phí vận chuyển</span>
                   <span className="text-gray-900 font-bold">{shippingFee === 0 ? 'Miễn phí' : `+${shippingFee.toLocaleString('vi-VN')} ₫`}</span>
                 </div>
-                
+
                 {appliedDiscount && (
                   <div className="flex justify-between text-sm font-bold text-emerald-600 bg-emerald-50/50 px-3 py-1.5 rounded-lg border border-emerald-100/50 animate-in slide-in-from-right-4 duration-300">
                     <span className="flex items-center gap-1.5"><Ticket size={14} /> Giảm giá voucher</span>
@@ -643,13 +623,12 @@ export default function CheckoutPage() {
                 <button
                   onClick={handlePreSubmit}
                   disabled={isLoading || orderPlaced}
-                  className={`w-full py-5 rounded-2xl text-base font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${
-                    orderPlaced
-                      ? 'bg-emerald-500 text-white cursor-not-allowed shadow-emerald-500/20'
-                      : isLoading
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-900 text-white hover:bg-blue-600 shadow-gray-900/20 hover:shadow-blue-600/20'
-                  }`}
+                  className={`w-full py-5 rounded-2xl text-base font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${orderPlaced
+                    ? 'bg-emerald-500 text-white cursor-not-allowed shadow-emerald-500/20'
+                    : isLoading
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-900 text-white hover:bg-blue-600 shadow-gray-900/20 hover:shadow-blue-600/20'
+                    }`}
                 >
                   {orderPlaced ? (
                     <span className="flex items-center justify-center gap-3">

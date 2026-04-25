@@ -72,8 +72,8 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
   const [selectedDistrictCode, setSelectedDistrictCode] = useState("");
   const [selectedWardCode, setSelectedWardCode] = useState("");
   const [formData, setFormData] = useState({
-    receiver_name: "",
-    phone_number: "",
+    shipping_name: "",
+    shipping_phone: "",
     address_detail: "",
     is_default: false
   });
@@ -109,14 +109,14 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
     setSelectedAddress(addr);
     onAddressSelect({
       addressId: addr.id,
-      displayInfo: `${addr.receiver_name} | ${addr.phone_number}\n${addr.address_detail}, ${addr.ward?.name}, ${addr.district?.name}, ${addr.province?.name}`,
+      displayInfo: `${addr.shipping_name} | ${addr.shipping_phone}\n${addr.address_detail}, ${addr.ward?.name}, ${addr.district?.name}, ${addr.province?.name}`,
       shippingData: {
         province: addr.province?.name || "",
         district: addr.district?.name || "",
         ward: addr.ward?.name || ""
       },
       // @ts-ignore
-      contactInfo: { name: addr.receiver_name, phone: addr.phone_number, email: "" },
+      contactInfo: { name: addr.shipping_name, phone: addr.shipping_phone, email: "" },
       // @ts-ignore
       detailAddress: addr.address_detail
     });
@@ -159,10 +159,10 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
     const wardName = wards.find(w => w.code === selectedWardCode)?.name || "";
     onAddressSelect({
       manualData: { ...formData, province: provinceName, district: districtName, ward: wardName },
-      displayInfo: `${formData.receiver_name} | ${formData.phone_number}\n${formData.address_detail}, ${wardName}, ${districtName}, ${provinceName}`,
+      displayInfo: `${formData.shipping_name} | ${formData.shipping_phone}\n${formData.address_detail}, ${wardName}, ${districtName}, ${provinceName}`,
       shippingData: { province: provinceName, district: districtName, ward: wardName },
       // @ts-ignore
-      contactInfo: { name: formData.receiver_name, phone: formData.phone_number, email: "" },
+      contactInfo: { name: formData.shipping_name, phone: formData.shipping_phone, email: "" },
       // @ts-ignore
       detailAddress: formData.address_detail
     });
@@ -187,7 +187,7 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
           district: districtName,
           ward: wardName
         },
-        displayInfo: `${formData.receiver_name} | ${formData.phone_number}\n${formData.address_detail}, ${wardName}, ${districtName}, ${provinceName}`,
+        displayInfo: `${formData.shipping_name} | ${formData.shipping_phone}\n${formData.address_detail}, ${wardName}, ${districtName}, ${provinceName}`,
         shippingData: { province: provinceName, district: districtName, ward: wardName }
       });
       return;
@@ -221,12 +221,12 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
         <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2.5">
           <span className="w-7 h-7 rounded-full bg-gray-900 text-white text-xs flex items-center justify-center font-bold">2</span>
-          Địa chỉ giao hàng
+          Địa chỉ giao hàngr
         </h2>
         <form className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <FloatingInput name="receiver_name" label="Người nhận *" value={formData.receiver_name} onChange={handleInputChange} icon={<User size={16} />} />
-            <FloatingInput name="phone_number" label="Số điện thoại *" value={formData.phone_number} onChange={handleInputChange} icon={<Phone size={16} />} />
+            <FloatingInput name="shipping_name" label="Người nhận *" value={formData.shipping_name} onChange={handleInputChange} icon={<User size={16} />} />
+            <FloatingInput name="shipping_phone" label="Số điện thoại *" value={formData.shipping_phone} onChange={handleInputChange} icon={<Phone size={16} />} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <CustomSelect label="Tỉnh / Thành phố *" value={selectedProvinceCode} onChange={handleProvinceChange} options={provinces} defaultOption="Chọn Tỉnh/Thành phố" icon={<MapPin size={15} />} />
@@ -249,7 +249,7 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
           Địa chỉ giao hàng
         </h2>
         {viewMode === "selected" && (
-          <button 
+          <button
             onClick={() => setViewMode("list")}
             className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1"
           >
@@ -257,110 +257,110 @@ export default function AddressSection({ isLoggedIn, onAddressSelect }: AddressS
           </button>
         )}
         {(viewMode === "list" || viewMode === "add") && (
-            <button 
-                onClick={() => setViewMode("selected")}
-                className="text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
-            >
-                Quay lại
-            </button>
+          <button
+            onClick={() => setViewMode("selected")}
+            className="text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Quay lại
+          </button>
         )}
       </div>
 
       {viewMode === "selected" && selectedAddress && (
         <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 relative group transition-all hover:border-gray-200">
-            <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 shrink-0 shadow-sm">
-                    <MapPin size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-gray-900">{selectedAddress.receiver_name}</span>
-                        <span className="text-gray-400 text-xs">|</span>
-                        <span className="text-gray-600 text-sm">{selectedAddress.phone_number}</span>
-                        {selectedAddress.is_default && (
-                            <span className="text-[10px] font-bold bg-gray-900 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">Mặc định</span>
-                        )}
-                    </div>
-                    <p className="text-sm text-gray-500 leading-relaxed truncate sm:whitespace-normal">
-                        {selectedAddress.address_detail}, {selectedAddress.ward?.name}, {selectedAddress.district?.name}, {selectedAddress.province?.name}
-                    </p>
-                </div>
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 shrink-0 shadow-sm">
+              <MapPin size={20} />
             </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-bold text-gray-900">{selectedAddress.shipping_name}</span>
+                <span className="text-gray-400 text-xs">|</span>
+                <span className="text-gray-600 text-sm">{selectedAddress.shipping_phone}</span>
+                {selectedAddress.is_default && (
+                  <span className="text-[10px] font-bold bg-gray-900 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">Mặc định</span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 leading-relaxed truncate sm:whitespace-normal">
+                {selectedAddress.address_detail}, {selectedAddress.ward?.name}, {selectedAddress.district?.name}, {selectedAddress.province?.name}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
       {viewMode === "list" && (
         <div className="space-y-3 animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="grid grid-cols-1 gap-2.5">
-                {addresses.map((addr) => (
-                    <div
-                        key={addr.id}
-                        onClick={() => handleSelect(addr)}
-                        className={`flex items-start gap-4 p-4 border rounded-2xl cursor-pointer transition-all ${selectedAddress?.id === addr.id ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900' : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}
-                    >
-                        <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedAddress?.id === addr.id ? 'border-gray-900 bg-gray-900' : 'border-gray-300'}`}>
-                            {selectedAddress?.id === addr.id && <Check size={12} className="text-white" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <span className="font-bold text-gray-900">{addr.receiver_name}</span>
-                                <span className="text-gray-500 text-xs">| {addr.phone_number}</span>
-                            </div>
-                            <p className="text-sm text-gray-500">
-                                {addr.address_detail}, {addr.ward?.name}, {addr.district?.name}, {addr.province?.name}
-                            </p>
-                        </div>
-                    </div>
-                ))}
-                <button
-                    onClick={() => setViewMode("add")}
-                    className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-2xl text-sm font-bold text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-all bg-white"
-                >
-                    <Plus size={18} /> Thêm địa chỉ mới
-                </button>
-            </div>
+          <div className="grid grid-cols-1 gap-2.5">
+            {addresses.map((addr) => (
+              <div
+                key={addr.id}
+                onClick={() => handleSelect(addr)}
+                className={`flex items-start gap-4 p-4 border rounded-2xl cursor-pointer transition-all ${selectedAddress?.id === addr.id ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900' : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'}`}
+              >
+                <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedAddress?.id === addr.id ? 'border-gray-900 bg-gray-900' : 'border-gray-300'}`}>
+                  {selectedAddress?.id === addr.id && <Check size={12} className="text-white" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-bold text-gray-900">{addr.shipping_name}</span>
+                    <span className="text-gray-500 text-xs">| {addr.shipping_phone}</span>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {addr.address_detail}, {addr.ward?.name}, {addr.district?.name}, {addr.province?.name}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={() => setViewMode("add")}
+              className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-200 rounded-2xl text-sm font-bold text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-all bg-white"
+            >
+              <Plus size={18} /> Thêm địa chỉ mới
+            </button>
+          </div>
         </div>
       )}
 
       {viewMode === "add" && (
         <form onSubmit={handleSubmitNew} className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FloatingInput name="receiver_name" label="Người nhận *" value={formData.receiver_name} onChange={handleInputChange} icon={<User size={16} />} />
-                <FloatingInput name="phone_number" label="Số điện thoại *" value={formData.phone_number} onChange={handleInputChange} icon={<Phone size={16} />} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <CustomSelect label="Tỉnh / Thành phố *" value={selectedProvinceCode} onChange={handleProvinceChange} options={provinces} defaultOption="Chọn Tỉnh/Thành phố" icon={<MapPin size={15} />} />
-                <CustomSelect label="Quận / Huyện *" value={selectedDistrictCode} onChange={handleDistrictChange} options={districts} disabled={!selectedProvinceCode} defaultOption={selectedProvinceCode ? "Chọn Quận/Huyện" : "Chọn Tỉnh trước"} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <CustomSelect label="Phường / Xã *" value={selectedWardCode} onChange={(e: any) => setSelectedWardCode(e.target.value)} options={wards} disabled={!selectedDistrictCode} defaultOption={selectedDistrictCode ? "Chọn Phường/Xã" : "Chọn Huyện trước"} />
-                <FloatingInput name="address_detail" label="Số nhà, Tên đường *" value={formData.address_detail} onChange={handleInputChange} />
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer group w-fit">
-                <input 
-                    type="checkbox" 
-                    checked={formData.is_default} 
-                    onChange={(e) => setFormData(f => ({ ...f, is_default: e.target.checked }))}
-                    className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
-                />
-                <span className="text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">Đặt làm địa chỉ mặc định</span>
-            </label>
-            <div className="flex gap-3 pt-2">
-                <button
-                    type="submit"
-                    disabled={loading || !selectedWardCode || !formData.address_detail}
-                    className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-gray-800 transition-all disabled:bg-gray-200 disabled:text-gray-400"
-                >
-                    {loading ? "Đang lưu..." : "Lưu địa chỉ này"}
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setViewMode(addresses.length > 0 ? "list" : "selected")}
-                    className="px-6 py-3.5 border border-gray-200 rounded-xl font-bold text-sm text-gray-500 hover:bg-gray-50 transition-all"
-                >
-                    Hủy
-                </button>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FloatingInput name="shipping_name" label="Người nhận *" value={formData.shipping_name} onChange={handleInputChange} icon={<User size={16} />} />
+            <FloatingInput name="shipping_phone" label="Số điện thoại *" value={formData.shipping_phone} onChange={handleInputChange} icon={<Phone size={16} />} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CustomSelect label="Tỉnh / Thành phố *" value={selectedProvinceCode} onChange={handleProvinceChange} options={provinces} defaultOption="Chọn Tỉnh/Thành phố" icon={<MapPin size={15} />} />
+            <CustomSelect label="Quận / Huyện *" value={selectedDistrictCode} onChange={handleDistrictChange} options={districts} disabled={!selectedProvinceCode} defaultOption={selectedProvinceCode ? "Chọn Quận/Huyện" : "Chọn Tỉnh trước"} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CustomSelect label="Phường / Xã *" value={selectedWardCode} onChange={(e: any) => setSelectedWardCode(e.target.value)} options={wards} disabled={!selectedDistrictCode} defaultOption={selectedDistrictCode ? "Chọn Phường/Xã" : "Chọn Huyện trước"} />
+            <FloatingInput name="address_detail" label="Số nhà, Tên đường *" value={formData.address_detail} onChange={handleInputChange} />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer group w-fit">
+            <input
+              type="checkbox"
+              checked={formData.is_default}
+              onChange={(e) => setFormData(f => ({ ...f, is_default: e.target.checked }))}
+              className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+            />
+            <span className="text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">Đặt làm địa chỉ mặc định</span>
+          </label>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={loading || !selectedWardCode || !formData.address_detail}
+              className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-gray-800 transition-all disabled:bg-gray-200 disabled:text-gray-400"
+            >
+              {loading ? "Đang lưu..." : "Lưu địa chỉ này"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode(addresses.length > 0 ? "list" : "selected")}
+              className="px-6 py-3.5 border border-gray-200 rounded-xl font-bold text-sm text-gray-500 hover:bg-gray-50 transition-all"
+            >
+              Hủy
+            </button>
+          </div>
         </form>
       )}
     </div>
