@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\Api\UserAddressController;
 use App\Http\Controllers\Api\UserProfileController;
+use App\Http\Controllers\Api\ShipperTrackingController;
 
 //Route của khách hàng chưa đăng nhập
 Route::post('/register', [AuthController::class, 'register']);
@@ -36,6 +37,7 @@ Route::get('/products/price-range', [ProductController::class, 'priceRange']);
 Route::get('/products/{slug}', [ProductController::class, 'show']);
 Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{tracking_code}', [OrderController::class, 'show']);
+Route::get('/orders/{tracking_code}/tracking', [ShipperTrackingController::class, 'getTracking']);
 Route::get('/discounts/active', [DiscountController::class, 'getActiveVouchers']);
 Route::post('/discounts/apply', [DiscountController::class, 'apply']);
 Route::get('/payment/vnpay-ipn', [App\Http\Controllers\Api\PaymentController::class, 'vnpayIpn']);
@@ -82,19 +84,19 @@ Route::middleware(['auth:sanctum', 'permission:manage-products,sanctum'])->group
 });
 
 Route::get('/provinces', function () {
-    $provinces = DB::table('provinces')->select('name', 'code')->get();
+    $provinces = DB::table('provinces')->select('id', 'name', 'code')->get();
     return response()->json([
         'success' => true, 
         'data' => $provinces]);
 });
 Route::get('/districts/{province_code}', function ($province_code) {
-    $districts = DB::table('districts')->where('province_code', $province_code)->select('name', 'code', 'province_code')->get();
+    $districts = DB::table('districts')->where('province_code', $province_code)->select('id', 'name', 'code', 'province_code')->get();
     return response()->json([
         'success' => true, 
         'data' => $districts]);
 });
 Route::get('/wards/{district_code}', function ($district_code) {
-    $wards = DB::table('wards')->where('district_code', $district_code)->select('name', 'code', 'district_code')->get();
+    $wards = DB::table('wards')->where('district_code', $district_code)->select('id', 'name', 'code', 'district_code')->get();
     return response()->json([
         'success' => true, 
         'data' => $wards]);
@@ -142,6 +144,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Order Actions
     Route::put('/orders/{id}/cancel', [OrderController::class, 'cancel']);
     Route::post('/orders/{id}/return', [OrderController::class, 'return']);
+
+    // Shipper Tracking Routes
+    Route::get('/shipper/my-orders', [ShipperTrackingController::class, 'myAssignedOrders']);
+    Route::post('/shipper/orders/{id}/track', [ShipperTrackingController::class, 'updateTracking']);
 
     // Routes for admin
     Route::prefix('admin')->group(function () {
@@ -335,6 +341,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/orders', [AdminOrderController::class, 'index']);
             Route::get('/orders/{id}', [AdminOrderController::class, 'show']);
             Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
+            Route::post('/orders/{id}/assign-shipper', [AdminOrderController::class, 'assignShipper']);
         });
 
         // Quản lý mã giảm giá

@@ -7,12 +7,22 @@ import toast from "react-hot-toast";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  // Nếu đã đăng nhập thì tự động đá ra ngoài
+  if (typeof window !== 'undefined' && !isLoading && isAuthenticated && user) {
+    if (user.role === 'shipper') {
+      window.location.href = "/shipper/orders";
+    } else {
+      window.location.href = "/";
+    }
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,10 +33,15 @@ export default function LoginPage() {
 
       if (data.success && data.data) {
         toast.success("👋 Đăng nhập thành công!");
+        const userRole = data.data.user.role; // Lấy role ngay lập tức
         login(data.data.user, data.data.token);
 
         setTimeout(() => {
-          window.location.href = "/";
+          if (userRole === 'shipper') {
+            window.location.href = "/shipper/orders";
+          } else {
+            window.location.href = "/";
+          }
         }, 1500);
       } else {
         toast.error(`❌ ${data.message || "Đăng nhập thất bại"}`);

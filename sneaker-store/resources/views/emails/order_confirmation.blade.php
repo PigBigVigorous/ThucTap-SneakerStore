@@ -3,153 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác nhận đơn hàng - SneakerShop</title>
+    <title>Xác nhận đơn hàng - SneakerStore</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #374151; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); margin: 0; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-        .header { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: #ffffff; padding: 32px 24px; text-align: center; position: relative; }
-        .header::before { content: '🎉'; font-size: 48px; display: block; margin-bottom: 8px; }
-        .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
-        .content { padding: 32px 24px; }
-        .greeting { font-size: 18px; margin-bottom: 24px; color: #1f2937; }
-        .order-info { background: #f8fafc; border-radius: 12px; padding: 20px; margin: 24px 0; border-left: 4px solid #3b82f6; }
-        .order-info table { width: 100%; border-collapse: collapse; }
-        .order-info td { padding: 8px 0; }
-        .order-info .label { font-weight: 600; color: #374151; width: 140px; }
-        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
-        .status-paid { background: #dcfce7; color: #166534; }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .shipping-info { background: #ecfdf5; border-radius: 12px; padding: 20px; margin: 24px 0; border-left: 4px solid #10b981; }
-        .products { margin: 32px 0; }
-        .products h2 { color: #1f2937; font-size: 20px; margin-bottom: 16px; display: flex; align-items: center; }
-        .products h2::before { content: '🛍️'; margin-right: 8px; }
-        .product-table { width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
-        .product-table th { background: #f1f5f9; color: #374151; font-weight: 600; padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
-        .product-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
-        .product-table tr:last-child td { border-bottom: none; }
-        .product-name { font-weight: 500; color: #1f2937; }
-        .quantity { text-align: center; font-weight: 600; color: #7c3aed; }
-        .price { text-align: right; font-weight: 600; color: #059669; }
-        .total-row { background: #f8fafc; font-weight: 700; }
-        .footer { background: #f8fafc; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0; }
-        .footer p { margin: 8px 0; color: #6b7280; }
-        .footer .signature { color: #374151; font-weight: 600; }
-        .btn { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 16px; }
-        .btn:hover { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); }
-        @media (max-width: 600px) {
-            .container { margin: 10px; }
-            .header, .content, .footer { padding: 20px; }
-            .order-info .label { width: 120px; display: block; margin-bottom: 4px; }
-            .product-table { font-size: 14px; }
-            .product-table th, .product-table td { padding: 8px; }
-        }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #444; background-color: #f4f7f9; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .header { background: #1a202c; color: #ffffff; padding: 40px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 26px; letter-spacing: -0.5px; }
+        .header p { margin: 10px 0 0; opacity: 0.8; font-size: 15px; }
+        .content { padding: 40px 30px; }
+        .greeting { margin-bottom: 30px; }
+        .greeting p { font-size: 16px; line-height: 1.6; margin: 0 0 10px; }
+        
+        .section-card { background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 25px; border: 1px solid #edf2f7; }
+        .section-title { font-size: 14px; font-weight: 800; color: #718096; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; }
+        
+        .info-table { width: 100%; border-collapse: collapse; }
+        .info-table td { padding: 6px 0; font-size: 15px; }
+        .info-label { color: #718096; width: 130px; }
+        .info-value { color: #2d3748; font-weight: 600; }
+
+        .product-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .product-table th { text-align: left; font-size: 12px; font-weight: 700; color: #a0aec0; text-transform: uppercase; padding: 12px 10px; border-bottom: 2px solid #edf2f7; }
+        .product-table td { padding: 16px 10px; border-bottom: 1px solid #edf2f7; }
+        
+        .product-name { font-size: 15px; font-weight: 700; color: #1a202c; margin-bottom: 4px; }
+        .product-meta { font-size: 12px; color: #718096; text-transform: uppercase; font-weight: 600; }
+        
+        .summary-row td { padding: 10px 10px; font-size: 14px; }
+        .summary-label { color: #718096; text-align: right; }
+        .summary-value { color: #2d3748; font-weight: 700; text-align: right; }
+        .summary-discount { color: #e53e3e; }
+        
+        .total-box { background: #f0fff4; border-radius: 10px; margin-top: 15px; }
+        .total-box td { padding: 20px 15px; }
+        .total-label { font-size: 15px; font-weight: 800; color: #276749; text-align: right; }
+        .total-price { font-size: 22px; font-weight: 900; color: #2f855a; text-align: right; }
+
+        .btn-container { text-align: center; margin: 40px 0 20px; }
+        .btn { background: #3182ce; color: #ffffff !important; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 16px; display: inline-block; transition: background 0.2s; }
+        
+        .footer { padding: 30px; text-align: center; background: #f7fafc; color: #a0aec0; font-size: 13px; }
+        .footer p { margin: 5px 0; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <h1>Xác nhận đơn hàng</h1>
-            <p>Đơn hàng của bạn đã được xử lý thành công!</p>
+            <p>Mã đơn: {{ $order->order_tracking_code }}</p>
         </div>
 
-        <!-- Content -->
         <div class="content">
             <div class="greeting">
                 <p>Chào <strong>{{ $order->customer_name }}</strong>,</p>
-                <p>Cảm ơn bạn đã tin tưởng và mua sắm tại SneakerShop! Đơn hàng của bạn đã được thanh toán thành công và đang được chuẩn bị để giao hàng.</p>
+                <p>Đơn hàng của bạn đã được tiếp nhận và đang được chuẩn bị. Dưới đây là thông tin chi tiết:</p>
             </div>
 
-            <!-- Order Info -->
-            <div class="order-info">
-                <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #1f2937;">📋 Thông tin đơn hàng</h2>
-                <table>
-                    <tr>
-                        <td class="label">Mã đơn hàng:</td>
-                        <td><strong>{{ $order->order_tracking_code }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td class="label">Trạng thái:</td>
-                        <td>
-                            <span class="status-badge {{ $order->status === 'completed' ? 'status-paid' : 'status-pending' }}">
-                                {{ ucfirst($order->status) }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label">Thanh toán:</td>
-                        <td>
-                            <span class="status-badge status-paid">
-                                {{ strtoupper($order->payment_method ?? 'VNPAY') }}
-                            </span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="label">Tổng tiền:</td>
-                        <td style="font-size: 18px; font-weight: 700; color: #059669;">{{ $formattedTotal }} ₫</td>
-                    </tr>
+            <div class="section-card">
+                <span class="section-title">📍 Thông tin giao nhận</span>
+                <table class="info-table">
+                    <tr><td class="info-label">Người nhận:</td><td class="info-value">{{ $order->customer_name }}</td></tr>
+                    <tr><td class="info-label">Điện thoại:</td><td class="info-value">{{ $order->customer_phone }}</td></tr>
+                    <tr><td class="info-label">Địa chỉ:</td><td class="info-value">{{ $order->address_detail }}, {{ $order->ward }}, {{ $order->district }}, {{ $order->province }}</td></tr>
                 </table>
             </div>
 
-            <!-- Shipping Info -->
-            <div class="shipping-info">
-                <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #1f2937;">🚚 Thông tin giao hàng</h2>
-                <p style="margin: 4px 0;"><strong>📞 Số điện thoại:</strong> {{ $order->customer_phone }}</p>
-                <p style="margin: 4px 0;"><strong>✉️ Email:</strong> {{ $order->customer_email }}</p>
-                <p style="margin: 4px 0;"><strong>🏠 Địa chỉ:</strong> {{ $order->address_detail }}, {{ $order->ward }}, {{ $order->district }}, {{ $order->province }}</p>
-                @if($order->shipping_fee > 0)
-                <p style="margin: 4px 0;"><strong>🚛 Phí vận chuyển:</strong> {{ $formattedShipping }} ₫</p>
-                @endif
-            </div>
-
-            <!-- Products -->
-            <div class="products">
-                <h2>Sản phẩm đã đặt</h2>
+            <div class="section-card" style="background: #fff; border: none; padding: 0;">
+                <span class="section-title">🛍️ Chi tiết đơn hàng</span>
                 <table class="product-table">
                     <thead>
                         <tr>
                             <th>Sản phẩm</th>
-                            <th style="text-align: center;">SL</th>
-                            <th style="text-align: right;">Đơn giá</th>
+                            <th style="text-align: center; width: 40px;">SL</th>
                             <th style="text-align: right;">Thành tiền</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @php $subtotal = 0; @endphp
                         @foreach($order->items as $item)
+                            @php $subtotal += $item->unit_price * $item->quantity; @endphp
                             <tr>
-                                <td class="product-name">{{ $item->variant->product->name ?? 'Sản phẩm' }}</td>
-                                <td class="quantity">{{ $item->quantity }}</td>
-                                <td class="price">{{ number_format($item->unit_price, 0, ',', '.') }} ₫</td>
-                                <td class="price">{{ number_format($item->unit_price * $item->quantity, 0, ',', '.') }} ₫</td>
+                                <td>
+                                    <div class="product-name">{{ $item->variant->product->name ?? 'Sản phẩm' }}</div>
+                                    <div class="product-meta">
+                                        {{ $item->variant->color->name ?? 'N/A' }} / {{ $item->variant->size->name ?? 'N/A' }}
+                                    </div>
+                                </td>
+                                <td style="text-align: center; font-weight: 600; color: #4a5568;">{{ $item->quantity }}</td>
+                                <td style="text-align: right; font-weight: 700; color: #2d3748;">
+                                    {{ number_format($item->unit_price * $item->quantity, 0, ',', '.') }} ₫
+                                </td>
                             </tr>
                         @endforeach
-                        <tr class="total-row">
-                            <td colspan="3" style="text-align: right; font-size: 16px;">Tổng cộng:</td>
-                            <td style="font-size: 18px; color: #059669;">{{ $formattedTotal }} ₫</td>
-                        </tr>
                     </tbody>
+                </table>
+
+                <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+                    <tr class="summary-row">
+                        <td class="summary-label">Tổng tiền hàng</td>
+                        <td class="summary-value">{{ number_format($subtotal, 0, ',', '.') }} ₫</td>
+                    </tr>
+                    @if($order->discount_amount > 0)
+                    <tr class="summary-row">
+                        <td class="summary-label">Voucher giảm giá</td>
+                        <td class="summary-value summary-discount">-{{ number_format($order->discount_amount, 0, ',', '.') }} ₫</td>
+                    </tr>
+                    @endif
+                    @if($order->points_used > 0)
+                    <tr class="summary-row">
+                        <td class="summary-label">Dùng {{ number_format($order->points_used) }} điểm</td>
+                        <td class="summary-value summary-discount">-{{ number_format($order->points_used * 1000, 0, ',', '.') }} ₫</td>
+                    </tr>
+                    @endif
+                    <tr class="summary-row">
+                        <td class="summary-label">Phí vận chuyển</td>
+                        <td class="summary-value">+{{ $formattedShipping }} ₫</td>
+                    </tr>
+                    <tr class="total-box">
+                        <td class="total-label">TỔNG THANH TOÁN</td>
+                        <td class="total-price">{{ $formattedTotal }} ₫</td>
+                    </tr>
                 </table>
             </div>
 
-            <!-- Call to Action -->
-            <div style="text-align: center; margin: 32px 0;">
-                <p style="margin-bottom: 16px; color: #6b7280;">Bạn có thể theo dõi trạng thái đơn hàng qua tài khoản của mình.</p>
-                <a href="{{ env('FRONTEND_URL', 'http://localhost:3000') }}/my-orders" class="btn">Xem đơn hàng của tôi</a>
+            <div class="btn-container">
+                <a href="{{ env('FRONTEND_URL', 'http://localhost:3000') }}/user/purchase" class="btn">Theo dõi đơn hàng</a>
             </div>
-
-            <p style="color: #6b7280; line-height: 1.6;">
-                Nếu bạn có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với đội ngũ hỗ trợ của chúng tôi.
-                Chúng tôi luôn sẵn sàng giúp đỡ bạn!
-            </p>
         </div>
 
-        <!-- Footer -->
         <div class="footer">
-            <p>Chúc bạn có những trải nghiệm mua sắm tuyệt vời cùng SneakerShop!</p>
-            <p class="signature">Đội ngũ SneakerShop 💙</p>
-            <p style="font-size: 12px; margin-top: 16px; color: #9ca3af;">
-                Email này được gửi tự động, vui lòng không trả lời trực tiếp.
-            </p>
+            <p>Cảm ơn bạn đã mua sắm tại <strong>SneakerStore</strong></p>
+            <p>Đây là email tự động, vui lòng không phản hồi email này.</p>
+            <p style="margin-top: 15px; font-weight: 700; color: #4a5568;">Hotline: 1900 xxxx</p>
         </div>
     </div>
 </body>

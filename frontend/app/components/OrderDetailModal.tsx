@@ -4,6 +4,12 @@ import React, { useEffect, useState } from "react";
 import { X, Truck, MapPin, Package, CreditCard, Calendar } from "lucide-react";
 import { orderAPI } from "../services/api";
 import toast from "react-hot-toast";
+import dynamic from "next/dynamic";
+
+const OrderTrackingMap = dynamic(() => import("./OrderTrackingMap"), { 
+  ssr: false,
+  loading: () => <div className="h-48 w-full bg-gray-100 animate-pulse rounded-xl" />
+});
 
 interface OrderDetailModalProps {
   isOpen: boolean;
@@ -106,8 +112,61 @@ export default function OrderDetailModal({ isOpen, onClose, orderId, trackingCod
                         Được mua tại: Sneaker Store - Chi nhánh {order.branch.province?.name || order.branch.name || 'Hệ thống'}
                       </p>
                     )}
+                    {order.shipper && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
+                          <Truck size={14} />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 font-bold uppercase">Đơn vị vận chuyển</p>
+                          <p className="text-sm font-bold text-gray-800">{order.shipper.name} <span className="font-normal text-gray-500">({order.shipper.phone || order.shipper.phone_number})</span></p>
+                        </div>
+                      </div>
+                    )}
                 </div>
               </div>
+
+              {/* Order Tracking Map Section */}
+              {['shipped', 'delivering', 'delivered', 'picked_up', 'in_transit'].includes(order.status) && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <Truck size={16} className="text-blue-600" /> Hành trình đơn hàng
+                  </h3>
+                  <div className="rounded-xl overflow-hidden border border-gray-100">
+                    <OrderTrackingMap 
+                      trackings={order.trackings || []} 
+                      destination={undefined} // Simplified for now
+                    />
+                  </div>
+                  
+                  {/* Tracking History List */}
+                  <div className="space-y-4 pt-2">
+                    {order.trackings && order.trackings.map((t: any, idx: number) => (
+                      <div key={t.id} className="flex gap-4 relative">
+                        {idx !== order.trackings.length - 1 && (
+                          <div className="absolute left-[7px] top-[24px] bottom-[-16px] w-[2px] bg-gray-100" />
+                        )}
+                        <div className={`w-4 h-4 rounded-full mt-1.5 z-10 shrink-0 ${idx === 0 ? 'bg-blue-600 shadow-[0_0_0_4px_rgba(37,99,235,0.1)]' : 'bg-gray-200'}`} />
+                        <div className="flex-1 pb-4">
+                          <div className="flex justify-between items-start">
+                            <p className={`text-sm font-bold ${idx === 0 ? 'text-gray-900' : 'text-gray-500'}`}>
+                              {t.status === 'picked_up' ? 'Đã lấy hàng' :
+                               t.status === 'in_transit' ? 'Đang trung chuyển' :
+                               t.status === 'delivering' ? 'Đang giao hàng' :
+                               t.status === 'delivered' ? 'Đã giao thành công' : t.status}
+                            </p>
+                            <span className="text-[10px] text-gray-400 font-medium">
+                              {new Date(t.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">{t.location_text}</p>
+                          {t.note && <p className="text-xs text-gray-400 italic mt-1">"{t.note}"</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Items */}
               <div className="space-y-3">

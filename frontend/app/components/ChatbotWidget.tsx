@@ -1,6 +1,8 @@
-"use client";
+'use client';
 
 import { useState, useRef, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { usePathname } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Product {
@@ -67,27 +69,12 @@ function ProductCard({ product }: { product: Product }) {
             </span>
           )}
         </div>
-        {(product.available_colors.length > 0 || product.available_sizes.length > 0) && (
-          <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
-             {product.available_colors.length > 0 && (
-                <p className="text-[10px] font-medium text-gray-400">
-                  Màu: <span className="text-gray-600">{product.available_colors.slice(0, 2).join(", ")}{product.available_colors.length > 2 ? '...' : ''}</span>
-                </p>
-             )}
-             {product.available_sizes.length > 0 && (
-                <p className="text-[10px] font-medium text-gray-400">
-                  Size: <span className="text-gray-600">{product.available_sizes.slice(0, 3).join(", ")}{product.available_sizes.length > 3 ? '...' : ''}</span>
-                </p>
-             )}
-          </div>
-        )}
       </div>
     </a>
   );
 }
 
 function AssistantBubble({ msg }: { msg: Message }) {
-  // Render markdown-lite: **bold**
   const html = msg.content
     .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
@@ -109,21 +96,28 @@ function AssistantBubble({ msg }: { msg: Message }) {
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
 export default function ChatbotWidget() {
+  // KHAI BÁO TẤT CẢ HOOKS Ở ĐẦU TIÊN (QUY TẮC BẮT BUỘC)
+  const { user } = useAuth();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Xin chào! Tôi là trợ lý tư vấn của **Sneaker Store** 👟\nBạn muốn tìm đôi giày nào hôm nay?",
-    },
-  ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content: "Xin chào! Tôi là trợ lý tư vấn của **Sneaker Store** 👟\nBạn muốn tìm đôi giày nào hôm nay?",
+    },
+  ]);
 
   useEffect(() => {
     if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
+
+  // SAU KHI GỌI HOOKS MỚI ĐƯỢC KIỂM TRA ĐIỀU KIỆN RETURN
+  const isAdmin = pathname?.startsWith("/admin");
+
+  if (isAdmin) return null;
 
   const sendMessage = async () => {
     const text = input.trim();
@@ -148,8 +142,6 @@ export default function ChatbotWidget() {
         }
       );
       const data = await res.json();
-      
-      // Thêm một chút delay nhẹ để cảm giác AI đang "suy nghĩ" thực sự
       await new Promise(r => setTimeout(r, 600));
 
       setMessages((prev) => [
@@ -177,12 +169,11 @@ export default function ChatbotWidget() {
 
   return (
     <>
-      {/* ── Chat window ── */}
+      {/* Chat window */}
       {open && (
         <div className="fixed bottom-24 right-5 z-50 flex w-80 flex-col rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden border border-white/20 bg-white/95 backdrop-blur-xl transition-all animate-in fade-in slide-in-from-bottom-5 duration-300"
           style={{ height: "550px" }}
         >
-          {/* Header với Gradient mượt */}
           <div className="relative bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 px-5 py-5">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -195,78 +186,53 @@ export default function ChatbotWidget() {
                 <p className="text-[15px] font-bold text-white tracking-tight">Trợ lý Sneaker Store</p>
                 <div className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <p className="text-[11px] text-indigo-100 font-medium">Sẵn sàng tư vấn cho bạn</p>
+                  <p className="text-[11px] text-indigo-100 font-medium">Sẵn sàng tư vấn</p>
                 </div>
               </div>
-              <button
-                onClick={() => setOpen(false)}
-                className="group flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-all"
-              >
-                <span className="text-xl leading-none group-hover:rotate-90 transition-transform duration-300">✕</span>
-              </button>
+              <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white transition-all">✕</button>
             </div>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto bg-transparent px-4 py-6 space-y-5 scrollbar-thin scrollbar-thumb-gray-200">
+          <div className="flex-1 overflow-y-auto bg-transparent px-4 py-6 space-y-5">
             {messages.map((msg, i) =>
               msg.role === "user" ? (
-                <div key={i} className="flex justify-end animate-in fade-in slide-in-from-right-3 duration-300">
-                  <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-[13.5px] text-white shadow-md shadow-indigo-100">
+                <div key={i} className="flex justify-end">
+                  <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2.5 text-[13.5px] text-white">
                     {msg.content}
                   </div>
                 </div>
               ) : (
-                <div key={i} className="animate-in fade-in slide-in-from-left-3 duration-300">
+                <div key={i}>
                   <AssistantBubble msg={msg} />
                 </div>
               )
             )}
-            {loading && (
-              <div className="flex items-center gap-1.5 self-start rounded-2xl rounded-tl-sm bg-gray-100/50 px-4 py-3 border border-gray-100">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:-0.3s]" />
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:-0.15s]" />
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 animate-bounce" />
-              </div>
-            )}
+            {loading && <div className="p-3 text-xs text-gray-400">Đang trả lời...</div>}
             <div ref={bottomRef} className="h-2" />
           </div>
 
-          {/* Input Area */}
           <div className="border-t border-gray-100 bg-white/50 p-4">
-            <div className="relative flex items-center gap-2 rounded-2xl border border-gray-200 bg-white p-1.5 transition-all focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-50 shadow-sm">
+            <div className="relative flex items-center gap-2 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-sm">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                placeholder="Hỏi về size, màu sắc..."
+                placeholder="Hỏi bất cứ điều gì..."
                 disabled={loading}
-                className="flex-1 bg-transparent px-3 py-2 text-sm text-gray-800 outline-none placeholder:text-gray-400 disabled:opacity-50"
+                className="flex-1 bg-transparent px-3 py-2 text-sm text-gray-800 outline-none"
               />
-              <button
-                onClick={sendMessage}
-                disabled={loading || !input.trim()}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:scale-100 transition-all"
-              >
-                <svg className="h-5 w-5 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
+              <button onClick={sendMessage} disabled={loading || !input.trim()} className="bg-indigo-600 text-white p-2 rounded-xl">➔</button>
             </div>
-            <p className="mt-2 text-center text-[10px] text-gray-400">Trợ lý AI có thể nhầm lẫn. Hãy kiểm tra lại thông tin quan trọng.</p>
           </div>
         </div>
       )}
 
-      {/* ── Floating button ── */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 text-3xl shadow-[0_10px_25px_-5px_rgba(79,70,229,0.5)] hover:shadow-[0_15px_30px_-5px_rgba(79,70,229,0.6)] hover:scale-110 hover:-rotate-6 transition-all duration-300 active:scale-90 group"
+        className="fixed bottom-6 right-6 z-50 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 text-3xl shadow-lg hover:scale-110 transition-all"
       >
-        <span className="drop-shadow-sm group-hover:scale-110 transition-transform">
-          {open ? "✕" : "💬"}
-        </span>
+        {open ? "✕" : "💬"}
       </button>
     </>
   );

@@ -28,6 +28,7 @@ class Order extends Model
     'discount_amount',
     'points_used',
     'points_earned',
+    'shipper_id',
 ];
 
     protected $casts = [
@@ -70,6 +71,16 @@ class Order extends Model
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function trackings()
+    {
+        return $this->hasMany(OrderTracking::class)->orderByDesc('created_at');
+    }
+
+    public function shipper()
+    {
+        return $this->belongsTo(User::class, 'shipper_id');
     }
 
     // Quan hệ: Thuộc về 1 Mã giảm giá (nếu có áp dụng)

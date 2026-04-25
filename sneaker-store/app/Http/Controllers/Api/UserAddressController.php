@@ -38,7 +38,7 @@ class UserAddressController extends Controller
             ...$validated
         ]);
 
-        return response()->json($address, 201);
+        return response()->json($address->load(['province', 'district', 'ward']), 201);
     }
 
     public function update(Request $request, $id)

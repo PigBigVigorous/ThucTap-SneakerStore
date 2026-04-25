@@ -18,6 +18,7 @@ export type User = {
   gender?: 'male' | 'female' | 'other';
   dob?: string;
   phone?: string;
+  created_at?: string;
 };
 
 type AuthContextType = {
@@ -29,6 +30,7 @@ type AuthContextType = {
   hasRole: (roleName: string) => boolean;
   hasPermission: (permissionName: string) => boolean;
   isAuthenticated: boolean;
+  isLoading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,21 +38,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
+    const initAuth = async () => {
+      const storedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("token");
 
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
-      // Gọi refresh để đồng bộ data mới nhất từ server (ví dụ: điểm vừa được cộng)
-      refreshUser();
-    }
+      if (storedUser && storedToken) {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+        // Gọi refresh để đồng bộ data mới nhất từ server
+        await refreshUser(storedToken);
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
-  const refreshUser = async () => {
-    const storedToken = token || localStorage.getItem("token");
+  const refreshUser = async (passedToken?: string) => {
+    const storedToken = passedToken || token || localStorage.getItem("token");
     if (!storedToken) return;
 
     try {
@@ -61,7 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (err: any) {
       console.warn("Làm mới dữ liệu user thất bại:", err.message);
-      // Nếu là lỗi 'Failed to fetch', có thể do server backend chưa khởi động
     }
   };
 
@@ -143,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshUser,
       hasRole, 
       hasPermission,
+      isLoading,
       isAuthenticated: !!user && !!token
     }}>
       {children}

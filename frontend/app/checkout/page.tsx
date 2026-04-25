@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "../store/useCartStore";
-import { Coins, MapPin, User, Check, Lock, Package, ChevronRight, Truck, CreditCard, ShieldCheck, Ticket, Banknote, ShoppingBag, X, CheckCircle2 } from "lucide-react";
+import { Coins, MapPin, Check, Lock, Package, ChevronRight, Truck, CreditCard, ShieldCheck, Ticket, Banknote, ShoppingBag, X, CheckCircle2, Star } from "lucide-react";
 import toast from "react-hot-toast";
 import { orderAPI, discountAPI, shippingAPI, addressAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";

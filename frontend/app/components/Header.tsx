@@ -234,8 +234,12 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Ẩn header trong admin panel (sau khi đã gọi hết hooks)
+  // Hiển thị header cho tất cả các quyền
+  const { user } = useAuth();
   const isAdmin = pathname?.startsWith("/admin");
+  
+  // Chỉ ẩn nếu ở trang admin (tùy chọn, nhưng thường admin có layout riêng)
+  // Nếu bạn muốn admin cũng thấy header này thì xóa nốt dòng dưới
   if (isAdmin) return null;
 
   return (

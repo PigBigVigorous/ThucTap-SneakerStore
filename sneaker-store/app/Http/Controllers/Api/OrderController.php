@@ -164,7 +164,9 @@ class OrderController extends Controller
             'items.variant.product', 
             'items.variant.color', 
             'items.variant.size',
-            'discount'
+            'discount',
+            'trackings',
+            'shipper:id,name,phone'
         ])
             ->where('order_tracking_code', $trackingCode)
             ->first();
@@ -214,7 +216,9 @@ class OrderController extends Controller
             'items.variant.product', 
             'items.variant.color', 
             'items.variant.size',
-            'discount'
+            'discount',
+            'trackings',
+            'shipper:id,name,phone'
         ])
         ->where('user_id', $request->user()->id)
         ->orderBy('created_at', 'desc')

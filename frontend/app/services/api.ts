@@ -1016,3 +1016,48 @@ export const adminReportAPI = {
     window.URL.revokeObjectURL(url);
   }
 };
+
+// ==========================================
+// 🚚 TRACKING ENDPOINTS
+// ==========================================
+
+export const trackingAPI = {
+  // Lấy lịch sử hành trình đơn hàng (Public/Customer)
+  getHistory: async (trackingCode: string) => {
+    const res = await fetch(`${API_URL}/orders/${encodeURIComponent(trackingCode)}/tracking`, {
+      method: "GET",
+      headers: { "Accept": "application/json" }
+    });
+    if (!res.ok) throw new Error("Không thể tải thông tin hành trình");
+    return res.json();
+  },
+
+  // Shipper cập nhật vị trí & trạng thái
+  updateLocation: async (orderId: number, data: any, token: string) => {
+    const res = await fetch(`${API_URL}/shipper/orders/${orderId}/track`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || "Cập nhật hành trình thất bại");
+    return result;
+  },
+
+  // Lấy danh sách đơn hàng của shipper
+  getShipperOrders: async (token: string) => {
+    const res = await fetch(`${API_URL}/shipper/my-orders`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/json",
+      },
+    });
+    if (!res.ok) throw new Error("Lỗi tải danh sách đơn hàng shipper");
+    return res.json();
+  },
+};
+

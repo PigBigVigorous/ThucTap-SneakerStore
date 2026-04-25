@@ -23,7 +23,7 @@ class OrderConfirmation extends Mailable implements ShouldQueue
      */
     public function __construct(Order $order)
     {
-        $this->order = $order;
+        $this->order = $order->load(['items.variant.product.images', 'items.variant.color', 'items.variant.size']);
         $this->formattedTotal = number_format($order->total_amount, 0, ',', '.');
         $this->formattedShipping = number_format($order->shipping_fee ?? 0, 0, ',', '.');
     }

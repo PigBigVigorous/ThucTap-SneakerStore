@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </div>
 
-          {/* Chatbot AI Widget — Tư vấn chọn giày, hiện trên mọi trang */}
+          {/* Chatbot AI Widget — Tư vấn chọn giày, hiện trên mọi trang (trừ admin và shipper) */}
           <ChatbotWidget />
         </Providers>
       </body>
