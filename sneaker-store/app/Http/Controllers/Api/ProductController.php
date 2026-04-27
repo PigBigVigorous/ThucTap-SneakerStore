@@ -23,6 +23,12 @@ class ProductController extends Controller
         $minFloor = floor($min / 100_000) * 100_000;
         $maxCeil  = ceil($max  / 100_000) * 100_000;
 
+        // 🚨 TRƯỜNG HỢP ĐẶC BIỆT: Giá bằng nhau (Tránh lỗi chia 0 ở range slider)
+        if ($minFloor === $maxCeil) {
+            $minFloor = max(0, $minFloor - 2000000);
+            $maxCeil  = $maxCeil + 2000000;
+        }
+
         // Tự sinh 4–5 khoảng preset phân phối đều theo dải giá thực
         $span     = $maxCeil - $minFloor;
         $step     = $span > 0 ? ceil($span / 4 / 100_000) * 100_000 : 1_000_000;
@@ -86,15 +92,15 @@ class ProductController extends Controller
         }
 
         // ── Lọc giá (qua bảng variants) ──────────────────────────────
-        if ($request->filled('price_min')) {
-            $query->whereHas('variants', fn ($q) =>
-                $q->where('price', '>=', (float) $request->price_min)
-            );
-        }
-        if ($request->filled('price_max')) {
-            $query->whereHas('variants', fn ($q) =>
-                $q->where('price', '<=', (float) $request->price_max)
-            );
+        if ($request->filled('price_min') || $request->filled('price_max')) {
+            $query->whereHas('variants', function ($q) use ($request) {
+                if ($request->filled('price_min')) {
+                    $q->where('price', '>=', (float) $request->price_min);
+                }
+                if ($request->filled('price_max')) {
+                    $q->where('price', '<=', (float) $request->price_max);
+                }
+            });
         }
 
         // ── Sắp xếp ──────────────────────────────────────────────────

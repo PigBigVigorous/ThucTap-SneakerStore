@@ -191,7 +191,14 @@ export default function ClientHome({
   priceRange: { min: number; max: number; buckets: { min: number; max: number }[] };
 }) {
   const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [vouchers, setVouchers] = useState<Discount[]>([]);
+
+  useEffect(() => {
+    if (user?.role === 'shipper') {
+      router.push("/shipper/orders");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     const fetchVouchers = async () => {
@@ -205,8 +212,6 @@ export default function ClientHome({
     };
     fetchVouchers();
   }, [isAuthenticated]);
-
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
@@ -223,6 +228,14 @@ export default function ClientHome({
     priceMax: "",
     sortBy: "newest",
   });
+
+  const [tempPriceMin, setTempPriceMin] = useState<string>("");
+  const [tempPriceMax, setTempPriceMax] = useState<string>("");
+
+  useEffect(() => {
+    setTempPriceMin(filters.priceMin === "" ? "" : String(filters.priceMin));
+    setTempPriceMax(filters.priceMax === "" ? "" : String(filters.priceMax));
+  }, [filters.priceMin, filters.priceMax]);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
@@ -324,7 +337,7 @@ export default function ClientHome({
 
   // ── Filter sidebar ────────────────────────────────────────────────────────
 
-  const FilterPanel = () => (
+  const filterPanelJSX = (
     <div className="flex flex-col gap-7">
       {/* Thương hiệu */}
       <div>
@@ -353,48 +366,65 @@ export default function ClientHome({
       {/* Khoảng giá */}
       <div>
         <p className="text-[11px] font-black uppercase tracking-widest text-gray-400 mb-2">Khoảng giá</p>
-        <div className="flex justify-between text-[13px] font-semibold text-gray-700 mb-3">
-          <span>{filters.priceMin !== "" ? fmtPrice(Number(filters.priceMin)) : fmtPrice(priceRange.min)}</span>
-          <span>{filters.priceMax !== "" ? fmtPrice(Number(filters.priceMax)) : fmtPrice(priceRange.max)}</span>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="relative w-1/2">
+            <input
+              type="number"
+              placeholder="Từ ₫"
+              value={tempPriceMin}
+              onChange={(e) => setTempPriceMin(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const next: FilterState = {
+                    ...filters,
+                    priceMin: tempPriceMin === "" ? "" : Number(tempPriceMin),
+                    priceMax: tempPriceMax === "" ? "" : Number(tempPriceMax)
+                  } as FilterState;
+                  setFilters(next);
+                  applyFilters(next);
+                }
+              }}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800 placeholder:text-gray-400 shadow-sm"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">₫</span>
+          </div>
+          <span className="text-gray-400 font-bold">-</span>
+          <div className="relative w-1/2">
+            <input
+              type="number"
+              placeholder="Đến ₫"
+              value={tempPriceMax}
+              onChange={(e) => setTempPriceMax(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const next: FilterState = {
+                    ...filters,
+                    priceMin: tempPriceMin === "" ? "" : Number(tempPriceMin),
+                    priceMax: tempPriceMax === "" ? "" : Number(tempPriceMax)
+                  } as FilterState;
+                  setFilters(next);
+                  applyFilters(next);
+                }
+              }}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-[13px] font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-gray-800 placeholder:text-gray-400 shadow-sm"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400">₫</span>
+          </div>
         </div>
-        <div className="relative h-5 flex items-center mb-4">
-          <div className="absolute w-full h-1.5 bg-gray-200 rounded-full" />
-          <div
-            className="absolute h-1.5 bg-indigo-600 rounded-full"
-            style={{
-              left: `${((Number(filters.priceMin !== "" ? filters.priceMin : priceRange.min) - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
-              right: `${100 - ((Number(filters.priceMax !== "" ? filters.priceMax : priceRange.max) - priceRange.min) / (priceRange.max - priceRange.min)) * 100}%`,
-            }}
-          />
-          <input
-            type="range" min={priceRange.min} max={priceRange.max} step={100_000}
-            value={filters.priceMin !== "" ? Number(filters.priceMin) : priceRange.min}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              const maxVal = filters.priceMax !== "" ? Number(filters.priceMax) : priceRange.max;
-              if (val <= maxVal) {
-                const next = { ...filters, priceMin: val === priceRange.min ? "" as const : val };
-                setFilters(next); applyFilters(next);
-              }
-            }}
-            className="absolute w-full h-1.5 appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-indigo-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab"
-            style={{ zIndex: filters.priceMin !== "" && Number(filters.priceMin) >= priceRange.max - 100_000 ? 5 : 3 }}
-          />
-          <input
-            type="range" min={priceRange.min} max={priceRange.max} step={100_000}
-            value={filters.priceMax !== "" ? Number(filters.priceMax) : priceRange.max}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              const minVal = filters.priceMin !== "" ? Number(filters.priceMin) : priceRange.min;
-              if (val >= minVal) {
-                const next = { ...filters, priceMax: val === priceRange.max ? "" as const : val };
-                setFilters(next); applyFilters(next);
-              }
-            }}
-            className="absolute w-full h-1.5 appearance-none bg-transparent cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-indigo-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-grab"
-            style={{ zIndex: 4 }}
-          />
-        </div>
+        <button
+          onClick={() => {
+            const next: FilterState = {
+              ...filters,
+              priceMin: tempPriceMin === "" ? "" : Number(tempPriceMin),
+              priceMax: tempPriceMax === "" ? "" : Number(tempPriceMax)
+            } as FilterState;
+            setFilters(next);
+            applyFilters(next);
+          }}
+          className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-indigo-600/10 mb-4"
+        >
+          Áp dụng
+        </button>
 
         {priceRange.buckets.length > 0 && (
           <div className="flex flex-col gap-1.5 mt-1">
@@ -662,7 +692,7 @@ export default function ClientHome({
                   )}
                 </p>
               </div>
-              <FilterPanel />
+              {filterPanelJSX}
             </div>
           </aside>
 
@@ -784,7 +814,7 @@ export default function ClientHome({
           </button>
         </div>
         <div className="overflow-y-auto flex-1 px-6 py-5">
-          <FilterPanel />
+          {filterPanelJSX}
         </div>
         <div className="px-6 py-4 border-t border-gray-100 shrink-0">
           <button

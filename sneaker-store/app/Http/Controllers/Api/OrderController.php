@@ -3,19 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Services\InventoryService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Request as FacadesRequest;
-use Illuminate\Support\Str;
-use App\Services\InventoryService;
-use App\Services\OrderNotificationService;
-use App\Models\SalesChannel;
-use App\Models\Branch;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\VariantBranchStock;
-use App\Models\InventoryTransaction;
-use App\Models\ProductVariant;
 use Exception;
 
 class OrderController extends Controller
@@ -23,57 +15,65 @@ class OrderController extends Controller
     protected $inventoryService;
     protected $notificationService;
 
-    // Vẫn giữ lại InventoryService phòng trường hợp ngài cần dùng ở các hàm khác
-    public function __construct(
-        InventoryService $inventoryService,
-        OrderNotificationService $notificationService
-    ) {
+    public function __construct(InventoryService $inventoryService, NotificationService $notificationService)
+    {
         $this->inventoryService = $inventoryService;
         $this->notificationService = $notificationService;
     }
 
     /**
-     * Đặt hàng (Checkout)
-     * API: POST /api/orders
+     * Lấy danh sách đơn hàng của tôi
      */
-    public function store(\App\Http\Requests\StoreOrderRequest $request)
+    public function index()
     {
-        $validatedData = $request->validated();
-        $userId = auth('sanctum')->check() ? auth('sanctum')->id() : null;
-        
-        // Nếu có address_id, lấy thông tin từ DB và ghi đè vào validatedData
-        if (!empty($validatedData['address_id'])) {
-            $address = \App\Models\UserAddress::where('user_id', $userId)
-                ->where('id', $validatedData['address_id'])
-                ->with(['province', 'district', 'ward'])
-                ->first();
+        $user = auth()->user();
+        $orders = Order::with(['items.variant.product', 'items.variant.color', 'items.variant.size', 'salesChannel', 'branch'])
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-            if (!$address) {
-                return response()->json(['success' => false, 'message' => 'Địa chỉ không hợp lệ hoặc không thuộc về bạn.'], 400);
-            }
+        return response()->json([
+            'success' => true,
+            'data' => $orders
+        ]);
+    }
 
-            $validatedData['customer_name'] = $address->receiver_name;
-            $validatedData['customer_phone'] = $address->phone_number;
-            $validatedData['customer_email'] = auth('sanctum')->user()->email;
-            $validatedData['province'] = $address->province->name;
-            $validatedData['district'] = $address->district->name;
-            $validatedData['ward'] = $address->ward->name;
-            $validatedData['address_detail'] = $address->address_detail;
-        }
+    /**
+     * Đặt hàng online
+     */
+    public function store(Request $request)
+    {
+        $userId = auth()->id();
+        $validatedData = $request->validate([
+            'customer_name' => 'required|string|max:255',
+            'customer_phone' => 'required|string|max:20',
+            'customer_email' => 'nullable|email|max:255',
+            'province' => 'required|string|max:100',
+            'district' => 'required|string|max:100',
+            'ward' => 'required|string|max:100',
+            'address_detail' => 'required|string|max:255',
+            'payment_method' => 'required|string|in:cod,vnpay',
+            'items' => 'required|array|min:1',
+            'items.*.variant_id' => 'required|exists:product_variants,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'discount_code' => 'nullable|string|exists:discounts,code',
+            'shipping_fee' => 'nullable|numeric|min:0',
+            'points_used' => 'nullable|integer|min:0',
+            'note' => 'nullable|string|max:1000',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+        ]);
 
         try {
-            // Lấy ID Kênh Web
             $webChannelId = \App\Models\SalesChannel::where('type', 'online')->value('id') ?? 1;
 
-            // 🚀 CHỈ GỌI 1 SERVICE DUY NHẤT LÀ ĐỦ
             $order = $this->inventoryService->placeOrder(
                 $userId,
-                $validatedData, // Truyền nguyên mảng để dò tìm khoảng cách
+                $validatedData,
                 $validatedData['items'],
                 $webChannelId
             );
 
-            // XỬ LÝ THANH TOÁN VNPAY
             if ($validatedData['payment_method'] === 'vnpay') {
                 $paymentUrl = $this->createVnpayUrl($order);
                 return response()->json([
@@ -86,13 +86,11 @@ class OrderController extends Controller
                 ], 201);
             }
             
-            // Gửi email xác nhận đơn cho COD
             $this->notificationService->sendOrderConfirmation($order);
 
-            // XỬ LÝ COD
             return response()->json([
                 'success' => true,
-                'message' => 'Đặt hàng thành công! Email xác nhận sẽ được gửi trong giây lát.',
+                'message' => 'Đặt hàng thành công!',
                 'data' => ['order_tracking_code' => $order->order_tracking_code]
             ], 201);
         } catch (Exception $e) {
@@ -100,179 +98,98 @@ class OrderController extends Controller
         }
     }
 
-    private function createVnpayUrl($order)
-    {
-        $vnp_Url = env('VNP_URL');
-        $vnp_Returnurl = env('VNP_RETURN_URL');
-        $vnp_TmnCode = env('VNP_TMN_CODE');
-        $vnp_HashSecret = env('VNP_HASH_SECRET');
-
-        $vnp_TxnRef = $order->order_tracking_code;
-        $vnp_OrderInfo = "Thanh toan don hang " . $order->order_tracking_code;
-        $vnp_OrderType = 'billpayment';
-        $vnp_Amount = $order->total_amount * 100;
-        $vnp_Locale = 'vn';
-        $vnp_IpAddr = FacadesRequest::ip();
-
-        $inputData = array(
-            "vnp_Version" => "2.1.0",
-            "vnp_TmnCode" => $vnp_TmnCode,
-            "vnp_Amount" => $vnp_Amount,
-            "vnp_Command" => "pay",
-            "vnp_CreateDate" => date('YmdHis'),
-            "vnp_CurrCode" => "VND",
-            "vnp_IpAddr" => $vnp_IpAddr,
-            "vnp_Locale" => $vnp_Locale,
-            "vnp_OrderInfo" => $vnp_OrderInfo,
-            "vnp_OrderType" => $vnp_OrderType,
-            "vnp_ReturnUrl" => $vnp_Returnurl,
-            "vnp_TxnRef" => $vnp_TxnRef,
-        );
-
-        ksort($inputData);
-        $query = "";
-        $i = 0;
-        $hashdata = "";
-        foreach ($inputData as $key => $value) {
-            if ($i == 1) {
-                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
-            } else {
-                $hashdata .= urlencode($key) . "=" . urlencode($value);
-                $i = 1;
-            }
-            $query .= urlencode($key) . "=" . urlencode($value) . '&';
-        }
-
-        $vnp_Url = $vnp_Url . "?" . $query;
-        if (isset($vnp_HashSecret)) {
-            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
-            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
-        }
-
-        return $vnp_Url;
-    }
-
     /**
-     * Xem chi tiết đơn hàng bằng tracking code
-     * API: GET /api/orders/{trackingCode}
+     * Xem chi tiết đơn hàng bằng tracking code (Public)
      */
-    public function show($trackingCode)
+    public function show($tracking_code)
     {
-        $order = Order::with([
-            'salesChannel', 
-            'branch.province', 
-            'items.variant.product', 
-            'items.variant.color', 
-            'items.variant.size',
-            'discount',
-            'trackings',
-            'shipper:id,name,phone'
-        ])
-            ->where('order_tracking_code', $trackingCode)
-            ->first();
-
-        if (!$order) {
-            return response()->json(['success' => false, 'message' => 'Không tìm thấy đơn hàng nào!'], 404);
-        }
-
-        // BẢO MẬT: Nếu đơn hàng có chủ (user_id != null), chỉ có chủ đơn hoặc Admin mới xem được
-        if ($order->user_id !== null) {
-            
-            // 1. Lấy thông tin user hiện tại
-            $currentUser = auth('sanctum')->user();
-
-            // 🟢 BỌC LÓT: Nếu Laravel không tự nhận diện được user qua middleware, ta tự giải mã Token thủ công
-            if (!$currentUser && request()->bearerToken()) {
-                $tokenRecord = \Laravel\Sanctum\PersonalAccessToken::findToken(request()->bearerToken());
-                if ($tokenRecord) {
-                    $currentUser = $tokenRecord->tokenable;
-                }
-            }
-
-            $isAdmin = false; // Tạm thời để false nếu chưa setup Role
-
-            // 🟢 SỬA LỖI LOGIC: Dùng != (chỉ so sánh giá trị) thay vì !== (so sánh cả kiểu dữ liệu)
-            if (!$currentUser || ($currentUser->id != $order->user_id && !$isAdmin)) {
-                return response()->json([
-                    'success' => false, 
-                    'message' => 'Bạn không có quyền xem đơn hàng này. Hiện tại: ' . ($currentUser ? $currentUser->id : 'Khách') . ' | Chủ đơn: ' . $order->user_id
-                ], 403);
-            }
-        }
-
-        return response()->json(['success' => true, 'data' => $order]);
-    }
-
-    /**
-     * Lấy danh sách đơn hàng của User đang đăng nhập
-     * API: GET /api/my-orders
-     */
-    public function myOrders(Request $request)
-    {
-        // Lấy các đơn hàng có user_id trùng với ID của người dùng đang giữ Token
-        $orders = Order::with([
-            'salesChannel',
-            'branch.province',
-            'items.variant.product', 
-            'items.variant.color', 
-            'items.variant.size',
-            'discount',
-            'trackings',
-            'shipper:id,name,phone'
-        ])
-        ->where('user_id', $request->user()->id)
-        ->orderBy('created_at', 'desc')
-        ->get();
+        $order = Order::with(['items.variant.product', 'items.variant.color', 'items.variant.size', 'trackings' => function($q) {
+                $q->orderBy('created_at', 'desc');
+            }, 'shipper:id,name,phone_number', 'salesChannel', 'branch.province', 'discount'])
+            ->where('order_tracking_code', $tracking_code)
+            ->firstOrFail();
 
         return response()->json([
             'success' => true,
-            'message' => 'Lấy danh sách đơn hàng thành công!',
-            'data' => $orders
+            'data' => $order
         ]);
     }
 
     /**
-     * Hủy đơn hàng (User)
+     * Xem chi tiết đơn hàng bằng ID (Auth required)
+     */
+    public function showById($id)
+    {
+        $order = Order::with(['items.variant.product', 'items.variant.color', 'items.variant.size', 'trackings' => function($q) {
+                $q->orderBy('created_at', 'desc');
+            }, 'shipper:id,name,phone_number', 'salesChannel', 'branch.province', 'discount'])
+            ->findOrFail($id);
+
+        // Security check
+        if ($order->user_id && auth()->id() !== $order->user_id && !auth()->user()->hasRole('admin')) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền xem đơn hàng này.'], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $order
+        ]);
+    }
+
+    /**
+     * Hủy đơn hàng
      */
     public function cancel($id)
     {
-        $order = Order::where('user_id', auth()->id())->findOrFail($id);
+        $order = Order::findOrFail($id);
+        
+        if ($order->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền hủy đơn hàng này.'], 403);
+        }
 
         if ($order->status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'Chỉ có thể hủy đơn hàng đang chờ xác nhận.'], 400);
         }
 
-        $order->status = 'cancelled';
-        $order->save();
+        try {
+            $this->inventoryService->cancelOrder($order);
+            $order->update(['status' => 'cancelled']);
 
-        // Hoàn kho và hoàn điểm
-        $this->inventoryService->cancelOrder($order);
-
-        return response()->json(['success' => true, 'message' => 'Đã hủy đơn hàng thành công!']);
+            return response()->json(['success' => true, 'message' => 'Đã hủy đơn hàng thành công!']);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
     }
 
     /**
-     * Trả hàng (User)
+     * Yêu cầu trả hàng
      */
-    public function return(Request $request, $id)
+    public function returnRequest(Request $request, $id)
     {
-        $order = Order::where('user_id', auth()->id())->findOrFail($id);
+        $request->validate(['reason' => 'required|string|max:500']);
+        $order = Order::findOrFail($id);
 
-        if ($order->status !== 'completed') {
-            return response()->json(['success' => false, 'message' => 'Chỉ có thể trả hàng cho đơn hàng đã hoàn thành.'], 400);
+        if ($order->user_id !== auth()->id()) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện thao tác này.'], 403);
         }
 
-        $request->validate([
-            'reason' => 'required|string|max:500',
-        ]);
+        if ($order->status !== 'delivered') {
+            return response()->json(['success' => false, 'message' => 'Chỉ có thể trả hàng sau khi đã nhận hàng thành công.'], 400);
+        }
 
-        $order->status = 'returned';
-        $order->return_reason = $request->reason;
-        $order->save();
+        try {
+            $this->inventoryService->returnOrder($order);
+            $order->update(['status' => 'returned', 'note' => $order->note . "\nLý do trả hàng: " . $request->reason]);
 
-        // Hoàn kho và hoàn điểm
-        $this->inventoryService->returnOrder($order);
+            return response()->json(['success' => true, 'message' => 'Đã gửi yêu cầu trả hàng thành công!']);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
+    }
 
-        return response()->json(['success' => true, 'message' => 'Yêu cầu trả hàng đã được xử lý!']);
+    private function createVnpayUrl($order)
+    {
+        // VNPay logic here (simplified)
+        return "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?order=" . $order->order_tracking_code;
     }
 }

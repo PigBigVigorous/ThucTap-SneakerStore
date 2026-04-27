@@ -289,7 +289,7 @@ class DiscountController extends Controller
         // Nếu user đã đăng nhập, đánh dấu voucher nào đã lưu
         $user = auth('sanctum')->user();
         if ($user) {
-            $savedVoucherIds = $user->vouchers()->pluck('discounts.id')->toArray();
+            $savedVoucherIds = $user->vouchers->pluck('id')->toArray();
             foreach ($discounts as $discount) {
                 $discount->is_saved = in_array($discount->id, $savedVoucherIds);
             }

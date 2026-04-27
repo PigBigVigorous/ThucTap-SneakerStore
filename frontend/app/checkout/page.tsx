@@ -88,7 +88,6 @@ export default function CheckoutPage() {
 
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const subtotal = cart.reduce((t, i) => t + i.price * i.quantity, 0);
-  const FREESHIP_THRESHOLD = 5000000;
   const [shippingFee, setShippingFee] = useState(0);
 
   // Discount State
@@ -97,7 +96,7 @@ export default function CheckoutPage() {
   const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
 
   // Loyalty Points State
-  const { user, isAuthenticated, refreshUser } = useAuth();
+  const { user, isAuthenticated, refreshUser, token } = useAuth();
   const [usePoints, setUsePoints] = useState(false);
   const [pointsToUse, setPointsToUse] = useState(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -144,16 +143,14 @@ export default function CheckoutPage() {
 
   // Auto calculate shipping via API
   useEffect(() => {
-    if (subtotal >= FREESHIP_THRESHOLD) {
-      setShippingFee(0);
-      return;
-    }
-
     // Chỉ tính phí khi đã chọn đủ Tỉnh và Huyện
     if (formData.province && formData.district) {
       const fetchShippingFee = async () => {
         try {
-          const res = await shippingAPI.calculateFee(formData.province, formData.district, formData.ward);
+          const res = await shippingAPI.calculateFee(
+            { province: formData.province, district: formData.district, ward: formData.ward },
+            token || undefined
+          );
           if (res.success) {
             setShippingFee(res.shipping_fee);
           }
@@ -165,7 +162,7 @@ export default function CheckoutPage() {
       };
       fetchShippingFee();
     }
-  }, [formData.province, formData.district, formData.ward, subtotal]);
+  }, [formData.province, formData.district, formData.ward]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -180,7 +177,7 @@ export default function CheckoutPage() {
       const res = await discountAPI.apply(discountCode.trim(), currentSubtotal, cart.map((item) => ({
         variant_id: item.variant_id,
         quantity: item.quantity,
-      })));
+      })), token || undefined);
       if (res.success) {
         setAppliedDiscount({
           code: res.data.code,

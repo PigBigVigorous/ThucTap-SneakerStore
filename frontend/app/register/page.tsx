@@ -26,7 +26,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const data = await authAPI.register(formData.name, formData.email, formData.password);
+      const data = await authAPI.register(formData);
 
       if (data.success && data.data) {
         toast.success("🎉 Đăng ký thành công!");

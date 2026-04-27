@@ -491,7 +491,7 @@ class InventoryService
         DB::transaction(function () use ($order) {
             foreach ($order->items as $item) {
                 // 1. Tìm tồn kho của biến thể tại chi nhánh đã mua (có lock)
-                $branchStock = VariantBranchStock::where('variant_id', $item->variant_id)
+                $branchStock = VariantBranchStock::where('variant_id', $item->product_variant_id)
                     ->where('branch_id', $order->branch_id)
                     ->lockForUpdate()
                     ->first();
@@ -503,7 +503,7 @@ class InventoryService
 
                     // 3. Ghi lịch sử biến động là RETURN để kế toán kiểm tra
                     InventoryTransaction::create([
-                        'product_variant_id' => $item->variant_id,
+                        'product_variant_id' => $item->product_variant_id,
                         'transaction_type' => 'RETURN', 
                         'reference_id' => $order->id,
                         'quantity_change' => $item->quantity, // Số dương (cộng vào)

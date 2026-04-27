@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { adminInventoryAPI } from "../../services/api";
+import { adminInventoryAPI, adminBranchAPI, adminBrandAPI, adminProductAPI } from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
 import { Search } from "lucide-react";
 
@@ -63,7 +63,7 @@ export default function InventoryPage() {
       if (res.success) {
         setStocks(res.data || []);
       } else {
-        toast.error(data.message || "Lỗi khi tải dữ liệu tồn kho");
+        toast.error(res.message || "Lỗi khi tải dữ liệu tồn kho");
       }
     } catch (error: any) {
       toast.error(error.message || "Lỗi kết nối máy chủ");
@@ -83,24 +83,22 @@ export default function InventoryPage() {
 
   const fetchDropdownData = async () => {
     try {
-      const branchRes = await fetch(`${baseUrl}/admin/branches`, { headers: { Authorization: `Bearer ${token}` } });
-      const branchData = await branchRes.json();
+      const branchData = await adminBranchAPI.getAll(token || "");
       if (branchData.success) {
         const branchArray = Array.isArray(branchData.data) ? branchData.data : (Array.isArray(branchData.data?.data) ? branchData.data.data : []);
         setBranches(branchArray);
       }
 
-      const brandRes = await fetch(`${baseUrl}/admin/brands`, { headers: { Authorization: `Bearer ${token}` } });
-      const brandData = await brandRes.json();
+      const brandData = await adminBrandAPI.getAll(token || "");
       if (brandData.success) {
         setBrands(brandData.data || []);
       }
 
-      const prodRes = await fetch(`${baseUrl}/admin/products?per_page=100`, { headers: { Authorization: `Bearer ${token}` } });
-      const prodData = await prodRes.json();
+      const prodData = await adminProductAPI.getAll(token || "", { per_page: 100 });
       if (prodData.success) {
         const allVariants: any[] = [];
-        prodData.data.data.forEach((p: any) => {
+        const products = prodData.data?.data || prodData.data || [];
+        products.forEach((p: any) => {
           p.variants?.forEach((v: any) => {
             allVariants.push({
               id: v.id,
@@ -125,13 +123,8 @@ export default function InventoryPage() {
         note: `[NHẬP LÔ HÀNG MỚI] ${importForm.note}`
       };
       
-      // Chuyển hướng gọi tới endpoint /import chuyên dụng
-      const res = await fetch(`${baseUrl}/admin/inventory/import`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
+      const res = await adminInventoryAPI.importStock(payload, token || "");
+      const data = res;
 
       if (data.success) {
         toast.success("Đã nhập hàng thành công vào Kho Tổng!");

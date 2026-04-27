@@ -117,7 +117,7 @@ export default function ChatbotWidget() {
   // SAU KHI GỌI HOOKS MỚI ĐƯỢC KIỂM TRA ĐIỀU KIỆN RETURN
   const isAdmin = pathname?.startsWith("/admin");
 
-  if (isAdmin) return null;
+  if (isAdmin || user?.role === 'shipper') return null;
 
   const sendMessage = async () => {
     const text = input.trim();

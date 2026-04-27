@@ -18,6 +18,7 @@ const emptyForm: FormState = {
   category_ids: [],
   start_date: "",
   expiration_date: "",
+  description: "",
   is_active: true,
 };
 
@@ -182,6 +183,7 @@ export default function DiscountsPage() {
       category_ids: discount.category_ids ?? [],
       start_date: discount.start_date ? new Date(discount.start_date).toISOString().slice(0, 16) : "",
       expiration_date: discount.expiration_date ? new Date(discount.expiration_date).toISOString().slice(0, 16) : "",
+      description: discount.description || "",
       is_active: discount.is_active,
     });
   };

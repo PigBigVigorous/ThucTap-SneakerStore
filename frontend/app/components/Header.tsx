@@ -240,7 +240,7 @@ export default function Header() {
   
   // Chỉ ẩn nếu ở trang admin (tùy chọn, nhưng thường admin có layout riêng)
   // Nếu bạn muốn admin cũng thấy header này thì xóa nốt dòng dưới
-  if (isAdmin) return null;
+  if (isAdmin || user?.role === 'shipper') return null;
 
   return (
     <>

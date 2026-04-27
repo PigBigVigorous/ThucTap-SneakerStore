@@ -29,6 +29,8 @@ class Order extends Model
     'points_used',
     'points_earned',
     'shipper_id',
+    'latitude',
+    'longitude',
 ];
 
     protected $casts = [

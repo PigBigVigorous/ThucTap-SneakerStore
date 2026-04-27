@@ -29,7 +29,28 @@ export default function CategoriesPage() {
     setLoading(true);
     try {
       const res = await adminCategoryAPI.getAll(token);
-      if (res.success) setCategories(res.data || []);
+      if (res.success && res.data) {
+        const flat: Category[] = [];
+        res.data.forEach((parent: any) => {
+          flat.push({
+            id: parent.id,
+            name: parent.name,
+            slug: parent.slug,
+            parent_id: parent.parent_id,
+          });
+          if (parent.children && Array.isArray(parent.children)) {
+            parent.children.forEach((child: any) => {
+              flat.push({
+                id: child.id,
+                name: child.name,
+                slug: child.slug,
+                parent_id: child.parent_id,
+              });
+            });
+          }
+        });
+        setCategories(flat);
+      }
     } catch {
       toast.error("Lỗi kết nối máy chủ");
     }

@@ -26,7 +26,7 @@ class InventoryController extends Controller
             'variant.branchStocks', 'fromBranch', 'toBranch'
         ]);
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
                 $q->whereHas('variant.product', function($pq) use ($search) {
@@ -37,7 +37,7 @@ class InventoryController extends Controller
             });
         }
 
-        if ($request->has('brand_id')) {
+        if ($request->filled('brand_id')) {
             $query->whereHas('variant.product', function($pq) use ($request) {
                 $pq->where('brand_id', $request->input('brand_id'));
             });

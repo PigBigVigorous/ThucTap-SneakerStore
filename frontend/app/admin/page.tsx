@@ -90,22 +90,30 @@ export default function AdminDashboard() {
     if (!token || !hasPermission("view-dashboard")) return;
     (async () => {
       try {
-        const [jsonTx, jsonStats] = await Promise.all([
-          adminAPI.getInventoryTransactions(token),
-          adminAPI.getStatistics(token),
-        ]);
-        if (jsonTx.success && jsonStats.success) {
-          setTransactions(jsonTx.data.data ?? []);
-          setStats(jsonStats.data);
-          // Initial chart data from statistics (last 7 days)
-          setChartData((jsonStats.data.revenueByDay ?? []).map((d: any) => ({
-            name: formatChartDate(d.date, 'day'),
-            revenue: Number(d.total),
-          })));
-        } else {
-          toast.error("Lỗi phân quyền hoặc dữ liệu!");
+        try {
+          const jsonStats = await adminAPI.getStatistics(token);
+          if (jsonStats.success) {
+            setStats(jsonStats.data);
+            setChartData((jsonStats.data.revenueByDay ?? []).map((d: any) => ({
+              name: formatChartDate(d.date, 'day'),
+              revenue: Number(d.total),
+            })));
+          }
+        } catch (errStats: any) {
+          console.error("Lỗi Statistics API:", errStats);
+          toast.error("Lỗi tải dữ liệu Thống kê");
         }
-      } catch {
+
+        try {
+          const jsonTx = await adminAPI.getInventoryTransactions(token);
+          if (jsonTx.success) {
+            setTransactions(jsonTx.data.data ?? []);
+          }
+        } catch (errTx: any) {
+          console.error("Lỗi Transactions API:", errTx);
+          toast.error("Lỗi tải dữ liệu Biến động kho");
+        }
+      } catch (e) {
         toast.error("Lỗi kết nối API Admin!");
       } finally {
         setLoading(false);

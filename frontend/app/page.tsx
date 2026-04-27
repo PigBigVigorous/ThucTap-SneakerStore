@@ -37,19 +37,19 @@ export default async function Home({
   const [json, brands, priceRange] = await Promise.all([
     productAPI.getAll({
       category: params.category,
-      brand:    params.brand,
-      search:   params.search,
+      brand: params.brand,
+      search: params.search,
     }),
     getAllBrands(),
     getPriceRange(),
   ]);
 
   const paginateObj = json.data ?? {};
-  const products    = paginateObj.data ?? [];
+  const products = paginateObj.data ?? [];
   const meta = {
     current_page: paginateObj.current_page ?? 1,
-    last_page:    paginateObj.last_page    ?? 1,
-    total:        paginateObj.total        ?? 0,
+    last_page: paginateObj.last_page ?? 1,
+    total: paginateObj.total ?? 0,
   };
 
   return (

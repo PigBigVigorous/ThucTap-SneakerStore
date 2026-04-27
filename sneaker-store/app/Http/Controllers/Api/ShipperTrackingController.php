@@ -5,38 +5,92 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderTracking;
+use App\Services\PointService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Services\PointService;
+use Illuminate\Support\Facades\Storage;
 
 class ShipperTrackingController extends Controller
 {
     /**
-     * Cập nhật vị trí/trạng thái đơn hàng (Dành cho Shipper)
+     * Lấy danh sách đơn hàng được phân công cho shipper hiện tại
+     */
+    public function myOrders(Request $request)
+    {
+        $shipperId = $request->user()->id;
+        $orders = Order::with([
+            'items.variant.product', 
+            'items.variant.color', 
+            'items.variant.size',
+            'trackings' => function($q) { $q->orderBy('created_at', 'desc'); }
+        ])
+        ->where('shipper_id', $shipperId)
+        ->orderBy('updated_at', 'desc')
+        ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $orders
+        ]);
+    }
+
+    /**
+     * Lấy chi tiết đơn hàng cho shipper
+     */
+    public function showOrderById($id)
+    {
+        $order = Order::with([
+            'items.variant.product', 
+            'items.variant.color', 
+            'items.variant.size',
+            'trackings' => function($q) { $q->orderBy('created_at', 'desc'); },
+            'shipper:id,name,phone'
+        ])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $order
+        ]);
+    }
+
+    /**
+     * Cập nhật hành trình và trạng thái đơn hàng
      */
     public function updateTracking(Request $request, $orderId)
     {
         $order = Order::findOrFail($orderId);
 
-        // Authorization: Đảm bảo user hiện tại là shipper của đơn này
-        // Nếu shipper_id chưa được gán, có thể cho phép shipper tự nhận đơn (tùy logic business)
-        // Ở đây giả sử admin đã gán shipper_id
+        // Kiểm tra quyền
         if ($order->shipper_id !== $request->user()->id) {
-            return response()->json(['message' => 'Bạn không được phân công giao đơn hàng này.'], 403);
+            return response()->json(['success' => false, 'message' => 'Bạn không được phân công giao đơn hàng này.'], 403);
         }
 
-        if (in_array($order->status, ['delivered', 'cancelled', 'returned'])) {
-            return response()->json(['message' => 'Đơn hàng này đã kết thúc, không thể cập nhật thêm.'], 400);
+        // Kiểm tra trạng thái cuối
+        if (in_array($order->status, ['cancelled', 'returned'])) {
+            return response()->json(['success' => false, 'message' => 'Đơn hàng này đã kết thúc và không thể cập nhật thêm.'], 400);
         }
 
-        $validated = $request->validate([
-            'status' => 'required|string|in:picked_up,in_transit,delivering,delivered,failed',
-            'latitude' => 'nullable|numeric|between:-90,90',
-            'longitude' => 'nullable|numeric|between:-180,180',
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'status' => 'required|string|in:shipped,delivering,delivered,failed,returned',
+            'latitude' => 'nullable',
+            'longitude' => 'nullable',
             'location_text' => 'nullable|string|max:255',
             'note' => 'nullable|string|max:500',
-            'image' => 'nullable|image|max:5120', // Max 5MB
+            'image' => 'nullable|file|max:20480',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ: ' . implode(', ', $validator->errors()->all())
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+
+        if ($order->status === 'delivered' && $validated['status'] !== 'returned') {
+            return response()->json(['success' => false, 'message' => 'Đơn hàng đã hoàn thành, chỉ có thể cập nhật trạng thái Trả hàng.'], 400);
+        }
 
         return DB::transaction(function () use ($order, $request, $validated) {
             $imageUrl = null;
@@ -46,63 +100,48 @@ class ShipperTrackingController extends Controller
             }
 
             // Lưu checkpoint tracking
-            $trackingData = array_merge($validated, ['image_url' => $imageUrl]);
-            $order->trackings()->create($trackingData);
+            $order->trackings()->create([
+                'status' => $validated['status'],
+                'latitude' => $validated['latitude'] ?? null,
+                'longitude' => $validated['longitude'] ?? null,
+                'location_text' => $validated['location_text'] ?? 'Cập nhật hành trình',
+                'note' => $validated['note'] ?? null,
+                'image_url' => $imageUrl
+            ]);
             
-            // Cập nhật trạng thái chính của đơn hàng
+            // Cập nhật trạng thái chính
             $order->update(['status' => $validated['status']]);
             
-            // Nếu trạng thái là 'delivered', kích hoạt cộng điểm loyalty và đánh dấu đã thanh toán
+            // Xử lý hoàn tất đơn hàng
             if ($validated['status'] === 'delivered') {
-                $order->update(['payment_status' => 'paid']);
+                $order->update([
+                    'payment_status' => 'paid',
+                    'delivery_proof_image' => $imageUrl
+                ]);
                 app(PointService::class)->awardPointsForOrder($order);
             }
 
+            // Xử lý trả hàng
+            if ($validated['status'] === 'returned') {
+                $order->update([
+                    'payment_status' => 'refunded'
+                ]);
+                // Cộng ngược sản phẩm về kho & hoàn/thu hồi điểm
+                app(\App\Services\InventoryService::class)->returnOrder($order);
+            }
+
+            // Trả về dữ liệu ĐỒNG BỘ với cấu trúc chuẩn
             return response()->json([
                 'success' => true,
-                'message' => 'Cập nhật hành trình thành công',
-                'data' => $order->load(['trackings', 'shipper'])
+                'message' => 'Cập nhật hành trình thành công!',
+                'data' => $order->load([
+                    'items.variant.product', 
+                    'items.variant.color', 
+                    'items.variant.size',
+                    'trackings' => function($q) { $q->orderBy('created_at', 'desc'); },
+                    'shipper:id,name,phone'
+                ])
             ]);
         });
-    }
-
-    /**
-     * Lấy lịch sử hành trình đơn hàng (Dành cho Khách hàng & Shipper)
-     */
-    public function getTracking(Request $request, $orderTrackingCode)
-    {
-        $order = Order::where('order_tracking_code', $orderTrackingCode)
-            ->with(['trackings', 'shipper:id,name,phone_number'])
-            ->firstOrFail();
-
-        return response()->json([
-            'success' => true,
-            'order_status' => $order->status,
-            'customer_info' => [
-                'name' => $order->customer_name,
-                'province' => $order->province,
-                'district' => $order->district,
-                'ward' => $order->ward,
-                'address_detail' => $order->address_detail,
-            ],
-            'shipper' => $order->shipper,
-            'trackings' => $order->trackings
-        ]);
-    }
-
-    /**
-     * Danh sách đơn hàng được phân công cho Shipper hiện tại
-     */
-    public function myAssignedOrders(Request $request)
-    {
-        $orders = Order::where('shipper_id', $request->user()->id)
-            ->whereNotIn('status', ['delivered', 'cancelled', 'returned'])
-            ->orderByDesc('created_at')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $orders
-        ]);
     }
 }
