@@ -42,11 +42,11 @@ function StatCard({
 }
 
 const TX_TYPE_MAP: Record<string, { label: string; cls: string }> = {
-  IMPORT:    { label: "Nhập kho",    cls: "bg-blue-50   text-blue-700"   },
-  SALE:      { label: "Bán ra",      cls: "bg-red-50    text-red-700"    },
-  RETURN:    { label: "Hoàn trả",    cls: "bg-green-50  text-green-700"  },
-  TRANSFER:  { label: "Chuyển kho",  cls: "bg-purple-50 text-purple-700" },
-  ADJUSTMENT:{ label: "Điều chỉnh",  cls: "bg-orange-50 text-orange-700" },
+  IMPORT: { label: "Nhập kho", cls: "bg-blue-50   text-blue-700" },
+  SALE: { label: "Bán ra", cls: "bg-red-50    text-red-700" },
+  RETURN: { label: "Hoàn trả", cls: "bg-green-50  text-green-700" },
+  TRANSFER: { label: "Chuyển kho", cls: "bg-purple-50 text-purple-700" },
+  ADJUSTMENT: { label: "Điều chỉnh", cls: "bg-orange-50 text-orange-700" },
 };
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
       if (hasPermission("manage-orders")) return router.replace("/admin/orders");
       if (hasPermission("manage-products")) return router.replace("/admin/products");
       if (hasPermission("manage-inventory")) return router.replace("/admin/branches");
-      
+
       toast.error("Bạn không có quyền truy cập trang quản trị!");
       return router.replace("/");
     }
@@ -90,30 +90,22 @@ export default function AdminDashboard() {
     if (!token || !hasPermission("view-dashboard")) return;
     (async () => {
       try {
-        try {
-          const jsonStats = await adminAPI.getStatistics(token);
-          if (jsonStats.success) {
-            setStats(jsonStats.data);
-            setChartData((jsonStats.data.revenueByDay ?? []).map((d: any) => ({
-              name: formatChartDate(d.date, 'day'),
-              revenue: Number(d.total),
-            })));
-          }
-        } catch (errStats: any) {
-          console.error("Lỗi Statistics API:", errStats);
-          toast.error("Lỗi tải dữ liệu Thống kê");
+        const [jsonTx, jsonStats] = await Promise.all([
+          adminAPI.getInventoryTransactions(token),
+          adminAPI.getStatistics(token),
+        ]);
+        if (jsonTx.success && jsonStats.success) {
+          setTransactions(jsonTx.data.data ?? []);
+          setStats(jsonStats.data);
+          // Initial chart data from statistics (last 7 days)
+          setChartData((jsonStats.data.revenueByDay ?? []).map((d: any) => ({
+            name: formatChartDate(d.date, 'day'),
+            revenue: Number(d.total),
+          })));
+        } else {
+          toast.error("Lỗi phân quyền hoặc dữ liệu!");
         }
-
-        try {
-          const jsonTx = await adminAPI.getInventoryTransactions(token);
-          if (jsonTx.success) {
-            setTransactions(jsonTx.data.data ?? []);
-          }
-        } catch (errTx: any) {
-          console.error("Lỗi Transactions API:", errTx);
-          toast.error("Lỗi tải dữ liệu Biến động kho");
-        }
-      } catch (e) {
+      } catch {
         toast.error("Lỗi kết nối API Admin!");
       } finally {
         setLoading(false);
@@ -205,10 +197,10 @@ export default function AdminDashboard() {
         {/* Quick links */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { href: "/admin/orders",   icon: ClipboardList, label: "Đơn hàng",  color: "text-blue-600  bg-blue-50" },
-            { href: "/admin/products", icon: Package,       label: "Sản phẩm",  color: "text-orange-600 bg-orange-50" },
-            { href: "/admin/inventory",icon: ArrowUpRight,  label: "Nhập kho",  color: "text-red-600   bg-red-50" },
-            { href: "/admin/pos",      icon: ShoppingBag,   label: "POS",       color: "text-purple-600 bg-purple-50" },
+            { href: "/admin/orders", icon: ClipboardList, label: "Đơn hàng", color: "text-blue-600  bg-blue-50" },
+            { href: "/admin/products", icon: Package, label: "Sản phẩm", color: "text-orange-600 bg-orange-50" },
+            { href: "/admin/inventory", icon: ArrowUpRight, label: "Nhập kho", color: "text-red-600   bg-red-50" },
+            { href: "/admin/pos", icon: ShoppingBag, label: "POS", color: "text-purple-600 bg-purple-50" },
           ].map(({ href, icon: Icon, label, color }) => (
             <Link
               key={href} href={href}
@@ -230,7 +222,7 @@ export default function AdminDashboard() {
             <h2 className="text-[15px] font-black text-gray-900 uppercase tracking-wide">
               Phân tích Doanh thu
             </h2>
-            
+
             <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl">
               {[
                 { key: 'day', label: 'Ngày' },
@@ -241,8 +233,8 @@ export default function AdminDashboard() {
                   key={p.key}
                   onClick={() => fetchDetailedRevenue(p.key as any)}
                   className={`px-4 py-1.5 rounded-lg text-[12px] font-bold transition-all
-                    ${reportPeriod === p.key 
-                      ? "bg-white text-gray-900 shadow-sm" 
+                    ${reportPeriod === p.key
+                      ? "bg-white text-gray-900 shadow-sm"
                       : "text-gray-400 hover:text-gray-600"}`}
                 >
                   {p.label}
@@ -253,21 +245,21 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-3 ml-auto">
               {/* Date pickers cho việc xuất file */}
               <div className="flex items-center justify-between gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-sm relative z-10 w-full sm:w-auto">
-                  <input 
-                    type="date" 
-                    value={exportStartDate}
-                    onChange={(e) => setExportStartDate(e.target.value)}
-                    className="bg-transparent text-[13px] font-semibold text-gray-700 outline-none cursor-pointer w-full sm:w-[115px]"
-                    title="Từ ngày"
-                  />
-                  <span className="text-gray-300">-</span>
-                  <input 
-                    type="date" 
-                    value={exportEndDate}
-                    onChange={(e) => setExportEndDate(e.target.value)}
-                    className="bg-transparent text-[13px] font-semibold text-gray-700 outline-none cursor-pointer w-full sm:w-[115px]"
-                    title="Đến ngày"
-                  />
+                <input
+                  type="date"
+                  value={exportStartDate}
+                  onChange={(e) => setExportStartDate(e.target.value)}
+                  className="bg-transparent text-[13px] font-semibold text-gray-700 outline-none cursor-pointer w-full sm:w-[115px]"
+                  title="Từ ngày"
+                />
+                <span className="text-gray-300">-</span>
+                <input
+                  type="date"
+                  value={exportEndDate}
+                  onChange={(e) => setExportEndDate(e.target.value)}
+                  className="bg-transparent text-[13px] font-semibold text-gray-700 outline-none cursor-pointer w-full sm:w-[115px]"
+                  title="Đến ngày"
+                />
               </div>
 
               <button
@@ -285,7 +277,7 @@ export default function AdminDashboard() {
                 Đang cập nhật dữ liệu...
               </div>
             )}
-            
+
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} barSize={reportPeriod === 'day' ? 30 : 50}>
@@ -304,7 +296,7 @@ export default function AdminDashboard() {
                         {props.payload.orders !== undefined && (
                           <p className="text-[11px] text-gray-400 font-bold uppercase">{props.payload.orders} đơn hàng</p>
                         )}
-                      </div>, 
+                      </div>,
                       ""
                     ]}
                   />
