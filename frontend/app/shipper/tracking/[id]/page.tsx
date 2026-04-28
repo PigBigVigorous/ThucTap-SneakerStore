@@ -90,7 +90,7 @@ export default function ShipperTrackingPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success("✅ Đã cập nhật hành trình!");
+        toast.success("✅ Đã cập nhật trạng thái!");
         setOrder(data.data);
         setStatus(data.data.status);
         setLocationText('');

@@ -5,11 +5,9 @@ import { X, Package, MapPin, Truck, CreditCard, User, Camera } from 'lucide-reac
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { orderAPI, adminAPI, shipperAPI } from '../services/api';
 
-const OrderTrackingMap = dynamic(() => import('./OrderTrackingMap'), {
-  ssr: false,
-  loading: () => <div className="h-40 w-full bg-gray-100 animate-pulse rounded-xl" />
-});
+
 
 interface OrderDetailModalProps {
   isOpen: boolean;
@@ -32,18 +30,15 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
     if (!orderId || !token) return;
     setLoading(true);
     try {
-      // Chọn endpoint phù hợp theo role (được xác định qua URL)
-      let endpoint = `${API_BASE_URL}/orders/id/${orderId}`;
+      let data;
       if (location.pathname.includes('/shipper/')) {
-        endpoint = `${API_BASE_URL}/shipper/orders/${orderId}`;
+        data = await shipperAPI.getOrderDetail(orderId, token);
       } else if (location.pathname.includes('/admin/')) {
-        endpoint = `${API_BASE_URL}/admin/orders/${orderId}`;
+        data = await adminAPI.getOrderDetail(orderId, token);
+      } else {
+        data = await orderAPI.getDetail(orderId, token);
       }
 
-      const res = await fetch(endpoint, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-      });
-      const data = await res.json();
       if (data.success) {
         setOrder(data.data);
       }
@@ -126,58 +121,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
             <div className="text-center py-20 text-gray-400 font-bold">Không tìm thấy thông tin đơn hàng</div>
           ) : (
             <>
-              {/* Tracking Section */}
-              {['shipped', 'delivering', 'delivered'].includes(order.status) && (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-black text-gray-900 flex items-center gap-2 uppercase tracking-widest">
-                    <Truck size={16} className="text-blue-600" /> Hành trình đơn hàng
-                  </h3>
 
-                  <div className="rounded-3xl overflow-hidden border border-gray-100 shadow-inner">
-                    <OrderTrackingMap
-                      trackings={order.trackings || []}
-                      destination={order.latitude && order.longitude ? {
-                        lat: Number(order.latitude),
-                        lng: Number(order.longitude),
-                        address: `${order.address_detail}, ${order.ward}, ${order.district}, ${order.province}`
-                      } : undefined}
-                    />
-                  </div>
-
-                  {/* Timeline */}
-                  <div className="space-y-6 pt-4 px-2">
-                    {order.trackings?.map((t: any, idx: number) => (
-                      <div key={t.id} className="flex gap-4 relative">
-                        {idx !== order.trackings.length - 1 && (
-                          <div className="absolute left-[7px] top-[24px] bottom-[-24px] w-[2px] bg-gray-100" />
-                        )}
-                        <div className={`w-4 h-4 rounded-full mt-1.5 z-10 shrink-0 ${idx === 0 ? 'bg-blue-600 shadow-[0_0_0_4px_rgba(37,99,235,0.1)] animate-pulse' : 'bg-gray-200'}`} />
-                        <div className="flex-1 pb-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className={`text-[13px] font-black ${idx === 0 ? 'text-blue-600' : 'text-gray-900'}`}>
-                              {getStatusLabel(t.status)}
-                            </p>
-                            <span className="text-[10px] font-bold text-gray-400">
-                              {new Date(t.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
-                            </span>
-                          </div>
-                          <p className="text-[12px] text-gray-600 mt-1 font-medium">{t.location_text}</p>
-                          {t.note && <p className="text-[11px] text-gray-400 mt-1 italic">"{t.note}"</p>}
-                          {t.image_url && (
-                            <div className="mt-3 rounded-xl overflow-hidden border border-gray-100 w-24 h-24">
-                              <img
-                                src={t.image_url.startsWith('http') ? t.image_url : `${API_BASE_URL.replace('/api', '')}${t.image_url}`}
-                                alt="Proof"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Items Section */}
               <div className="space-y-4">

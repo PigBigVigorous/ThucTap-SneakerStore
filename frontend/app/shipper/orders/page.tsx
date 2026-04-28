@@ -182,7 +182,7 @@ export default function ShipperDashboardPage() {
                   {new Date(order.created_at).toLocaleDateString('vi-VN')}
                 </div>
                 <div className="flex items-center gap-1 text-orange-600 text-xs font-bold">
-                  Cập nhật hành trình
+                  Cập nhật trạng thái
                   <ChevronRight size={14} />
                 </div>
               </div>

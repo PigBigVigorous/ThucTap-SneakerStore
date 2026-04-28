@@ -175,7 +175,7 @@ export default function UserPurchasePage() {
           <ShoppingBag className="text-gray-900" size={28} />
           Đơn hàng của tôi
         </h1>
-        <p className="text-gray-400 text-[11px] font-black uppercase tracking-widest mt-1">Lịch sử mua sắm và hành trình vận chuyển</p>
+        <p className="text-gray-400 text-[11px] font-black uppercase tracking-widest mt-1">Lịch sử mua sắm và quản lý đơn hàng</p>
       </div>
 
       {/* Tabs */}

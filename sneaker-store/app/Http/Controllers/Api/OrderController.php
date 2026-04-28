@@ -105,7 +105,7 @@ class OrderController extends Controller
     {
         $order = Order::with(['items.variant.product', 'items.variant.color', 'items.variant.size', 'trackings' => function($q) {
                 $q->orderBy('created_at', 'desc');
-            }, 'shipper:id,name,phone_number', 'salesChannel', 'branch.province', 'discount'])
+            }, 'shipper:id,name,phone', 'salesChannel', 'branch.province', 'discount'])
             ->where('order_tracking_code', $tracking_code)
             ->firstOrFail();
 
@@ -122,7 +122,7 @@ class OrderController extends Controller
     {
         $order = Order::with(['items.variant.product', 'items.variant.color', 'items.variant.size', 'trackings' => function($q) {
                 $q->orderBy('created_at', 'desc');
-            }, 'shipper:id,name,phone_number', 'salesChannel', 'branch.province', 'discount'])
+            }, 'shipper:id,name,phone', 'salesChannel', 'branch.province', 'discount'])
             ->findOrFail($id);
 
         // Security check
