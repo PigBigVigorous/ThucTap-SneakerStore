@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\ProductVariant;
+use Illuminate\Support\Facades\Cache;
 
 class ProductController extends Controller
 {
@@ -16,37 +17,41 @@ class ProductController extends Controller
      */
     public function priceRange()
     {
-        $min = (float) ProductVariant::min('price') ?: 0;
-        $max = (float) ProductVariant::max('price') ?: 0;
+        $data = Cache::remember('price_range', 3600, function () {
+            $min = (float) ProductVariant::min('price') ?: 0;
+            $max = (float) ProductVariant::max('price') ?: 0;
 
-        // Làm tròn đẹp: floor min xuống 100k, ceil max lên 100k
-        $minFloor = floor($min / 100_000) * 100_000;
-        $maxCeil  = ceil($max  / 100_000) * 100_000;
+            // Làm tròn đẹp: floor min xuống 100k, ceil max lên 100k
+            $minFloor = floor($min / 100_000) * 100_000;
+            $maxCeil  = ceil($max  / 100_000) * 100_000;
 
-        // 🚨 TRƯỜNG HỢP ĐẶC BIỆT: Giá bằng nhau (Tránh lỗi chia 0 ở range slider)
-        if ($minFloor === $maxCeil) {
-            $minFloor = max(0, $minFloor - 2000000);
-            $maxCeil  = $maxCeil + 2000000;
-        }
+            // 🚨 TRƯỜNG HỢP ĐẶC BIỆT: Giá bằng nhau (Tránh lỗi chia 0 ở range slider)
+            if ($minFloor === $maxCeil) {
+                $minFloor = max(0, $minFloor - 2000000);
+                $maxCeil  = $maxCeil + 2000000;
+            }
 
-        // Tự sinh 4–5 khoảng preset phân phối đều theo dải giá thực
-        $span     = $maxCeil - $minFloor;
-        $step     = $span > 0 ? ceil($span / 4 / 100_000) * 100_000 : 1_000_000;
-        $buckets  = [];
-        $cur      = $minFloor;
-        while ($cur < $maxCeil) {
-            $next = min($cur + $step, $maxCeil);
-            $buckets[] = ['min' => $cur, 'max' => $next];
-            $cur = $next;
-        }
+            // Tự sinh 4–5 khoảng preset phân phối đều theo dải giá thực
+            $span     = $maxCeil - $minFloor;
+            $step     = $span > 0 ? ceil($span / 4 / 100_000) * 100_000 : 1_000_000;
+            $buckets  = [];
+            $cur      = $minFloor;
+            while ($cur < $maxCeil) {
+                $next = min($cur + $step, $maxCeil);
+                $buckets[] = ['min' => $cur, 'max' => $next];
+                $cur = $next;
+            }
 
-        return response()->json([
-            'success'    => true,
-            'data'       => [
+            return [
                 'min'     => $minFloor,
                 'max'     => $maxCeil,
                 'buckets' => $buckets,
-            ],
+            ];
+        });
+
+        return response()->json([
+            'success'    => true,
+            'data'       => $data,
         ]);
     }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useTransition, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Heart, X, SlidersHorizontal, ChevronDown,
@@ -12,6 +13,7 @@ import {
 import toast from "react-hot-toast";
 import { useAuth } from "./context/AuthContext";
 import { useFavoritesStore } from "./store/useFavoritesStore";
+import { useProductFilters } from "./hooks/useProductFilters";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -114,13 +116,13 @@ function ProductCard({
       <Link href={`/product/${product.slug}`} className="block">
         {/* Image */}
         <div className="relative h-56 w-full bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-          <img
+          <Image
             src={product.base_image_url || "/placeholder.png"}
             alt={product.name}
-            className="object-contain w-full h-full mix-blend-multiply p-5 group-hover:scale-108 transition-transform duration-500"
-            style={{ transform: "scale(1)" }}
-            onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.08)")}
-            onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-contain mix-blend-multiply p-5 group-hover:scale-108 transition-transform duration-500"
+            priority={index < 4}
           />
         </div>
 
@@ -190,113 +192,19 @@ export default function ClientHome({
   allBrands: { id: number; name: string }[];
   priceRange: { min: number; max: number; buckets: { min: number; max: number }[] };
 }) {
-  const { user, isAuthenticated } = useAuth();
+  const {
+    products, meta, page, loading, searchTerm, setSearchTerm, vouchers,
+    filters, setFilters, tempPriceMin, setTempPriceMin, tempPriceMax, setTempPriceMax,
+    toggleBrand, resetAll, fetchProducts, applyFilters, user, isAuthenticated
+  } = useProductFilters(initialProducts, initialMeta, activeCategory, activeBrand);
+
+  const [, startTransition] = useTransition();
   const router = useRouter();
-  const [vouchers, setVouchers] = useState<Discount[]>([]);
-
-  useEffect(() => {
-    if (user?.role === 'shipper') {
-      router.push("/shipper/orders");
-    }
-  }, [user, router]);
-
-  useEffect(() => {
-    const fetchVouchers = async () => {
-      try {
-        const token = localStorage.getItem("token") || undefined;
-        const res = await discountAPI.getActive(token);
-        if (res.success) setVouchers(res.data);
-      } catch (err) {
-        console.error("Lỗi tải voucher:", err);
-      }
-    };
-    fetchVouchers();
-  }, [isAuthenticated]);
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
-
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [meta, setMeta] = useState(initialMeta);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [filters, setFilters] = useState<FilterState>({
-    brands: activeBrand ? [activeBrand] : [],
-    priceMin: "",
-    priceMax: "",
-    sortBy: "newest",
-  });
-
-  const [tempPriceMin, setTempPriceMin] = useState<string>("");
-  const [tempPriceMax, setTempPriceMax] = useState<string>("");
-
-  useEffect(() => {
-    setTempPriceMin(filters.priceMin === "" ? "" : String(filters.priceMin));
-    setTempPriceMax(filters.priceMax === "" ? "" : String(filters.priceMax));
-  }, [filters.priceMin, filters.priceMax]);
-
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 
   const favorites = useFavoritesStore((state) => state.favorites);
   const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
-
-  // ── Fetch ─────────────────────────────────────────────────────────────────
-
-  const fetchProducts = useCallback(
-    async (overridePage = 1, overrideFilters?: FilterState, overrideSearch?: string) => {
-      setLoading(true);
-      const f = overrideFilters ?? filters;
-      const s = overrideSearch ?? searchTerm;
-      try {
-        const url = new URL(`${API}/products`);
-        if (activeCategory) url.searchParams.set("category", activeCategory);
-        if (f.brands.length > 0) url.searchParams.set("brand", f.brands.join(","));
-        if (s.trim()) url.searchParams.set("search", s.trim());
-        if (f.sortBy && f.sortBy !== "newest") url.searchParams.set("sort_by", f.sortBy);
-        if (f.priceMin !== "") url.searchParams.set("price_min", String(f.priceMin));
-        if (f.priceMax !== "") url.searchParams.set("price_max", String(f.priceMax));
-        url.searchParams.set("page", String(overridePage));
-
-        const res = await fetch(url.toString(), { cache: "no-store" });
-        const data = await res.json();
-        if (data.success) {
-          setProducts(data.data?.data ?? []);
-          setMeta({
-            current_page: data.data?.current_page ?? 1,
-            last_page: data.data?.last_page ?? 1,
-            total: data.data?.total ?? 0,
-          });
-          setPage(overridePage);
-        }
-      } catch {
-        toast.error("Không thể tải sản phẩm!");
-      }
-      setLoading(false);
-    },
-    [filters, searchTerm, activeCategory]
-  );
-
-  const applyFilters = useCallback(
-    (newFilters: FilterState) => {
-      setFilters(newFilters);
-      fetchProducts(1, newFilters, searchTerm);
-    },
-    [fetchProducts, searchTerm]
-  );
-
-  useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => {
-      fetchProducts(1, filters, searchTerm);
-    }, 400);
-    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
 
   const handleToggleFavorite = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
@@ -310,20 +218,6 @@ export default function ClientHome({
     isAdded
       ? toast.success("Đã thêm vào Yêu thích ❤️")
       : toast("Đã xóa khỏi Yêu thích", { icon: "🗑️" });
-  };
-
-  const toggleBrand = (brandName: string) => {
-    const next = filters.brands.includes(brandName)
-      ? filters.brands.filter((b) => b !== brandName)
-      : [...filters.brands, brandName];
-    applyFilters({ ...filters, brands: next });
-  };
-
-  const resetAll = () => {
-    setSearchTerm("");
-    const def: FilterState = { brands: [], priceMin: "", priceMax: "", sortBy: "newest" };
-    applyFilters(def);
-    if (activeCategory || activeBrand) startTransition(() => router.push("/"));
   };
 
   const activeFilterCount =

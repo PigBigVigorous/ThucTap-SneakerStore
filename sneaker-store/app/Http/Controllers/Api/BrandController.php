@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class BrandController extends Controller
 {
@@ -14,9 +15,11 @@ class BrandController extends Controller
      */
     public function index()
     {
-        $brands = Brand::withCount('products')
-            ->orderBy('name', 'asc')
-            ->get();
+        $brands = Cache::remember('brands_list', 86400, function () {
+            return Brand::withCount('products')
+                ->orderBy('name', 'asc')
+                ->get();
+        });
             
         return response()->json([
             'success' => true,
@@ -37,6 +40,8 @@ class BrandController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
         $brand = Brand::create($validated);
+
+        Cache::forget('brands_list');
 
         return response()->json([
             'success' => true,
@@ -65,6 +70,8 @@ class BrandController extends Controller
 
         $brand->update($validated);
 
+        Cache::forget('brands_list');
+
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật thương hiệu thành công',
@@ -87,6 +94,8 @@ class BrandController extends Controller
         }
 
         $brand->delete();
+
+        Cache::forget('brands_list');
 
         return response()->json([
             'success' => true,

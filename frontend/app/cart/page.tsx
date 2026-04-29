@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "../store/useCartStore";
 import { useFavoritesStore } from "../store/useFavoritesStore";
@@ -184,12 +185,14 @@ export default function CartPage() {
                     {/* Image */}
                     <Link
                       href={`/product/${item.slug}`}
-                      className="shrink-0 w-[110px] h-[110px] sm:w-[130px] sm:h-[130px]
+                      className="shrink-0 w-[110px] h-[110px] sm:w-[130px] sm:h-[130px] relative
                                  bg-[#f5f5f5] rounded-xl overflow-hidden block hover:opacity-90 transition-opacity"
                     >
-                      <img
+                      <Image
                         src={item.image || "/placeholder.png"}
                         alt={item.name}
+                        fill
+                        sizes="130px"
                         className="w-full h-full object-contain mix-blend-multiply p-2"
                       />
                     </Link>

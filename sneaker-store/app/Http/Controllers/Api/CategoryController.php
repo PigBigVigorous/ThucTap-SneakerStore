@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class CategoryController extends Controller
 {
@@ -14,10 +15,12 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::with('children')
-            ->whereNull('parent_id')
-            ->orderBy('name', 'asc')
-            ->get();
+        $categories = Cache::remember('categories_tree', 86400, function () {
+            return Category::with('children')
+                ->whereNull('parent_id')
+                ->orderBy('name', 'asc')
+                ->get();
+        });
 
         return response()->json([
             'success' => true,
@@ -39,6 +42,8 @@ class CategoryController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
         $category = Category::create($validated);
+
+        Cache::forget('categories_tree');
 
         return response()->json([
             'success' => true,
@@ -67,6 +72,8 @@ class CategoryController extends Controller
         }
 
         $category->update($validated);
+
+        Cache::forget('categories_tree');
 
         return response()->json([
             'success' => true,
@@ -97,6 +104,8 @@ class CategoryController extends Controller
         }
 
         $category->delete();
+
+        Cache::forget('categories_tree');
 
         return response()->json([
             'success' => true,
