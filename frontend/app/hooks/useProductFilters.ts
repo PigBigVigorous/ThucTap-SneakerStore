@@ -100,6 +100,14 @@ export function useProductFilters(
             total: data.data?.total ?? 0,
           });
           setPage(overridePage);
+
+          // Scroll lên đầu khu vực sản phẩm khi đổi trang
+          if (overridePage !== 1 || overrideFilters || overrideSearch !== undefined) {
+            const productSection = document.getElementById("product-section");
+            if (productSection) {
+              productSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }
         }
       } catch {
         toast.error("Không thể tải sản phẩm!");

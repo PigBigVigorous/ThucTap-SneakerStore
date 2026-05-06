@@ -37,6 +37,25 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    protected $appends = ['rank'];
+
+    public function getRankAttribute()
+    {
+        $totalEarned = $this->pointTransactions()
+            ->where('type', 'earn')
+            ->sum('amount');
+
+        if ($totalEarned >= 500) {
+            return ['name' => 'Kim Cương', 'color' => '#7dd3fc', 'icon' => '💎'];
+        } elseif ($totalEarned >= 200) {
+            return ['name' => 'Vàng', 'color' => '#fbbf24', 'icon' => '🥇'];
+        } elseif ($totalEarned >= 50) {
+            return ['name' => 'Bạc', 'color' => '#94a3b8', 'icon' => '🥈'];
+        } else {
+            return ['name' => 'Đồng', 'color' => '#b87333', 'icon' => '🥉'];
+        }
+    }
+
     // Quan hệ: Một người dùng có nhiều đơn hàng (as customer)
     public function orders()
     {

@@ -36,12 +36,12 @@ export interface Category {
 export interface Discount {
   id: number;
   code: string;
-  type: 'percentage' | 'fixed' | 'percent'; // Hỗ trợ cả percent và percentage
+  type: 'percent' | 'fixed'; // backend trả về 'percent', không phải 'percentage'
   value: number;
   min_order_value: number | null;
-  max_discount_value: number | null; // Cập nhật tên trường khớp với frontend
-  max_discount_amount?: number | null;
+  max_discount_value: number | null;
   usage_limit: number | null;
+  usage_limit_per_user: number | null;
   used_count: number;
   category_ids: number[] | null;
   start_date: string | null;
@@ -251,8 +251,8 @@ export const pointAPI = {
 };
 
 export const adminAPI = {
-  getOrders: async (token: string) => {
-    const res = await api.get('/admin/orders', getAuthHeaders(token));
+  getOrders: async (token: string, params?: { page?: number; per_page?: number; status?: string; search?: string }) => {
+    const res = await api.get('/admin/orders', { params, ...getAuthHeaders(token) });
     return res.data;
   },
   getOrderDetail: async (id: number, token: string) => {
@@ -285,6 +285,10 @@ export const adminAPI = {
   },
   posCreateOrder: async (token: string, data: any) => {
     const res = await api.post('/admin/pos', data, getAuthHeaders(token));
+    return res.data;
+  },
+  posSearchCustomers: async (token: string, search: string) => {
+    const res = await api.get(`/admin/pos/customers?search=${encodeURIComponent(search)}`, getAuthHeaders(token));
     return res.data;
   }
 };
@@ -367,6 +371,10 @@ export const adminProductAPI = {
   },
   delete: async (id: number, token: string) => {
     const res = await api.delete(`/admin/products/${id}`, getAuthHeaders(token));
+    return res.data;
+  },
+  toggleStatus: async (id: number, token: string) => {
+    const res = await api.patch(`/admin/products/${id}/toggle-status`, {}, getAuthHeaders(token));
     return res.data;
   }
 };

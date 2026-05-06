@@ -198,6 +198,8 @@ export default function ClientHome({
     toggleBrand, resetAll, fetchProducts, applyFilters, user, isAuthenticated
   } = useProductFilters(initialProducts, initialMeta, activeCategory, activeBrand);
 
+  const { token } = useAuth();
+
   const [, startTransition] = useTransition();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -450,9 +452,7 @@ export default function ClientHome({
                   <VoucherCard
                     voucher={v}
                     isAuthenticated={isAuthenticated}
-                    onSaved={() => {
-                      // Cập nhật lại state voucher nếu cần
-                    }}
+                    token={token || undefined}
                   />
                 </div>
               ))}
@@ -488,7 +488,7 @@ export default function ClientHome({
       )}
 
       {/* ── CONTENT ── */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
+      <div id="product-section" className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-8">
 
         {/* TOOLBAR */}
         <div className="flex items-center justify-between mb-6 gap-3">
@@ -633,48 +633,62 @@ export default function ClientHome({
 
                 {/* Pagination */}
                 {meta.last_page > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-14">
-                    <button
-                      onClick={() => fetchProducts(page - 1)}
-                      disabled={page <= 1 || loading}
-                      className="flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-gray-200 text-[13px] font-semibold text-gray-600 hover:border-indigo-500 hover:text-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all bg-white"
-                    >
-                      <ChevronLeft size={15} /> Trước
-                    </button>
-
-                    <div className="flex items-center gap-1.5">
-                      {Array.from({ length: meta.last_page }, (_, i) => i + 1)
-                        .filter((p) => p === 1 || p === meta.last_page || Math.abs(p - page) <= 1)
-                        .reduce<(number | "...")[]>((acc, p, i, arr) => {
-                          if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
-                          acc.push(p);
-                          return acc;
-                        }, [])
-                        .map((p, i) =>
-                          p === "..." ? (
-                            <span key={`e-${i}`} className="px-1 text-gray-400 text-sm">…</span>
-                          ) : (
-                            <button
-                              key={p}
-                              onClick={() => fetchProducts(p as number)}
-                              className={`w-9 h-9 rounded-full text-[13px] font-semibold transition-all ${p === page
-                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                                : "border border-gray-200 text-gray-600 hover:border-indigo-500 hover:text-indigo-700 bg-white"
-                                }`}
-                            >
-                              {p}
-                            </button>
-                          )
-                        )}
+                  <div className="mt-14 space-y-4">
+                    {/* Info bar */}
+                    <div className="flex items-center justify-center">
+                      <p className="text-sm text-gray-400 font-medium">
+                        Trang <span className="text-gray-800 font-black">{page}</span> / <span className="text-gray-800 font-black">{meta.last_page}</span>
+                        {" · "}
+                        <span className="text-gray-800 font-black">{meta.total}</span> sản phẩm
+                      </p>
                     </div>
 
-                    <button
-                      onClick={() => fetchProducts(page + 1)}
-                      disabled={page >= meta.last_page || loading}
-                      className="flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-gray-200 text-[13px] font-semibold text-gray-600 hover:border-indigo-500 hover:text-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all bg-white"
-                    >
-                      Tiếp <ChevronRight size={15} />
-                    </button>
+                    {/* Page buttons */}
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => fetchProducts(page - 1)}
+                        disabled={page <= 1 || loading}
+                        className="flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-gray-200 text-[13px] font-semibold text-gray-600 hover:border-indigo-500 hover:text-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all bg-white shadow-sm"
+                      >
+                        <ChevronLeft size={15} /> Trước
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        {Array.from({ length: meta.last_page }, (_, i) => i + 1)
+                          .filter((p) => p === 1 || p === meta.last_page || Math.abs(p - page) <= 1)
+                          .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                            if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                            acc.push(p);
+                            return acc;
+                          }, [])
+                          .map((p, i) =>
+                            p === "..." ? (
+                              <span key={`e-${i}`} className="px-1 text-gray-400 text-sm">…</span>
+                            ) : (
+                              <button
+                                key={p}
+                                onClick={() => fetchProducts(p as number)}
+                                disabled={loading}
+                                className={`w-10 h-10 rounded-full text-[13px] font-black transition-all ${
+                                  p === page
+                                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                                    : "border border-gray-200 text-gray-600 hover:border-indigo-500 hover:text-indigo-700 bg-white hover:shadow-md"
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            )
+                          )}
+                      </div>
+
+                      <button
+                        onClick={() => fetchProducts(page + 1)}
+                        disabled={page >= meta.last_page || loading}
+                        className="flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-gray-200 text-[13px] font-semibold text-gray-600 hover:border-indigo-500 hover:text-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all bg-white shadow-sm"
+                      >
+                        Tiếp <ChevronRight size={15} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </>

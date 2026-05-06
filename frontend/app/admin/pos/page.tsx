@@ -7,7 +7,8 @@ import jsPDF from "jspdf";
 import { adminAPI } from "../../services/api";
 import toast from "react-hot-toast";
 import {
-  Search, Plus, Minus, ShoppingCart, X, Store, Printer, CheckCircle2, DollarSign
+  Search, Plus, Minus, ShoppingCart, X, Store, Printer, CheckCircle2,
+  DollarSign, User, Star, Tag, ChevronRight, BadgePercent
 } from "lucide-react";
 
 interface Product {
@@ -27,6 +28,17 @@ interface CartItem {
   product: Product;
 }
 
+interface Customer {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string;
+  points: number;
+  rank: string;
+  rank_color: string;
+  rank_icon: string;
+}
+
 const fmt = (n: number) => Number(n).toLocaleString("vi-VN") + " ₫";
 
 export default function PosPage() {
@@ -42,6 +54,20 @@ export default function PosPage() {
   const [branches, setBranches] = useState<any[]>([]);
   const [branchId, setBranchId] = useState<number | "">("");
   const [currentOrderCode, setCurrentOrderCode] = useState<string | null>(null);
+
+  // Customer Search
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerResults, setCustomerResults] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerSearching, setCustomerSearching] = useState(false);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+
+  // Discount Code
+  const [discountCode, setDiscountCode]     = useState("");
+  const [discountInput, setDiscountInput]   = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [discountError, setDiscountError]   = useState("");
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
 
   // Payment Calculation
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qr'>('cash');
@@ -121,10 +147,88 @@ export default function PosPage() {
   };
 
   // ─── Math ────────────────────────────────────────────────────────────────────
-  const totalAmount = cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal    = cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
+  const totalAmount = Math.max(0, subtotal - discountAmount);
+  const totalItems  = cart.reduce((sum, item) => sum + item.quantity, 0);
   const customerCash = Number(customerCashStr.replace(/\D/g, '')) || 0;
   const change = customerCash - totalAmount;
+
+  // ─── Customer Search ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (customerQuery.trim().length < 2) {
+      setCustomerResults([]);
+      setShowCustomerDropdown(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setCustomerSearching(true);
+      try {
+        const res = await adminAPI.posSearchCustomers(token!, customerQuery.trim());
+        if (res.success) {
+          setCustomerResults(res.data || []);
+          setShowCustomerDropdown(true);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setCustomerSearching(false);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [customerQuery, token]);
+
+  const handleSelectCustomer = (c: Customer) => {
+    setSelectedCustomer(c);
+    setCustomerQuery("");
+    setShowCustomerDropdown(false);
+    setCustomerResults([]);
+  };
+
+  const handleClearCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerQuery("");
+  };
+
+  // Điểm sẽ tích được sau giao dịch này (tính gần đúng phía client)
+  const pointsWillEarn = Math.floor(totalAmount / 100000);
+
+  // ─── Apply Discount ──────────────────────────────────────────────────────────
+  const handleApplyDiscount = async () => {
+    const code = discountInput.trim().toUpperCase();
+    if (!code) return;
+    if (!cart.length) { setDiscountError("Vui lòng thêm sản phẩm trước khi áp dụng mã."); return; }
+    setApplyingDiscount(true);
+    setDiscountError("");
+    try {
+      const items = cart.map(i => ({ variant_id: i.variant_id, quantity: i.quantity }));
+      const res = await fetch(`${baseUrl}/discounts/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code, order_value: subtotal, items }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDiscountCode(code);
+        setDiscountAmount(data.data?.discount_amount ?? 0);
+        toast.success(`Áp dụng mã "${code}" thành công!`);
+      } else {
+        setDiscountError(data.message || "Mã không hợp lệ.");
+        setDiscountCode("");
+        setDiscountAmount(0);
+      }
+    } catch {
+      setDiscountError("Lỗi kết nối máy chủ.");
+    } finally {
+      setApplyingDiscount(false);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    setDiscountCode("");
+    setDiscountInput("");
+    setDiscountAmount(0);
+    setDiscountError("");
+  };
 
   // ─── Checkout ────────────────────────────────────────────────────────────────
   const handleCheckout = async () => {
@@ -135,7 +239,12 @@ export default function PosPage() {
     setProcessing(true);
     try {
       const items = cart.map((i) => ({ variant_id: i.variant_id, quantity: i.quantity }));
-      const response = await adminAPI.posCreateOrder(token!, { items, branch_id: branchId as number });
+      const response = await adminAPI.posCreateOrder(token!, {
+        items,
+        branch_id: branchId as number,
+        user_id: selectedCustomer?.id ?? undefined,
+        discount_code: discountCode || undefined,
+      });
       if (response.success) {
         toast.success("Thanh toán thành công!", { icon: "✅" });
 
@@ -186,6 +295,14 @@ export default function PosPage() {
           setCustomerCashStr("");
           setCurrentOrderCode(null);
           setShowQrModal(false);
+          handleRemoveDiscount();
+          if (selectedCustomer) {
+            // Refresh điểm khách hàng sau khi mua
+            const refreshed = await adminAPI.posSearchCustomers(token!, selectedCustomer.phone || selectedCustomer.email);
+            if (refreshed.success && refreshed.data?.length > 0) {
+              setSelectedCustomer(refreshed.data[0]);
+            }
+          }
         }, 300);
 
         // Reload products quietly
@@ -339,14 +456,100 @@ export default function PosPage() {
         {/* ════════════════════════════════════════════════════
           BÊN PHẢI: HÓA ĐƠN & THANH TOÁN (BILLING)
       ════════════════════════════════════════════════════ */}
-        <div className="w-[360px] xl:w-[400px] flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden shrink-0">
+        <div className="w-[380px] xl:w-[420px] flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden shrink-0">
 
           {/* Header Giỏ */}
-          <div className="px-5 py-5 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
+          <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
             <h2 className="text-base font-black text-gray-900 uppercase tracking-widest">Chi tiết đơn</h2>
             <span className="bg-gray-900 text-white text-xs font-black px-2.5 py-1 rounded-full">
               {totalItems} MÓN
             </span>
+          </div>
+
+          {/* ── Khu vực Khách hàng thân thiết ── */}
+          <div className="px-4 py-3 border-b border-gray-100 bg-indigo-50/40 shrink-0">
+            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+              <User size={11} /> Khách hàng thân thiết
+            </p>
+
+            {selectedCustomer ? (
+              /* Card khách đã chọn */
+              <div className="flex items-center gap-3 bg-white border border-indigo-200 rounded-2xl px-3 py-2.5 shadow-sm">
+                <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-black text-sm shrink-0">
+                  {selectedCustomer.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-gray-900 truncate">{selectedCustomer.name}</p>
+                  <p className="text-[10px] text-gray-400 font-medium truncate">{selectedCustomer.phone || selectedCustomer.email}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ backgroundColor: selectedCustomer.rank_color + '22', color: selectedCustomer.rank_color }}>
+                    {selectedCustomer.rank_icon} {selectedCustomer.rank}
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-600">{selectedCustomer.points.toLocaleString('vi-VN')} điểm</span>
+                </div>
+                <button onClick={handleClearCustomer} className="text-gray-300 hover:text-red-400 transition-colors ml-1">
+                  <X size={15} />
+                </button>
+              </div>
+            ) : (
+              /* Ô tìm kiếm */
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Tên, SĐT hoặc email..."
+                  value={customerQuery}
+                  onChange={(e) => setCustomerQuery(e.target.value)}
+                  onFocus={() => customerResults.length > 0 && setShowCustomerDropdown(true)}
+                  className="w-full bg-white border border-gray-200 focus:border-indigo-400 rounded-xl pl-8 pr-3 py-2 text-sm font-medium text-gray-800 outline-none transition-all"
+                />
+                {customerSearching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-3.5 h-3.5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+                  </div>
+                )}
+
+                {/* Dropdown kết quả */}
+                {showCustomerDropdown && customerResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                    {customerResults.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleSelectCustomer(c)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-indigo-50 transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-black text-xs shrink-0">
+                          {c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-gray-900 truncate">{c.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{c.phone || c.email}</p>
+                        </div>
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className="text-[9px] font-black" style={{ color: c.rank_color }}>{c.rank_icon} {c.rank}</span>
+                          <span className="text-[9px] text-amber-500 font-bold">{c.points.toLocaleString('vi-VN')}đ</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {showCustomerDropdown && customerResults.length === 0 && !customerSearching && customerQuery.length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 px-4 py-3 text-xs text-gray-400 text-center">
+                    Không tìm thấy khách hàng
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Thông tin điểm sẽ tích */}
+            {selectedCustomer && pointsWillEarn > 0 && (
+              <p className="text-[10px] text-indigo-500 font-bold mt-2 flex items-center gap-1">
+                <Star size={10} className="fill-indigo-400" />
+                Giao dịch này tích thêm <span className="text-indigo-700">+{pointsWillEarn} điểm</span>
+              </p>
+            )}
           </div>
 
           {/* Danh sách items */}
@@ -417,11 +620,59 @@ export default function PosPage() {
               </button>
             </div>
 
+            {/* ── Mã giảm giá ── */}
+            <div className="mb-4">
+              {discountCode ? (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <Tag size={14} className="text-green-600" />
+                    <div>
+                      <p className="text-xs font-black text-green-700">{discountCode}</p>
+                      <p className="text-[10px] text-green-500">Giảm {fmt(discountAmount)}</p>
+                    </div>
+                  </div>
+                  <button onClick={handleRemoveDiscount} className="text-gray-400 hover:text-red-500 transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <BadgePercent size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Nhập mã giảm giá..."
+                      value={discountInput}
+                      onChange={e => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError(""); }}
+                      onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
+                      className="w-full bg-gray-50 border border-gray-200 focus:border-indigo-400 rounded-xl pl-8 pr-3 py-2 text-sm font-bold text-gray-800 uppercase outline-none transition-all placeholder:normal-case placeholder:font-normal"
+                    />
+                  </div>
+                  <button
+                    onClick={handleApplyDiscount}
+                    disabled={!discountInput.trim() || applyingDiscount}
+                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white text-xs font-black rounded-xl transition-colors flex items-center gap-1 shrink-0"
+                  >
+                    {applyingDiscount
+                      ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      : <><ChevronRight size={13} /> Áp dụng</>}
+                  </button>
+                </div>
+              )}
+              {discountError && <p className="text-[10px] text-red-500 font-bold mt-1.5">{discountError}</p>}
+            </div>
+
             <div className="space-y-3 mb-4">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-500 font-bold">Tạm tính</span>
-                <span className="font-bold text-gray-900">{fmt(totalAmount)}</span>
+                <span className="font-bold text-gray-900">{fmt(subtotal)}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-green-600 font-bold flex items-center gap-1"><Tag size={12} /> Giảm giá ({discountCode})</span>
+                  <span className="font-black text-green-600">-{fmt(discountAmount)}</span>
+                </div>
+              )}
 
               {paymentMethod === 'cash' && (
                 <>
@@ -468,8 +719,8 @@ export default function PosPage() {
                 ))}
                 <button
                   onClick={() => setCustomerCashStr(totalAmount.toString())}
-                  className="flex-1 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg py-2 text-xs font-black text-green-700 transition-colors"
-                >
+                className="flex-1 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg py-2 text-xs font-black text-green-700 transition-colors"
+              >
                   Vừa đủ
                 </button>
               </div>

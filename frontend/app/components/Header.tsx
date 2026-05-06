@@ -256,7 +256,7 @@ export default function Header() {
             {/* ── LOGO ── */}
             <Link href="/" className="flex items-center shrink-0">
               <span className="font-black text-[22px] tracking-tighter text-gray-900 select-none">
-                SHOES<span className="text-red-500">.</span>
+                SNEAKER STORE<span className="text-red-500">.</span>
               </span>
             </Link>
 

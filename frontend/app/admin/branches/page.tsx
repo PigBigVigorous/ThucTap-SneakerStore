@@ -105,8 +105,8 @@ export default function BranchManagementPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.isArray(branches) && branches.length > 0 ? branches.map((branch) => (
-              <div 
-                key={branch.id} 
+              <div
+                key={branch.id}
                 className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 overflow-hidden flex flex-col group"
               >
                 {/* Header Thẻ */}
@@ -123,10 +123,10 @@ export default function BranchManagementPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   {branch.is_main && (
                     <span className="inline-block px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md mb-2 shadow-sm">
-                      🌟 Kho Tổng Bán Buôn
+                      🌟 Kho Tổng
                     </span>
                   )}
                 </div>
@@ -157,14 +157,14 @@ export default function BranchManagementPage() {
 
                 {/* Footer Thẻ - Thao tác */}
                 <div className="p-4 bg-gray-50 flex justify-end gap-2 border-t border-gray-100 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
-                  <button 
-                    onClick={() => openModal(branch)} 
+                  <button
+                    onClick={() => openModal(branch)}
                     className="flex items-center gap-2 text-sm font-bold text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors shadow-sm"
                   >
                     <Edit size={16} /> Sửa
                   </button>
-                  <button 
-                    onClick={() => handleDelete(branch.id)} 
+                  <button
+                    onClick={() => handleDelete(branch.id)}
                     className="flex items-center gap-2 text-sm font-bold text-red-600 bg-white border border-red-200 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors shadow-sm"
                   >
                     <Trash2 size={16} /> Xóa
@@ -194,60 +194,59 @@ export default function BranchManagementPage() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Tên Chi Nhánh <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  value={formData.name} 
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
-                  placeholder="Ví dụ: Sneaker Store HCM 1" 
-                  className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border font-medium text-black bg-gray-50 focus:bg-white transition-colors" 
-                  required 
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Ví dụ: Sneaker Store HCM 1"
+                  className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border font-medium text-black bg-gray-50 focus:bg-white transition-colors"
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Địa chỉ chi tiết <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  value={formData.address} 
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })} 
-                  placeholder="Số nhà, Đường, Quận, Thành phố..." 
-                  className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border font-medium text-black bg-gray-50 focus:bg-white transition-colors" 
-                  required 
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Số nhà, Đường, Quận, Thành phố..."
+                  className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border font-medium text-black bg-gray-50 focus:bg-white transition-colors"
+                  required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Số điện thoại</label>
-                  <input 
-                    type="tel" 
-                    value={formData.phone} 
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })} 
-                    placeholder="Hotline cửa hàng" 
-                    className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border text-black font-medium bg-gray-50 focus:bg-white transition-colors" 
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="Hotline cửa hàng"
+                    className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border text-black font-medium bg-gray-50 focus:bg-white transition-colors"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Email liên hệ</label>
-                  <input 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
-                    placeholder="Email cửa hàng" 
-                    className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border text-black font-medium bg-gray-50 focus:bg-white transition-colors" 
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="Email cửa hàng"
+                    className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border text-black font-medium bg-gray-50 focus:bg-white transition-colors"
                   />
                 </div>
               </div>
 
               {/* 🚨 CHECKBOX KHO TỔNG CỰC ĐẸP ĐÃ ĐƯỢC LÀM LẠI */}
               <div className="pt-2 border-t border-gray-100 flex items-center">
-                <label className={`w-full relative flex items-center justify-between cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${
-                  formData.is_main ? 'bg-purple-50 flex border-purple-400 shadow-md ring-4 ring-purple-100' : 'bg-gray-50 border-transparent hover:bg-purple-50/50'
-                }`}>
+                <label className={`w-full relative flex items-center justify-between cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${formData.is_main ? 'bg-purple-50 flex border-purple-400 shadow-md ring-4 ring-purple-100' : 'bg-gray-50 border-transparent hover:bg-purple-50/50'
+                  }`}>
                   <div className="flex-1 pr-4">
                     <span className={`block text-sm font-black uppercase mb-1 ${formData.is_main ? 'text-purple-700' : 'text-gray-700'}`}>
                       🌟 Thiết lập làm Kho Tổng
@@ -256,14 +255,14 @@ export default function BranchManagementPage() {
                       Kho tổng có quyền năng đặc biệt: Nhận hàng hóa trực tiếp từ số lượng lớn của xưởng sản xuất hoặc NCC.
                     </p>
                   </div>
-                  
+
                   {/* Custom Toggle Switch */}
                   <div className="relative">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.is_main} 
-                      onChange={(e) => setFormData({ ...formData, is_main: e.target.checked })} 
-                      className="sr-only" 
+                    <input
+                      type="checkbox"
+                      checked={formData.is_main}
+                      onChange={(e) => setFormData({ ...formData, is_main: e.target.checked })}
+                      className="sr-only"
                     />
                     <div className={`block w-14 h-8 rounded-full transition-colors ${formData.is_main ? 'bg-purple-600' : 'bg-gray-300'}`}></div>
                     <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-sm ${formData.is_main ? 'transform translate-x-6' : ''}`}></div>
@@ -273,9 +272,8 @@ export default function BranchManagementPage() {
 
               <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
                 <button type="button" onClick={closeModal} className="px-6 py-3 font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors">Hủy Bỏ</button>
-                <button type="submit" disabled={isSubmitting} className={`px-8 py-3 font-bold text-white rounded-xl shadow-lg transition-all ${
-                  isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800 hover:-translate-y-0.5'
-                }`}>
+                <button type="submit" disabled={isSubmitting} className={`px-8 py-3 font-bold text-white rounded-xl shadow-lg transition-all ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800 hover:-translate-y-0.5'
+                  }`}>
                   {isSubmitting ? "Đang xử lý..." : "Lưu Thông Tin"}
                 </button>
               </div>

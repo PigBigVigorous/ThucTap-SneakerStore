@@ -187,7 +187,9 @@ export default function CheckoutPage() {
         toast.success(res.message);
       }
     } catch (err: any) {
-      toast.error(err.message || "Mã không hợp lệ hoặc đã hết hạn");
+      // Ưu tiên lấy message từ body response của server (lỗi 4xx)
+      const serverMsg = err?.response?.data?.message || err.message || "Mã không hợp lệ hoặc đã hết hạn";
+      toast.error(serverMsg);
       setAppliedDiscount(null);
     }
     setIsApplyingDiscount(false);
@@ -293,7 +295,9 @@ export default function CheckoutPage() {
         toast.error(data.message || "Có lỗi xảy ra từ máy chủ.", { id: toastId, duration: 5000 });
       }
     } catch (err: any) {
-      toast.error(err.message || "Không thể kết nối đến máy chủ.", { id: toastId, duration: 5000 });
+      // Ưu tiên lấy message từ body response của server (lỗi 4xx/5xx)
+      const serverMsg = err?.response?.data?.message || err.message || "Không thể kết nối đến máy chủ.";
+      toast.error(serverMsg, { id: toastId, duration: 5000 });
     } finally {
       setIsLoading(false);
     }

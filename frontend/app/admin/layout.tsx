@@ -39,7 +39,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               S
             </div>
             <div>
-              <p className="font-black text-[15px] leading-none">SHOES</p>
+              <p className="font-black text-[15px] leading-none">SNEAKER STORE</p>
               <p className="text-[10px] text-white/40 font-medium tracking-widest uppercase">Admin Panel</p>
             </div>
           </Link>

@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Admin\ProductCatalogController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShipperTrackingController;
+use App\Http\Controllers\Api\LocationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +48,11 @@ Route::get('/branches', [BranchController::class, 'index']);
 Route::get('/discounts', [DiscountController::class, 'getActiveVouchers']);
 Route::post('/discounts/apply', [DiscountController::class, 'apply']);
 
+// Location (Tỉnh / Huyện / Xã)
+Route::get('/provinces', [LocationController::class, 'provinces']);
+Route::get('/districts/{provinceCode}', [LocationController::class, 'districts']);
+Route::get('/wards/{districtCode}', [LocationController::class, 'wards']);
+
 // Tra cứu đơn hàng công khai
 Route::get('/orders/{tracking_code}', [OrderController::class, 'show']);
 
@@ -68,9 +74,17 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::delete('/cart/remove/{id}', [CartController::class, 'remove']);
     // Route::post('/cart/clear', [CartController::class, 'clear']);
 
-    // Addresses
+    // Addresses (alias user/addresses để khớp với frontend)
     Route::apiResource('addresses', UserAddressController::class);
+    Route::apiResource('user/addresses', UserAddressController::class)->names([
+        'index'   => 'user.addresses.index',
+        'store'   => 'user.addresses.store',
+        'show'    => 'user.addresses.show',
+        'update'  => 'user.addresses.update',
+        'destroy' => 'user.addresses.destroy',
+    ]);
     Route::post('/addresses/{id}/default', [UserAddressController::class, 'setDefault']);
+    Route::post('/user/addresses/{id}/default', [UserAddressController::class, 'setDefault']);
     Route::post('/shipping-fee/calculate', [ShippingController::class, 'calculateFee']);
 
     // Customer Orders
@@ -99,7 +113,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/orders/{id}/assign-shipper', [AdminOrderController::class, 'assignShipper']);
 
         // Product Catalog Management
+        Route::patch('products/{id}/toggle-status', [ProductCatalogController::class, 'toggleStatus']);
         Route::apiResource('products', ProductCatalogController::class);
+
 
         // Brand & Category Management
         Route::apiResource('brands', BrandController::class);
@@ -121,6 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // POS
         Route::get('/pos/products', [PosController::class, 'getProducts']);
+        Route::get('/pos/customers', [PosController::class, 'searchCustomers']);
         Route::post('/pos', [PosController::class, 'placeOrder']);
 
         // Staff

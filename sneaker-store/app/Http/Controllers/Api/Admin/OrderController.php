@@ -15,9 +15,9 @@ class OrderController extends Controller
     /**
      * Danh sách đơn hàng dành cho Admin
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::with([
+        $query = Order::with([
             'items.variant.product', 
             'items.variant.color', 
             'items.variant.size', 
@@ -25,12 +25,39 @@ class OrderController extends Controller
             'salesChannel',
             'branch.province'
         ])
-        ->orderBy('created_at', 'desc')
-        ->get();
+        ->orderBy('created_at', 'desc');
+
+        // Filter by status
+        if ($request->filled('status') && $request->status !== 'all') {
+            if ($request->status === 'shipped') {
+                $query->whereIn('status', ['shipped', 'delivering']);
+            } else {
+                $query->where('status', $request->status);
+            }
+        }
+
+        // Search by tracking code or customer name
+        if ($request->filled('search')) {
+            $kw = '%' . $request->search . '%';
+            $query->where(function ($q) use ($kw) {
+                $q->where('order_tracking_code', 'like', $kw)
+                  ->orWhere('customer_name', 'like', $kw)
+                  ->orWhere('customer_phone', 'like', $kw);
+            });
+        }
+
+        $perPage = min((int) $request->input('per_page', 15), 100);
+        $orders  = $query->paginate($perPage);
 
         return response()->json([
             'success' => true,
-            'data' => $orders
+            'data'    => $orders->items(),
+            'meta'    => [
+                'current_page' => $orders->currentPage(),
+                'last_page'    => $orders->lastPage(),
+                'total'        => $orders->total(),
+                'per_page'     => $orders->perPage(),
+            ],
         ]);
     }
 

@@ -9,6 +9,7 @@ use App\Services\InventoryService;
 use App\Models\ProductVariant;
 use App\Models\SalesChannel;
 use App\Models\Order;
+use App\Models\User;
 use Exception;
 
 class PosController extends Controller
@@ -95,15 +96,90 @@ class PosController extends Controller
         }
     }
 
-    
+
+    /**
+     * Tìm kiếm khách hàng thân thiết tại quầy theo tên, SĐT, hoặc email
+     * API: GET /api/admin/pos/customers?search=...
+     */
+    public function searchCustomers(Request $request)
+    {
+        $request->validate([
+            'search' => 'required|string|min:2|max:100',
+        ]);
+
+        $search = $request->input('search');
+
+        try {
+            $customers = User::with('roles')
+                ->whereHas('roles', function ($q) {
+                    $q->where('name', 'customer');
+                })
+                ->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                      ->orWhere('phone', 'like', '%' . $search . '%')
+                      ->orWhere('email', 'like', '%' . $search . '%');
+                })
+                ->select('id', 'name', 'phone', 'email', 'points', 'avatar')
+                ->limit(10)
+                ->get()
+                ->map(function ($user) {
+                    // Tính hạng thành viên dựa trên tổng điểm tích lũy
+                    $totalEarned = \App\Models\PointTransaction::where('user_id', $user->id)
+                        ->where('type', 'earn')
+                        ->sum('amount');
+
+                    $rank = $this->getMemberRank($totalEarned);
+
+                    return [
+                        'id'         => $user->id,
+                        'name'       => $user->name,
+                        'phone'      => $user->phone,
+                        'email'      => $user->email,
+                        'points'     => (int) $user->points,
+                        'rank'       => $rank['name'],
+                        'rank_color' => $rank['color'],
+                        'rank_icon'  => $rank['icon'],
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data'    => $customers,
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi tìm kiếm khách hàng: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Xác định hạng thành viên dựa trên tổng điểm đã tích lũy
+     */
+    private function getMemberRank(int $totalEarned): array
+    {
+        if ($totalEarned >= 500) {
+            return ['name' => 'Kim Cương', 'color' => '#7dd3fc', 'icon' => '💎'];
+        } elseif ($totalEarned >= 200) {
+            return ['name' => 'Vàng', 'color' => '#fbbf24', 'icon' => '🥇'];
+        } elseif ($totalEarned >= 50) {
+            return ['name' => 'Bạc', 'color' => '#94a3b8', 'icon' => '🥈'];
+        } else {
+            return ['name' => 'Đồng', 'color' => '#b87333', 'icon' => '🥉'];
+        }
+    }
+
     public function placeOrder(Request $request)
     {
         $validatedData = $request->validate([
-            'items' => 'required|array|min:1',
+            'items'          => 'required|array|min:1',
             'items.*.variant_id' => 'required|integer|exists:product_variants,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'branch_id' => 'nullable|integer|exists:branches,id',
-            'user_id' => 'nullable|integer|exists:users,id',
+            'items.*.quantity'   => 'required|integer|min:1',
+            'branch_id'      => 'nullable|integer|exists:branches,id',
+            'user_id'        => 'nullable|integer|exists:users,id',
+            'discount_code'  => 'nullable|string|exists:discounts,code',
+            'points_used'    => 'nullable|integer|min:0',
         ]);
 
         try {
@@ -118,12 +194,19 @@ class PosController extends Controller
                 }
                 // 2. Set branch ID (default to 1, or from request)
                 $branchId = $validatedData['branch_id'] ?? 1;
-                $userId = $validatedData['user_id'] ?? null;
+                $userId   = $validatedData['user_id'] ?? null;
 
-                // 3. Place order using InventoryService
+                // 3. Chuẩn bị dữ liệu khách (POS flag là mảng với is_pos = true)
+                $customerData = [
+                    'is_pos'        => true,
+                    'discount_code' => $validatedData['discount_code'] ?? null,
+                    'points_used'   => $validatedData['points_used'] ?? 0,
+                ];
+
+                // 4. Place order using InventoryService
                 $order = $this->inventoryService->placeOrder(
-                    $userId, 
-                    'Khách mua tại quầy', // Fixed address for POS
+                    $userId,
+                    $customerData,
                     $validatedData['items'],
                     $posChannel->id,
                     $branchId

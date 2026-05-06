@@ -18,6 +18,11 @@ export type User = {
   gender?: 'male' | 'female' | 'other';
   dob?: string;
   phone?: string;
+  rank?: {
+    name: string;
+    color: string;
+    icon: string;
+  };
   created_at?: string;
 };
 

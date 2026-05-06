@@ -254,6 +254,32 @@ class ProductCatalogController extends Controller
         }
     }
 
+    /**
+     * Toggle trạng thái kinh doanh (Đang bán <-> Ngừng bán).
+     * PATCH /admin/products/{id}/toggle-status
+     */
+    public function toggleStatus($id)
+    {
+        try {
+            $product = Product::findOrFail($id);
+            $product->is_active = !$product->is_active;
+            $product->save();
+
+            $statusLabel = $product->is_active ? 'Đang bán' : 'Ngừng bán';
+
+            return response()->json([
+                'success'   => true,
+                'is_active' => $product->is_active,
+                'message'   => "Đã cập nhật trạng thái: {$statusLabel}",
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi cập nhật trạng thái: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function destroy($id)
     {
         try {

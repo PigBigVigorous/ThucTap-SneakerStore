@@ -90,8 +90,8 @@ class InventoryService
                 $chosenBranchId = $bestBranch->id;
             }
 
-            // KIỂM TRA LẠI KIỂU DỮ LIỆU ĐỂ TƯƠNG THÍCH POS CŨ (Truyền chuỗi)
-            $isPos = is_string($customerData);
+            // KIỂM TRA KIỂU DỮ LIỆU: POS dùng mảng có is_pos=true hoặc string cũ
+            $isPos = is_string($customerData) || (is_array($customerData) && !empty($customerData['is_pos']));
 
             // 🚀 BẢO MẬT: TÍNH PHÍ SHIP TỰ ĐỘNG TỪ BACKEND
             $shippingFee = 0;
@@ -162,7 +162,8 @@ class InventoryService
             // 3. XỬ LÝ MÃ GIẢM GIÁ (BACKEND KIỂM SOÁT BẢO MẬT KÉP LẦN 2)
             $discountId = null;
             $discountAmount = 0;
-            $discountCode = $isPos ? null : ($customerData['discount_code'] ?? null);
+            // POS mảng mới hỗ trợ discount_code, POS string cũ thì không
+            $discountCode = is_string($customerData) ? null : ($customerData['discount_code'] ?? null);
 
             if ($discountCode) {
                 // Sử dụng LockForUpdate để tránh đua lệnh dùng mã
@@ -237,7 +238,8 @@ class InventoryService
             }
 
             // 4. XỬ LÝ ĐIỂM TÍCH LŨY (LOYALTY POINTS)
-            $pointsUsed = $isPos ? 0 : ($customerData['points_used'] ?? 0);
+            // Hỗ trợ POS mảng mới dùng điểm, online, nhưng POS string cũ thì không
+            $pointsUsed = is_string($customerData) ? 0 : (int)($customerData['points_used'] ?? 0);
             $pointDiscount = 0;
 
             if ($pointsUsed > 0 && $userId) {

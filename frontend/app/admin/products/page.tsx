@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { adminProductAPI } from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
-import { Package, Plus, X, Upload, Edit, Trash2, Pipette, Search } from "lucide-react";
+import { Package, Plus, X, Upload, Edit, Trash2, Pipette, Search, ToggleLeft, ToggleRight } from "lucide-react";
 
 export default function ProductsPage() {
   const { token } = useAuth();
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -301,6 +301,36 @@ export default function ProductsPage() {
     }
   };
 
+  const handleToggleStatus = async (product: any) => {
+    if (!token) return;
+    const newStatus = !product.is_active;
+    const label = newStatus ? "Đang bán" : "Ngừng bán";
+    if (!window.confirm(`Xác nhận chuyển sản phẩm "${product.name}" sang trạng thái: ${label}?`)) return;
+
+    // Optimistic update — cập nhật UI ngay lập tức
+    setProducts((prev: any[]) =>
+      prev.map((p: any) => p.id === product.id ? { ...p, is_active: newStatus } : p)
+    );
+
+    try {
+      const res = await adminProductAPI.toggleStatus(product.id, token);
+      if (res.success) {
+        toast.success(res.message);
+      } else {
+        // Revert nếu server báo lỗi
+        setProducts((prev: any[]) =>
+          prev.map((p: any) => p.id === product.id ? { ...p, is_active: product.is_active } : p)
+        );
+        toast.error(res.message || "Cập nhật thất bại!");
+      }
+    } catch {
+      setProducts((prev: any[]) =>
+        prev.map((p: any) => p.id === product.id ? { ...p, is_active: product.is_active } : p)
+      );
+      toast.error("Lỗi kết nối máy chủ!");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -356,6 +386,7 @@ export default function ProductsPage() {
                       <th className="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Thương hiệu</th>
                       <th className="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Màu sắc</th>
                       <th className="px-6 py-4 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Giá cơ bản</th>
+                      <th className="px-6 py-4 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Kinh doanh</th>
                       <th className="px-6 py-4 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Hành động</th>
                     </tr>
                   </thead>
@@ -426,6 +457,39 @@ export default function ProductsPage() {
                             ? `${Number(product.variants[0].price).toLocaleString('vi-VN')} ₫` 
                             : "N/A"}
                         </td>
+
+                        {/* ============================================
+                            🔘 CỘT TRẠNG THÁI KINH DOANH + NÚT TOGGLE
+                            ============================================ */}
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <button
+                            onClick={() => handleToggleStatus(product)}
+                            title={product.is_active ? "Nhấn để Ngừng bán" : "Nhấn để Mở bán"}
+                            className={`group/toggle inline-flex flex-col items-center gap-1.5 px-3 py-2 rounded-xl border-2 transition-all duration-300 ${
+                              product.is_active
+                                ? "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-400 hover:shadow-md hover:shadow-emerald-100"
+                                : "border-gray-200 bg-gray-50 hover:bg-orange-50 hover:border-orange-300 hover:shadow-md hover:shadow-orange-100"
+                            }`}
+                          >
+                            {product.is_active ? (
+                              <ToggleRight
+                                size={26}
+                                className="text-emerald-500 group-hover/toggle:scale-110 transition-transform"
+                              />
+                            ) : (
+                              <ToggleLeft
+                                size={26}
+                                className="text-gray-400 group-hover/toggle:text-orange-500 group-hover/toggle:scale-110 transition-all"
+                              />
+                            )}
+                            <span className={`text-[10px] font-black uppercase tracking-wide ${
+                              product.is_active ? "text-emerald-600" : "text-gray-400"
+                            }`}>
+                              {product.is_active ? "Đang bán" : "Ngừng bán"}
+                            </span>
+                          </button>
+                        </td>
+
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 

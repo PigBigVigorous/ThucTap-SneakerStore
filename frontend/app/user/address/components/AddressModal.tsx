@@ -166,8 +166,8 @@ export default function AddressModal({ isOpen, onClose, onSuccess, initialData, 
       
       const method = initialData ? "PUT" : "POST";
       const url = initialData 
-        ? `${API_BASE_URL}/user/addresses/${initialData.id}` 
-        : `${API_BASE_URL}/user/addresses`;
+        ? `${API_BASE_URL}/addresses/${initialData.id}` 
+        : `${API_BASE_URL}/addresses`;
 
       const res = await fetch(url, {
         method,

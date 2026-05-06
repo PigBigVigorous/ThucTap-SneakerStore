@@ -13,7 +13,7 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "SHOES. — Cửa hàng giày chính hãng",
+  title: "SNEAKER STORE. — Cửa hàng giày chính hãng",
   description: "Mua giày thể thao chính hãng Nike, Adidas, Puma... Giao hàng toàn quốc, freeship từ 5 triệu.",
 };
 

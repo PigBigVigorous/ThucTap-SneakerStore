@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useAuth } from "../../context/AuthContext";
 import { authAPI, getFileUrl } from "../../services/api";
 import toast from "react-hot-toast";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, Star, Award, Shield, Wallet } from "lucide-react";
 
 type ProfileFormData = {
   name: string;
@@ -232,6 +232,49 @@ export default function ProfilePage() {
             <p>Dung lượng file tối đa 1 MB</p>
             <p>Định dạng: .JPEG, .PNG</p>
           </div>
+
+          {/* Membership Rank Section */}
+          {user?.rank && (
+            <div className="mt-8 w-full bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3 border-b border-gray-50 pb-2">
+                <Shield size={16} className="text-indigo-500" />
+                <span className="text-sm font-bold text-gray-700">Hạng thành viên</span>
+              </div>
+              
+              <div className="flex flex-col items-center py-2">
+                <div 
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-2 shadow-inner"
+                  style={{ backgroundColor: user.rank.color + '22' }}
+                >
+                  {user.rank.icon}
+                </div>
+                <p className="text-lg font-black" style={{ color: user.rank.color }}>
+                  {user.rank.name}
+                </p>
+                
+                <div className="mt-4 w-full space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Điểm hiện tại</span>
+                    <span className="font-bold text-amber-600 flex items-center gap-1">
+                      <Star size={12} className="fill-amber-500 text-amber-500" />
+                      {user.points?.toLocaleString('vi-VN')} điểm
+                    </span>
+                  </div>
+                  
+                  {/* Progress bar logic could be added here if we had next rank info */}
+                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{ 
+                        width: `${Math.min(100, ((user.points ?? 0) / 500) * 100)}%`,
+                        backgroundColor: user.rank.color 
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
