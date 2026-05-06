@@ -772,7 +772,7 @@ export default function PosPage() {
 
             <div className="bg-gray-50 p-4 rounded-xl mb-6 shadow-inner border border-gray-100 flex items-center justify-center">
               <img
-                src={`/maqrck.png`}
+                src={`/images/qr-bank-transfer.png`}
                 alt="QR Code"
                 className="w-full max-w-[220px] h-auto object-contain"
               />

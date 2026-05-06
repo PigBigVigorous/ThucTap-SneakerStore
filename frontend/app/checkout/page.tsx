@@ -666,7 +666,7 @@ export default function CheckoutPage() {
             <div className="bg-gray-50 p-4 rounded-xl mb-6 shadow-inner border border-gray-100 flex items-center justify-center relative overflow-hidden group">
               <div className="absolute inset-0 bg-blue-600/5 rotate-45 scale-150 transition-transform group-hover:rotate-90"></div>
               <img
-                src="/maqrck.png"
+                src="/images/qr-bank-transfer.png"
                 alt="QR Code"
                 className="w-full max-w-[200px] h-auto object-contain relative z-10"
               />
