@@ -52,7 +52,7 @@ class InventoryService
                 foreach ($allBranches as $branch) {
                     $canFulfill = true;
                     foreach ($items as $item) {
-                        $stock = \App\Models\VariantBranchStock::where('branch_id', $branch->id)
+                        $stock = VariantBranchStock::where('branch_id', $branch->id)
                             ->where('variant_id', $item['variant_id'])
                             ->first();
                         if (!$stock || $stock->stock < $item['quantity']) {
@@ -72,8 +72,8 @@ class InventoryService
                 foreach ($eligibleBranches as $branch) {
                     $score = 0;
                     $branchAddress = mb_strtolower(($branch->name ?? '') . ' ' . ($branch->address ?? ''));
-                    if (\Illuminate\Support\Str::contains($branchAddress, $custProvince)) {
-                        if (\Illuminate\Support\Str::contains($branchAddress, $custDistrict)) {
+                    if (Str::contains($branchAddress, $custProvince)) {
+                        if (Str::contains($branchAddress, $custDistrict)) {
                             $score = 100; // Cùng Quận -> Hỏa Tốc
                         } else {
                             $score = 50;  // Cùng Tỉnh -> Trong Ngày
@@ -243,7 +243,7 @@ class InventoryService
             $pointDiscount = 0;
 
             if ($pointsUsed > 0 && $userId) {
-                $user = \App\Models\User::find($userId);
+                $user = User::find($userId);
                 if ($user && $user->points >= $pointsUsed) {
                     // Quy đổi: 1 điểm = 1,000 VNĐ (Có thể cấu hình ở .env hoặc DB sau)
                     $pointDiscount = $pointsUsed * 1000;
@@ -258,7 +258,7 @@ class InventoryService
                     $user->decrement('points', $pointsUsed);
 
                     // Lưu lịch sử trừ điểm
-                    \App\Models\PointTransaction::create([
+                    PointTransaction::create([
                         'user_id' => $userId,
                         'amount' => -$pointsUsed,
                         'type' => 'spend',
@@ -332,7 +332,7 @@ class InventoryService
 
             // Hoàn lại điểm đã sử dụng (nếu có)
             if ($order->user_id && $order->points_used > 0) {
-                app(\App\Services\PointService::class)->refundPointsForOrder($order);
+                app(PointService::class)->refundPointsForOrder($order);
             }
 
             return true;

@@ -96,9 +96,9 @@ class OrderController extends Controller
         // 🚀 ĐỒNG BỘ KHO: Hoàn hàng/Thu hồi điểm an toàn khi Admin chuyển sang Hủy/Trả
         if ($oldStatus !== $request->status) {
             if ($request->status === 'cancelled') {
-                app(\App\Services\InventoryService::class)->cancelOrder($order);
+                app(InventoryService::class)->cancelOrder($order);
             } elseif ($request->status === 'returned') {
-                app(\App\Services\InventoryService::class)->returnOrder($order);
+                app(InventoryService::class)->returnOrder($order);
             }
 
             $order->trackings()->create([

@@ -24,6 +24,8 @@ use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShipperTrackingController;
 use App\Http\Controllers\Api\LocationController;
+use App\Models\Color;
+use App\Models\Size;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +47,9 @@ Route::get('/products/{slug}', [ProductController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/branches', [BranchController::class, 'index']);
+Route::get('/colors', function() { return response()->json(['success' => true, 'data' => Color::all()]); });
+Route::get('/sizes', function() { return response()->json(['success' => true, 'data' => Size::all()]); });
+
 Route::get('/discounts', [DiscountController::class, 'getActiveVouchers']);
 Route::post('/discounts/apply', [DiscountController::class, 'apply']);
 
