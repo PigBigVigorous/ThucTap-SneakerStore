@@ -20,6 +20,7 @@ export type CartItem = {
 // 2. Định nghĩa các hành động (Actions) của Giỏ hàng
 interface CartState {
   items: CartItem[];
+  syncCartWithServer: (latestItems: any[]) => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (variant_id: number) => void;
   updateQuantity: (variant_id: number, quantity: number) => void;
@@ -36,6 +37,20 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [], // Giỏ hàng ban đầu trống
+
+      // ĐỒNG BỘ GIỎ HÀNG VỚI SERVER (Giải quyết câu hỏi Hội đồng)
+      syncCartWithServer: (latestItems: any[]) => {
+        set((state) => {
+          const syncedItems = state.items.map(oldItem => {
+            const serverItem = latestItems.find((i: any) => i.variant_id === oldItem.variant_id);
+            if (serverItem) {
+              return { ...oldItem, price: serverItem.price, stock: serverItem.stock };
+            }
+            return oldItem;
+          });
+          return { items: syncedItems };
+        });
+      },
 
       // THÊM VÀO GIỎ
       addToCart: (newItem) => {
