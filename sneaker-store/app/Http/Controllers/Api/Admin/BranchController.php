@@ -15,7 +15,11 @@ class BranchController extends Controller
 {
     public function index()
     {
-        return response()->json(['success' => true, 'data' => Branch::all()]);
+        $branches = Cache::remember('branches_list', 300, function () {
+            return Branch::all();
+        });
+
+        return response()->json(['success' => true, 'data' => $branches]);
     }
 
     public function store(BranchStoreRequest $request)
@@ -47,6 +51,8 @@ class BranchController extends Controller
             }
         }
 
+        Cache::forget('branches_list');
+
         return response()->json(['success' => true, 'message' => 'Tạo chi nhánh thành công!', 'data' => $branch], 201);
     }
 
@@ -65,6 +71,8 @@ class BranchController extends Controller
 
         $branch->update($request->all());
 
+        Cache::forget('branches_list');
+
         return response()->json(['success' => true, 'message' => 'Cập nhật thành công', 'data' => $branch]);
     }
 
@@ -82,8 +90,7 @@ class BranchController extends Controller
 
         $branch->delete();
 
-        $maxId = Branch::max('id') ?? 0; 
-        DB::statement("ALTER TABLE branches AUTO_INCREMENT = " . ($maxId + 1));
+        Cache::forget('branches_list');
 
         return response()->json(['success' => true, 'message' => 'Đã xóa chi nhánh thành công']);
     }

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { adminProductAPI } from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
-import { Package, Plus, X, Upload, Edit, Trash2, Pipette, Search, ToggleLeft, ToggleRight } from "lucide-react";
+import { Package, Plus, X, Upload, Edit, Trash2, Pipette, Ruler, Search, ToggleLeft, ToggleRight } from "lucide-react";
 
 export default function ProductsPage() {
   const { token } = useAuth();
@@ -15,7 +15,7 @@ export default function ProductsPage() {
   // State cho Modal Thêm Sản phẩm
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // State đánh dấu đang sửa
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -26,7 +26,7 @@ export default function ProductsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [activeModalTab, setActiveModalTab] = useState("info"); // Tab Quản lý Modal
-  
+
   // State Biến thể (Mặc định có 1 dòng)
   const [variants, setVariants] = useState([
     { color_id: "1", size_id: "1", price: "2500000", stock: "50", colorway_name: "" }
@@ -47,6 +47,11 @@ export default function ProductsPage() {
   const [showAddColorForm, setShowAddColorForm] = useState(false);
   const [newColorForm, setNewColorForm] = useState({ name: "", hex_code: "#000000" });
   const [isCreatingColor, setIsCreatingColor] = useState(false);
+
+  // State mini-form thêm size mới
+  const [showAddSizeForm, setShowAddSizeForm] = useState(false);
+  const [newSizeName, setNewSizeName] = useState("");
+  const [isCreatingSize, setIsCreatingSize] = useState(false);
 
   // Lọc ra các ID màu sắc độc nhất mà người dùng đang chọn ở phần Biến thể
   const uniqueSelectedColors = Array.from(new Set(variants.map(v => v.color_id)));
@@ -103,7 +108,7 @@ export default function ProductsPage() {
     setIsCreatingColor(true);
     try {
       const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
-      const res = await fetch(`${API}/colors`, {
+      const res = await fetch(`${API}/admin/colors`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: newColorForm.name.trim(), hex_code: newColorForm.hex_code }),
@@ -134,7 +139,7 @@ export default function ProductsPage() {
   // Khi bấm nút Sửa trên từng dòng sản phẩm
   const handleEditClick = (product: any) => {
     setEditingId(product.id);
-    
+
     setForm({
       name: product.name,
       category_id: product.category_id?.toString() || "1",
@@ -142,10 +147,10 @@ export default function ProductsPage() {
       description: product.description || "",
       branch_id: "1"
     });
-    
+
     setPreviewUrl(product.base_image_url);
-    setImageFile(null); 
-    
+    setImageFile(null);
+
     // Reset gallery mới upload
     setGalleryByColor({});
 
@@ -180,7 +185,41 @@ export default function ProductsPage() {
     setShowModal(true);
   };
 
-  // Xử lý chọn ảnh đại diện
+  // Tạo size mới ngay trong form — gọi API POST /admin/sizes
+  const handleCreateSize = async () => {
+    if (!newSizeName.trim()) return toast.error("Vui lòng nhập tên size!");
+    setIsCreatingSize(true);
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+      const res = await fetch(`${API}/admin/sizes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: newSizeName.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const created = { id: String(data.data.id), name: data.data.name };
+        // Thêm size mới vào danh sách
+        setSizeOptions(prev => [...prev, created]);
+        // Tự động chọn size mới cho dòng biến thể cuối cùng
+        setVariants(prev => {
+          const newV = [...prev];
+          newV[newV.length - 1] = { ...newV[newV.length - 1], size_id: created.id };
+          return newV;
+        });
+        toast.success(`Đã tạo size "US ${created.name}" thành công!`);
+        setNewSizeName("");
+        setShowAddSizeForm(false);
+      } else {
+        toast.error(data.message || "Lỗi tạo size!");
+      }
+    } catch {
+      toast.error("Lỗi kết nối!");
+    }
+    setIsCreatingSize(false);
+  };
+
+
   const handleImageChange = (e: any) => {
     const file = e.target.files[0];
     if (file) {
@@ -236,22 +275,22 @@ export default function ProductsPage() {
       formData.append("brand_id", form.brand_id);
       formData.append("description", form.description);
       formData.append("branch_id", form.branch_id);
-      
+
       if (imageFile) formData.append("base_image", imageFile);
-      
+
       // 🚀 BÍ QUYẾT GÓI DỮ LIỆU: Đóng gói ảnh gallery theo đúng key ID màu sắc
       Object.entries(galleryByColor).forEach(([colorId, data]) => {
         data.files.forEach((file) => {
-          formData.append(`gallery_images[${colorId}][]`, file); 
+          formData.append(`gallery_images[${colorId}][]`, file);
         });
       });
 
       formData.append("variants", JSON.stringify(variants));
 
-      const res = editingId 
+      const res = editingId
         ? await adminProductAPI.update(editingId, formData, token)
         : await adminProductAPI.create(formData, token);
-      
+
       if (res.success) {
         if (editingId && res.data?.slug) {
           // Slug bị thay đổi: thông báo kèm link đến URL mới
@@ -278,15 +317,50 @@ export default function ProductsPage() {
       } else {
         toast.error(res.message || "Có lỗi xảy ra");
       }
-    } catch (error) {
-      toast.error("Lỗi kết nối máy chủ!");
+    } catch (error: any) {
+      // Log toàn bộ error để debug
+      console.error("❌ Lỗi khi lưu sản phẩm:", error);
+
+      const status = error?.response?.status;
+      const serverData = error?.response?.data;
+
+      console.error("📦 Server response data:", serverData);
+      console.error("🔢 HTTP Status:", status);
+
+      if (serverData) {
+        // 1. Laravel trả về { message: "..." }
+        if (serverData.message) {
+          toast.error(`[${status}] ${serverData.message}`, { duration: 6000 });
+
+        // 2. Laravel validation errors: { errors: { field: ["msg"] } }
+        } else if (serverData.errors) {
+          const allErrors = Object.entries(serverData.errors)
+            .map(([field, msgs]) =>
+              `• ${field}: ${Array.isArray(msgs) ? msgs.join(", ") : msgs}`
+            )
+            .join("\n");
+          toast.error(`Lỗi validation:\n${allErrors}`, { duration: 8000 });
+
+        // 3. Trường hợp khác — dump toàn bộ response
+        } else {
+          const raw = typeof serverData === "string"
+            ? serverData.slice(0, 300)
+            : JSON.stringify(serverData, null, 2).slice(0, 300);
+          toast.error(`[${status}] Lỗi server:\n${raw}`, { duration: 8000 });
+        }
+      } else if (error?.message) {
+        // Lỗi mạng hoặc timeout
+        toast.error(`Lỗi kết nối: ${error.message}`);
+      } else {
+        toast.error("Lỗi không xác định. Kiểm tra Console (F12) để biết chi tiết.");
+      }
     }
     setIsSubmitting(false);
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("⚠️ Bạn có chắc muốn xóa sản phẩm này? (Dữ liệu sẽ được ẩn đi để bảo toàn lịch sử hóa đơn)")) return;
-    
+
     if (!token) return;
     try {
       const res = await adminProductAPI.delete(id, token);
@@ -334,19 +408,19 @@ export default function ProductsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8 border-b border-gray-200 pb-4">
           <h1 className="text-3xl font-black text-gray-900 uppercase flex items-center gap-3">
             <Package size={32} className="text-orange-600" /> Quản lý Sản phẩm
           </h1>
-          
+
           {/* Search Bar */}
           <div className="flex-1 max-w-md mx-8 relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors" size={20} />
-            <input 
-              type="text" 
-              placeholder="Tìm theo tên, thương hiệu, danh mục..." 
+            <input
+              type="text"
+              placeholder="Tìm theo tên, thương hiệu, danh mục..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchProducts()}
@@ -448,13 +522,13 @@ export default function ProductsPage() {
                             {(product.variants || []).filter((v: any, i: number, arr: any[]) =>
                               arr.findIndex((x: any) => x?.color?.id === v?.color?.id) === i && v?.color
                             ).length === 0 && (
-                              <span className="text-xs text-gray-300 italic">Chưa có</span>
-                            )}
+                                <span className="text-xs text-gray-300 italic">Chưa có</span>
+                              )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-base font-black text-red-600">
-                          {product.variants?.length > 0 
-                            ? `${Number(product.variants[0].price).toLocaleString('vi-VN')} ₫` 
+                          {product.variants?.length > 0
+                            ? `${Number(product.variants[0].price).toLocaleString('vi-VN')} ₫`
                             : "N/A"}
                         </td>
 
@@ -465,11 +539,10 @@ export default function ProductsPage() {
                           <button
                             onClick={() => handleToggleStatus(product)}
                             title={product.is_active ? "Nhấn để Ngừng bán" : "Nhấn để Mở bán"}
-                            className={`group/toggle inline-flex flex-col items-center gap-1.5 px-3 py-2 rounded-xl border-2 transition-all duration-300 ${
-                              product.is_active
+                            className={`group/toggle inline-flex flex-col items-center gap-1.5 px-3 py-2 rounded-xl border-2 transition-all duration-300 ${product.is_active
                                 ? "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-400 hover:shadow-md hover:shadow-emerald-100"
                                 : "border-gray-200 bg-gray-50 hover:bg-orange-50 hover:border-orange-300 hover:shadow-md hover:shadow-orange-100"
-                            }`}
+                              }`}
                           >
                             {product.is_active ? (
                               <ToggleRight
@@ -482,9 +555,8 @@ export default function ProductsPage() {
                                 className="text-gray-400 group-hover/toggle:text-orange-500 group-hover/toggle:scale-110 transition-all"
                               />
                             )}
-                            <span className={`text-[10px] font-black uppercase tracking-wide ${
-                              product.is_active ? "text-emerald-600" : "text-gray-400"
-                            }`}>
+                            <span className={`text-[10px] font-black uppercase tracking-wide ${product.is_active ? "text-emerald-600" : "text-gray-400"
+                              }`}>
                               {product.is_active ? "Đang bán" : "Ngừng bán"}
                             </span>
                           </button>
@@ -492,14 +564,14 @@ export default function ProductsPage() {
 
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                              onClick={() => handleEditClick(product)} 
+                            <button
+                              onClick={() => handleEditClick(product)}
                               className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors border border-transparent hover:border-blue-200 shadow-sm"
                               title="Sửa sản phẩm"
                             >
                               <Edit size={18} />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDelete(product.id)}
                               className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors border border-transparent hover:border-red-200 shadow-sm"
                               title="Xóa sản phẩm"
@@ -522,7 +594,7 @@ export default function ProductsPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]">
-            
+
             <div className="flex flex-col justify-between items-start md:items-center p-6 border-b border-gray-100 shrink-0 bg-gray-50/50">
               <div className="flex justify-between items-center w-full mb-6">
                 <h2 className="text-2xl font-black text-gray-900 tracking-tight">{editingId ? "CẬP NHẬT SẢN PHẨM" : "TẠO SẢN PHẨM MỚI"}</h2>
@@ -552,7 +624,7 @@ export default function ProductsPage() {
 
             <form onSubmit={handleSubmit} className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white">
               <div className="space-y-8">
-                
+
                 {/* ────────────────────────────────────────────────────────
                     TAB 1: THÔNG TIN CƠ BẢN
                 ──────────────────────────────────────────────────────── */}
@@ -561,17 +633,17 @@ export default function ProductsPage() {
                     <span className="text-xl">💡</span>
                     <p className="text-sm font-medium leading-relaxed">Nhập các thông tin nền tảng của sản phẩm. Bạn có thể chọn ảnh đại diện đặc sắc nhất ở đây. Những ảnh góc máy khác sẽ được thêm ở phần Gallery sau.</p>
                   </div>
-                  
+
                   <div className="space-y-6 max-w-3xl mx-auto">
                     <div>
                       <label className="block text-sm font-black text-gray-900 mb-2">Tên Sản Phẩm <span className="text-red-500">*</span></label>
-                      <input type="text" required value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-4 border bg-gray-50 hover:bg-white transition-colors font-bold text-gray-900 text-lg placeholder-gray-400" placeholder="VD: Nike Air Jordan 1 Retro High" />
+                      <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-4 border bg-gray-50 hover:bg-white transition-colors font-bold text-gray-900 text-lg placeholder-gray-400" placeholder="VD: Nike Air Jordan 1 Retro High" />
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-black text-gray-900 mb-2">Danh mục <span className="text-red-500">*</span></label>
-                        <select value={form.category_id} onChange={e => setForm({...form, category_id: e.target.value})} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-3.5 border bg-gray-50 hover:bg-white text-gray-900 font-bold transition-colors">
+                        <select value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-3.5 border bg-gray-50 hover:bg-white text-gray-900 font-bold transition-colors">
                           {categoryOptions.length === 0
                             ? <option value="">Đang tải...</option>
                             : categoryOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
@@ -580,7 +652,7 @@ export default function ProductsPage() {
                       </div>
                       <div>
                         <label className="block text-sm font-black text-gray-900 mb-2">Thương hiệu <span className="text-red-500">*</span></label>
-                        <select value={form.brand_id} onChange={e => setForm({...form, brand_id: e.target.value})} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-3.5 border bg-gray-50 hover:bg-white text-gray-900 font-bold transition-colors">
+                        <select value={form.brand_id} onChange={e => setForm({ ...form, brand_id: e.target.value })} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-3.5 border bg-gray-50 hover:bg-white text-gray-900 font-bold transition-colors">
                           {brandOptions.length === 0
                             ? <option value="">Đang tải...</option>
                             : brandOptions.map(b => <option key={b.id} value={b.id}>{b.name}</option>)
@@ -604,7 +676,7 @@ export default function ProductsPage() {
 
                     <div>
                       <label className="block text-sm font-black text-gray-900 mb-2">Mô tả sản phẩm</label>
-                      <textarea rows={6} value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-4 border bg-gray-50 hover:bg-white transition-colors font-medium text-gray-800" placeholder="Giới thiệu về chất liệu, thiết kế, form dáng..." />
+                      <textarea rows={6} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full border-gray-300 rounded-xl shadow-sm focus:ring-black focus:border-black p-4 border bg-gray-50 hover:bg-white transition-colors font-medium text-gray-800" placeholder="Giới thiệu về chất liệu, thiết kế, form dáng..." />
                     </div>
 
                     <div className="pt-6 border-t border-gray-100 flex justify-end">
@@ -638,12 +710,12 @@ export default function ProductsPage() {
                           <Pipette size={16} /> Nhúng mã màu mới
                         </button>
                         <button type="button" onClick={() => setVariants([...variants, { color_id: colorOptions[0]?.id || "1", size_id: sizeOptions[0]?.id || "1", price: "2500000", stock: "0", colorway_name: "" }])} className="text-sm font-bold bg-gray-100 text-gray-800 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-200 transition-colors flex items-center gap-1.5 shadow-sm">
-                          <Plus size={16}/> Thêm dòng
+                          <Plus size={16} /> Thêm dòng
                         </button>
                       </div>
                     </div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Ảnh Gallery theo màu sắc</label>
-                    
+
                     {uniqueSelectedColors.map((colorId) => {
                       const colorOption = colorOptions.find(c => c.id === colorId);
                       const colorName = colorOption?.name || "Màu chưa rõ";
@@ -681,12 +753,12 @@ export default function ProductsPage() {
                           )}
 
                           {/* Upload ảnh mới */}
-                          <input 
-                            type="file" multiple accept="image/*" 
-                            onChange={(e) => handleGalleryByColorChange(colorId, e)} 
-                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-black hover:file:bg-gray-300 transition-colors mb-3" 
+                          <input
+                            type="file" multiple accept="image/*"
+                            onChange={(e) => handleGalleryByColorChange(colorId, e)}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-black hover:file:bg-gray-300 transition-colors mb-3"
                           />
-                          
+
                           {/* Preview ảnh mới chọn */}
                           {colorData.previews.length > 0 && (
                             <div>
@@ -722,8 +794,16 @@ export default function ProductsPage() {
                         >
                           <Pipette size={13} /> Màu mới
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddSizeForm(prev => !prev)}
+                          title="Tạo size mới"
+                          className={`text-xs font-bold flex items-center gap-1 px-2.5 py-1.5 rounded-lg border transition-colors ${showAddSizeForm ? "bg-teal-100 text-teal-700 border-teal-300" : "text-teal-600 border-teal-300 hover:bg-teal-50"}`}
+                        >
+                          <Ruler size={13} /> Size mới
+                        </button>
                         <button type="button" onClick={() => setVariants([...variants, { color_id: colorOptions[0]?.id || "1", size_id: sizeOptions[0]?.id || "1", price: "2500000", stock: "0", colorway_name: "" }])} className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                          <Plus size={16}/> Thêm size/màu
+                          <Plus size={16} /> Thêm size/màu
                         </button>
                       </div>
                     </div>
@@ -779,12 +859,55 @@ export default function ProductsPage() {
                       </div>
                     )}
 
-                    
+                    {/* Mini-form tạo size mới */}
+                    {showAddSizeForm && (
+                      <div className="mb-6 p-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-2xl shadow-inner">
+                        <p className="text-sm font-black text-teal-800 uppercase mb-4 flex items-center gap-2">
+                          <Ruler size={18} /> Thêm size mới vào hệ thống
+                        </p>
+                        <div className="flex flex-col md:flex-row md:items-end gap-4">
+                          <div className="flex-1">
+                            <label className="text-xs font-black text-gray-500 uppercase block mb-1.5 focus-within:text-teal-600 transition-colors">
+                              Tên size (số EU hoặc chữ S/M/L) *
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-black text-teal-600 shrink-0">US</span>
+                              <input
+                                type="text"
+                                value={newSizeName}
+                                onChange={e => setNewSizeName(e.target.value)}
+                                placeholder="VD: 42, 42.5, XL..."
+                                className="flex-1 text-base font-bold text-gray-900 border-2 border-teal-200 rounded-xl p-3 focus:ring-teal-500 focus:border-teal-500 bg-white placeholder-gray-300"
+                                onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleCreateSize())}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={handleCreateSize}
+                              disabled={isCreatingSize || !newSizeName.trim()}
+                              className="px-6 py-3 bg-teal-600 text-white text-base font-black rounded-xl shadow-lg shadow-teal-200 hover:bg-teal-700 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:transform-none transition-all"
+                            >
+                              {isCreatingSize ? "Đang xử lý..." : "Lưu vào Kho"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setShowAddSizeForm(false); setNewSizeName(""); }}
+                              className="px-4 py-3 text-gray-500 bg-white border border-gray-200 hover:text-red-500 hover:border-red-200 hover:bg-red-50 rounded-xl font-bold transition-colors"
+                            >
+                              Đóng
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                       {variants.map((v, index) => (
                         <div key={index} className="grid grid-cols-4 gap-4 bg-gray-50 border border-gray-200 p-4 rounded-xl relative group hover:border-gray-300 hover:shadow-sm transition-all">
                           {variants.length > 1 && (
-                            <button type="button" title="Xoá dòng hiển thị này" onClick={() => setVariants(variants.filter((_, i) => i !== index))} className="absolute -top-3 -right-3 w-7 h-7 bg-white text-red-500 rounded-full border border-red-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:scale-110 shadow-sm z-10"><X size={14}/></button>
+                            <button type="button" title="Xoá dòng hiển thị này" onClick={() => setVariants(variants.filter((_, i) => i !== index))} className="absolute -top-3 -right-3 w-7 h-7 bg-white text-red-500 rounded-full border border-red-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:scale-110 shadow-sm z-10"><X size={14} /></button>
                           )}
                           <div className="col-span-1">
                             <span className="text-xs font-black text-gray-500 uppercase">Màu cơ sở</span>
@@ -803,19 +926,19 @@ export default function ProductsPage() {
                               </select>
                             </div>
                           </div>
-                          
+
                           <div className="col-span-1 border-l border-gray-200 pl-4">
                             <span className="text-xs font-black text-gray-500 uppercase">Size</span>
-                            <select value={v.size_id} onChange={e => {const newV = [...variants]; newV[index].size_id = e.target.value; setVariants(newV);}} className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 py-1 focus:ring-0 text-gray-900 cursor-pointer">
+                            <select value={v.size_id} onChange={e => { const newV = [...variants]; newV[index].size_id = e.target.value; setVariants(newV); }} className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 py-1 focus:ring-0 text-gray-900 cursor-pointer">
                               {sizeOptions.length === 0 ? <option value="">Đang tải...</option> : sizeOptions.map(s => <option key={s.id} value={s.id}>US {s.name}</option>)}
                             </select>
                           </div>
-                          
+
                           <div className="col-span-1 border-l border-gray-200 pl-4">
                             <span className="text-xs font-black text-gray-500 uppercase">Giá bán lẻ</span>
-                            <input type="number" placeholder="2,500,000" value={v.price} onChange={e => {const newV = [...variants]; newV[index].price = e.target.value; setVariants(newV);}} className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 focus:ring-0 text-blue-600 appearance-none" />
+                            <input type="number" placeholder="2,500,000" value={v.price} onChange={e => { const newV = [...variants]; newV[index].price = e.target.value; setVariants(newV); }} className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 focus:ring-0 text-blue-600 appearance-none" />
                           </div>
-                          
+
                           <div className="col-span-1 border-l border-gray-200 pl-4">
                             <div className="flex justify-between items-end mb-1">
                               <span className="text-xs font-black text-gray-500 uppercase">{(v as any).id ? "Kho hiện tại" : "Kho gốc"}</span>
@@ -823,11 +946,11 @@ export default function ProductsPage() {
                             {editingId ? (
                               <div className="text-base font-black text-gray-400 mt-1.5 pl-1 italic" title="Quản lí kho từ module Kho Hàng">Khoá thay đổi</div>
                             ) : (
-                              <input 
+                              <input
                                 type="number" min="0" placeholder="0"
-                                value={v.stock || "0"} 
-                                onChange={e => {const newV = [...variants]; newV[index].stock = e.target.value; setVariants(newV);}} 
-                                className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 focus:ring-0 text-green-600 appearance-none" 
+                                value={v.stock || "0"}
+                                onChange={e => { const newV = [...variants]; newV[index].stock = e.target.value; setVariants(newV); }}
+                                className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 focus:ring-0 text-green-600 appearance-none"
                               />
                             )}
                           </div>
@@ -882,10 +1005,10 @@ export default function ProductsPage() {
                     <span className="text-xl">📸</span>
                     <p className="text-sm font-medium leading-relaxed">Mỗi góc chụp giúp trải nghiệm mua sắm của Khách hàng hoàn hảo hơn. Tải lên 3-5 ảnh cho mỗi màu sắc ở bên dưới.</p>
                   </div>
-                  
+
                   <div className="max-w-4xl mx-auto space-y-6">
                     <label className="block text-lg font-black text-gray-900 border-b border-gray-100 pb-2 mb-4">Tải Ảnh (Group theo màu sắc)</label>
-                    
+
                     {uniqueSelectedColors.map((colorId) => {
                       const colorOption = colorOptions.find(c => c.id === colorId);
                       const colorName = colorOption?.name || "Màu gốc";
@@ -923,17 +1046,17 @@ export default function ProductsPage() {
 
                           {/* Upload ảnh mới */}
                           <div className="relative">
-                            <input 
-                              type="file" multiple accept="image/*" 
-                              onChange={(e) => handleGalleryByColorChange(colorId, e)} 
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-sm" 
+                            <input
+                              type="file" multiple accept="image/*"
+                              onChange={(e) => handleGalleryByColorChange(colorId, e)}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-sm"
                             />
                             <div className="w-full border-2 border-dashed border-green-200 rounded-xl p-6 flex flex-col items-center justify-center bg-green-50/50 hover:bg-green-50 transition-colors text-green-700">
                               <Upload className="mb-2 opacity-50" size={24} />
                               <p className="font-bold">Bấm vào đây duyệt file hoặc kéo thả ảnh</p>
                             </div>
                           </div>
-                          
+
                           {/* Preview ảnh mới chọn */}
                           {colorData.previews.length > 0 && (
                             <div className="mt-5">
@@ -960,7 +1083,7 @@ export default function ProductsPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="pt-8 flex justify-between items-center max-w-4xl mx-auto">
                     <button type="button" onClick={() => setActiveModalTab("variants")} className="text-gray-500 font-bold hover:text-black transition-colors underline decoration-2 underline-offset-4">
                       ⬅️ Thu lại kho biến thể
@@ -984,7 +1107,7 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
-      
+
       <Toaster />
     </div>
   );

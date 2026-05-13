@@ -266,7 +266,7 @@ export default function ClientHome({
           <div className="relative w-1/2">
             <input
               type="number"
-              placeholder="Từ ₫"
+              placeholder="Từ "
               value={tempPriceMin}
               onChange={(e) => setTempPriceMin(e.target.value)}
               onKeyDown={(e) => {
@@ -288,7 +288,7 @@ export default function ClientHome({
           <div className="relative w-1/2">
             <input
               type="number"
-              placeholder="Đến ₫"
+              placeholder="Đến "
               value={tempPriceMax}
               onChange={(e) => setTempPriceMax(e.target.value)}
               onKeyDown={(e) => {
@@ -394,7 +394,7 @@ export default function ClientHome({
             <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Tìm giày, thương hiệu, mã sản phẩm..."
+              placeholder="Tìm giày, thương hiệu, loại giày..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-12 py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20
@@ -669,11 +669,10 @@ export default function ClientHome({
                                 key={p}
                                 onClick={() => fetchProducts(p as number)}
                                 disabled={loading}
-                                className={`w-10 h-10 rounded-full text-[13px] font-black transition-all ${
-                                  p === page
-                                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                                    : "border border-gray-200 text-gray-600 hover:border-indigo-500 hover:text-indigo-700 bg-white hover:shadow-md"
-                                }`}
+                                className={`w-10 h-10 rounded-full text-[13px] font-black transition-all ${p === page
+                                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                                  : "border border-gray-200 text-gray-600 hover:border-indigo-500 hover:text-indigo-700 bg-white hover:shadow-md"
+                                  }`}
                               >
                                 {p}
                               </button>

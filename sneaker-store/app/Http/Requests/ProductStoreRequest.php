@@ -18,7 +18,7 @@ class ProductStoreRequest extends FormRequest
             'name' => 'required|string|max:255|unique:products,name',
             'category_id' => 'required|integer|exists:categories,id',
             'brand_id' => 'required|integer|exists:brands,id',
-            'description' => 'nullable|string|max:1000',
+            'description' => 'nullable|string|max:5000',
             // NOTE: base_image và gallery_images được validate thủ công trong Controller
             // vì PHP không convert nested file array (gallery_images[colorId][]) thành UploadedFile đúng cách
             'variants' => 'required|string|json',

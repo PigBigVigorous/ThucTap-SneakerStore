@@ -22,7 +22,7 @@ class InventoryController extends Controller
     public function index(Request $request)
     {
         $query = InventoryTransaction::with([
-            'variant.product', 'variant.color', 'variant.size',
+            'variant.product.brand', 'variant.color', 'variant.size',
             'variant.branchStocks', 'fromBranch', 'toBranch'
         ]);
 
@@ -95,7 +95,7 @@ class InventoryController extends Controller
         
         // 🚀 SỬA LỖI UI CRASH: Chỉ lấy tồn kho của những Biến thể CHƯA BỊ XÓA (has('variant'))
         $query = \App\Models\VariantBranchStock::has('variant')->with([
-            'variant.product', 
+            'variant.product.brand', 
             'variant.color', 
             'variant.size', 
             'branch'

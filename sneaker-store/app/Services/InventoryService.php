@@ -10,6 +10,9 @@ use App\Models\ProductVariant;
 use App\Models\VariantBranchStock;
 use App\Models\InventoryTransaction;
 use App\Models\Discount;
+use App\Models\Branch;
+use App\Models\User;
+use App\Models\PointTransaction;
 use Carbon\Carbon;
 use Exception;
 
@@ -22,16 +25,7 @@ class InventoryService
         $this->shippingService = $shippingService;
     }
 
-    /**
-     * Hàm xử lý đặt hàng và trừ kho an toàn (Multi-warehouse support)
-     * 
-     * @param int $userId
-     * @param string $shippingAddress
-     * @param array $items
-     * @param int $saleschannelId
-     * @param int $branchId
-     * @return Order
-     */
+    
     public function placeOrder($userId, $customerData, $items, $salesChannelId = null, $branchId = null)
     {
         return DB::transaction(function () use ($userId, $customerData, $items, $salesChannelId, $branchId) {
@@ -40,47 +34,71 @@ class InventoryService
             $totalAmount = 0;
             $chosenBranchId = $branchId; // Nếu là POS thì có sẵn ID Kho
 
-            // 🚀 NẾU ĐƠN ONLINE (Không có ID Kho) -> KÍCH HOẠT SMART ROUTING DÒ KHOẢNG CÁCH
+            // NẾU ĐƠN ONLINE (Không có ID Kho) -> KÍCH HOẠT SMART ROUTING DÒ KHOẢNG CÁCH
             if (!$chosenBranchId) {
                 $custProvince = mb_strtolower($customerData['province'] ?? '');
                 $custDistrict = mb_strtolower($customerData['district'] ?? '');
+                $custProvinceCode = $customerData['province_code'] ?? null;
+                $custDistrictCode = $customerData['district_code'] ?? null;
 
-                $allBranches = \App\Models\Branch::all();
+                $allBranches = Branch::where('is_active', true)->get();
+                $variantIds = collect($items)->pluck('variant_id')->toArray();
+                
+                // Tối ưu: Lấy tất cả tồn kho cần thiết trong 1 câu query duy nhất
+                $allStocks = VariantBranchStock::whereIn('variant_id', $variantIds)
+                    ->whereIn('branch_id', $allBranches->pluck('id'))
+                    ->get()
+                    ->groupBy('branch_id');
+
                 $eligibleBranches = [];
-
-                // VÒNG 1: Lọc tồn kho
                 foreach ($allBranches as $branch) {
+                    $branchStocks = $allStocks->get($branch->id, collect())->keyBy('variant_id');
                     $canFulfill = true;
                     foreach ($items as $item) {
-                        $stock = VariantBranchStock::where('branch_id', $branch->id)
-                            ->where('variant_id', $item['variant_id'])
-                            ->first();
+                        $stock = $branchStocks->get($item['variant_id']);
                         if (!$stock || $stock->stock < $item['quantity']) {
-                            $canFulfill = false; break;
+                            $canFulfill = false;
+                            break;
                         }
                     }
-                    if ($canFulfill) { $eligibleBranches[] = $branch; }
+                    if ($canFulfill) {
+                        $eligibleBranches[] = $branch;
+                    }
                 }
 
                 if (empty($eligibleBranches)) {
                     throw new Exception("Rất tiếc, hiện tại không có một kho nào đủ hàng để giao trọn vẹn đơn này. Vui lòng giảm số lượng hoặc tách đơn.");
                 }
 
-                // VÒNG 2: Chấm điểm khoảng cách
+                // VÒNG 2: Chấm điểm khoảng cách (Ưu tiên so sánh Mã Vùng)
                 $bestBranch = null;
                 $maxScore = -1;
                 foreach ($eligibleBranches as $branch) {
                     $score = 0;
-                    $branchAddress = mb_strtolower(($branch->name ?? '') . ' ' . ($branch->address ?? ''));
-                    if (Str::contains($branchAddress, $custProvince)) {
-                        if (Str::contains($branchAddress, $custDistrict)) {
-                            $score = 100; // Cùng Quận -> Hỏa Tốc
-                        } else {
-                            $score = 50;  // Cùng Tỉnh -> Trong Ngày
-                        }
-                    } else { $score = 10; }
                     
-                    if ($branch->is_main) { $score += 5; } // Ưu tiên Kho Tổng nếu bằng điểm
+                    // 1. So sánh bằng CODE (Chính xác tuyệt đối)
+                    if ($custProvinceCode && $branch->province_code == $custProvinceCode) {
+                        if ($custDistrictCode && $branch->district_code == $custDistrictCode) {
+                            $score = 100; // Cùng Quận/Huyện -> Tối ưu nhất
+                        } else {
+                            $score = 50;  // Cùng Tỉnh/Thành phố
+                        }
+                    } 
+                    // 2. Dự phòng bằng String (Nếu không có code)
+                    else {
+                        $branchAddress = mb_strtolower(($branch->name ?? '') . ' ' . ($branch->address ?? ''));
+                        if (Str::contains($branchAddress, $custProvince)) {
+                            if (Str::contains($branchAddress, $custDistrict)) {
+                                $score = 100;
+                            } else {
+                                $score = 50;
+                            }
+                        } else {
+                            $score = 10;
+                        }
+                    }
+                    
+                    if ($branch->is_main) { $score += 5; } // Ưu tiên Kho Tổng nếu cùng điểm
 
                     if ($score > $maxScore) {
                         $maxScore = $score;
@@ -93,26 +111,28 @@ class InventoryService
             // KIỂM TRA KIỂU DỮ LIỆU: POS dùng mảng có is_pos=true hoặc string cũ
             $isPos = is_string($customerData) || (is_array($customerData) && !empty($customerData['is_pos']));
 
-            // 🚀 BẢO MẬT: TÍNH PHÍ SHIP TỰ ĐỘNG TỪ BACKEND
+            // TÍNH PHÍ SHIP TỰ ĐỘNG TỪ BACKEND
             $shippingFee = 0;
             if (!$isPos) {
                 $shippingFee = $this->calculateShippingFee($customerData['province'] ?? '', $customerData['district'] ?? '');
             }
 
-            // 1. TẠO ĐƠN HÀNG (Sẽ update TotalAmount và Discount sau)
+            // 1. TẠO ĐƠN HÀNG 
             $order = Order::create([
                 'order_tracking_code' => $orderCode,
                 'user_id' => $userId,
                 'status' => 'pending',
                 'payment_status' => 'pending', 
-                'payment_method' => $isPos ? 'cash' : ($customerData['payment_method'] ?? 'cod'), // 🟢 Lưu lại phương thức thanh toán
+                'payment_method' => $isPos ? 'cash' : ($customerData['payment_method'] ?? 'cod'), 
                 'total_amount' => 0,
-                'shipping_fee' => $shippingFee, // 🟢 Gán phí ship chuẩn
+                'shipping_fee' => $shippingFee, 
                 'customer_name' => $isPos ? 'Khách lẻ' : ($customerData['customer_name'] ?? null),
                 'customer_phone' => $isPos ? null : ($customerData['customer_phone'] ?? null),
                 'customer_email' => $isPos ? null : ($customerData['customer_email'] ?? null),
                 'province' => $isPos ? null : ($customerData['province'] ?? null),
+                'province_code' => $isPos ? null : ($customerData['province_code'] ?? null),
                 'district' => $isPos ? null : ($customerData['district'] ?? null),
+                'district_code' => $isPos ? null : ($customerData['district_code'] ?? null),
                 'ward' => $isPos ? null : ($customerData['ward'] ?? null),
                 'address_detail' => $isPos ? null : ($customerData['address_detail'] ?? null),
                 'sales_channel_id' => $salesChannelId,
@@ -194,7 +214,7 @@ class InventoryService
                     if ($discount->category_ids && count($discount->category_ids) > 0) {
                         $eligibleAmount = 0;
                         $variantIds = collect($items)->pluck('variant_id')->unique()->toArray();
-                        $variants = ProductVariant::with('product')->whereIn('id', $variantIds)->get()->keyBy('id');
+                        $variants = ProductVariant::with('product.category')->whereIn('id', $variantIds)->get()->keyBy('id');
 
                         foreach ($items as $item) {
                             $variant = $variants->get($item['variant_id']);
@@ -202,7 +222,11 @@ class InventoryService
                                 continue;
                             }
 
-                            if (in_array($variant->product->category_id, $discount->category_ids)) {
+                            $catId = $variant->product->category_id;
+                            $parentId = $variant->product->category?->parent_id;
+
+                            // Hợp lệ nếu danh mục trực tiếp HOẶC danh mục cha khớp
+                            if (in_array($catId, $discount->category_ids) || in_array($parentId, $discount->category_ids)) {
                                 $eligibleAmount += $variant->price * $item['quantity'];
                             }
                         }
@@ -442,7 +466,8 @@ class InventoryService
             InventoryTransaction::create([
                 'product_variant_id' => $variantId,
                 'transaction_type' => 'ADJUSTMENT',
-                'from_branch_id' => $branchId,
+                'from_branch_id' => $quantityChange < 0 ? $branchId : null,
+                'to_branch_id' => $quantityChange > 0 ? $branchId : null,
                 'quantity_change' => $quantityChange,
                 'note' => $note,
                 'created_at' => now(),

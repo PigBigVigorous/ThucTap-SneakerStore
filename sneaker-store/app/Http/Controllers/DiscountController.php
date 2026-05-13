@@ -144,7 +144,7 @@ class DiscountController extends Controller
         $eligibleAmount = null;
 
         if ($items->isNotEmpty()) {
-            $variants = ProductVariant::with('product')
+            $variants = ProductVariant::with('product.category')
                 ->whereIn('id', $items->pluck('variant_id')->unique())
                 ->get()
                 ->keyBy('id');
@@ -229,7 +229,11 @@ class DiscountController extends Controller
                     continue;
                 }
 
-                if (in_array($variant->product->category_id, $discount->category_ids)) {
+                $catId = $variant->product->category_id;
+                $parentId = $variant->product->category?->parent_id;
+
+                // Hợp lệ nếu: danh mục trực tiếp HOẶC danh mục cha khớp với category_ids của mã
+                if (in_array($catId, $discount->category_ids) || in_array($parentId, $discount->category_ids)) {
                     $eligibleAmount += $variant->price * max(0, (int) $item['quantity']);
                 }
             }

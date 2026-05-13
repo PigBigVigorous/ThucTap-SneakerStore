@@ -32,6 +32,8 @@ class BranchUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique('branches', 'email')->ignore($branchId),
             ],
+            'province_code' => 'nullable|string|max:20',
+            'district_code' => 'nullable|string|max:20',
             'is_main' => 'boolean',
         ];
     }

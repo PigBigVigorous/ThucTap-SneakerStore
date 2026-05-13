@@ -279,8 +279,9 @@ export default function InventoryPage() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Sản phẩm (SKU)</th>
+                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Thương hiệu</th>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Phân loại</th>
-                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Thuộc Chi Nhánh</th>
+                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Chi Nhánh</th>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Tồn Kho Hiện Tại</th>
                       </tr>
                     </thead>
@@ -292,14 +293,28 @@ export default function InventoryPage() {
                           <tr key={item.id} className="hover:bg-gray-50/80 transition-colors group">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-4">
-                                <div className="h-10 w-10 flex-shrink-0 bg-gray-100 rounded-lg flex items-center justify-center">
-                                  <span className="text-xl">👟</span>
+                                <div className="h-12 w-12 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-100 flex items-center justify-center">
+                                  {item.variant?.product?.base_image_url ? (
+                                    <img 
+                                      src={item.variant.product.base_image_url.startsWith('http') ? item.variant.product.base_image_url : `${baseUrl.replace('/api', '')}/storage/${item.variant.product.base_image_url}`} 
+                                      alt="" 
+                                      className="h-full w-full object-cover"
+                                      onError={(e: any) => { e.target.src = '/placeholder.png'; e.target.className = 'p-2 opacity-20'; }}
+                                    />
+                                  ) : (
+                                    <span className="text-xl">👟</span>
+                                  )}
                                 </div>
                                 <div>
-                                  <div className="text-sm font-black text-gray-900 group-hover:text-blue-600 transition-colors">{item.variant?.product?.name}</div>
+                                  <div className="text-sm font-black text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{item.variant?.product?.name}</div>
                                   <div className="text-xs text-gray-500 mt-0.5 font-mono bg-gray-100 inline-block px-1.5 py-0.5 rounded">SKU: {item.variant?.sku}</div>
                                 </div>
                               </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="text-sm font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">
+                                    {item.variant?.product?.brand?.name || 'Chưa rõ'}
+                                </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex flex-col gap-1">
@@ -418,6 +433,7 @@ export default function InventoryPage() {
                       <tr>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Thời gian</th>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Loại</th>
+                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Chi Nhánh</th>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Biến thể (SKU)</th>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Tăng/Giảm</th>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Ghi chú</th>
@@ -440,6 +456,17 @@ export default function InventoryPage() {
                                 default: return <span className="px-2.5 py-1 rounded border border-gray-200 text-xs font-black uppercase tracking-wider bg-gray-100 text-gray-600 shadow-sm">{tx.transaction_type}</span>;
                               }
                             })()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex flex-col gap-1">
+                                {tx.from_branch && (
+                                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded w-fit uppercase">Từ: {tx.from_branch.name}</span>
+                                )}
+                                {tx.to_branch && (
+                                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded w-fit uppercase">Đến: {tx.to_branch.name}</span>
+                                )}
+                                {!tx.from_branch && !tx.to_branch && <span className="text-gray-400">N/A</span>}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-l border-gray-100">
                             {tx.variant?.product?.name}

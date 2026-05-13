@@ -75,7 +75,9 @@ export default function CheckoutPage() {
   const [formData, setFormData] = useState({
     email: "",
     province: "",
+    province_code: "",
     district: "",
+    district_code: "",
     ward: "",
     addressDetail: "",
     shipping_name: "",
@@ -111,7 +113,9 @@ export default function CheckoutPage() {
       shipping_phone: data.contactInfo?.phone || "",
       email: data.contactInfo?.email || f.email,
       province: data.shippingData?.province || "",
+      province_code: data.shippingData?.province_code || "",
       district: data.shippingData?.district || "",
+      district_code: data.shippingData?.district_code || "",
       ward: data.shippingData?.ward || "",
       addressDetail: data.detailAddress || ""
     }));
@@ -261,7 +265,9 @@ export default function CheckoutPage() {
         user_id: user?.id || null,
         address_id: selectedAddressId,
         customer_name: formData.shipping_name, customer_phone: formData.shipping_phone, customer_email: formData.email,
-        province: formData.province, district: formData.district, ward: formData.ward,
+        province: formData.province, province_code: formData.province_code,
+        district: formData.district, district_code: formData.district_code,
+        ward: formData.ward,
         address_detail: formData.addressDetail, shipping_fee: shippingFee, total_amount: totalOriginal,
         discount_code: appliedDiscount ? appliedDiscount.code : null,
         payment_method: paymentMethod,
@@ -577,7 +583,7 @@ export default function CheckoutPage() {
                 </div>
                 {appliedDiscount && (
                   <div className="flex justify-between items-center px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-100 animate-in zoom-in-95 duration-300">
-                    <span className="text-xs font-bold text-emerald-700">Tiết kiệm được: -{appliedDiscount.amount.toLocaleString('vi-VN')} ₫</span>
+                    <span className="text-xs font-bold text-emerald-700">Tiết kiệm được: -{Math.round(appliedDiscount.amount).toLocaleString('vi-VN')} ₫</span>
                     <button onClick={removeDiscount} className="text-emerald-500 hover:text-emerald-700 p-1"><X size={14} /></button>
                   </div>
                 )}
@@ -597,7 +603,7 @@ export default function CheckoutPage() {
                 {appliedDiscount && (
                   <div className="flex justify-between text-sm font-bold text-emerald-600 bg-emerald-50/50 px-3 py-1.5 rounded-lg border border-emerald-100/50 animate-in slide-in-from-right-4 duration-300">
                     <span className="flex items-center gap-1.5"><Ticket size={14} /> Giảm giá voucher</span>
-                    <span>-{appliedDiscount.amount.toLocaleString('vi-VN')} ₫</span>
+                    <span>-{Math.round(appliedDiscount.amount).toLocaleString('vi-VN')} ₫</span>
                   </div>
                 )}
 

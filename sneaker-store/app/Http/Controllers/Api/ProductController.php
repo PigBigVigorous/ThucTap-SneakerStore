@@ -67,9 +67,13 @@ class ProductController extends Controller
 
         // ── Lọc theo danh mục (slug) ──────────────────────────────────
         if ($request->filled('category')) {
-            $query->whereHas('category', fn ($q) =>
-                $q->where('slug', $request->category)
-            );
+            $catSlug = $request->category;
+            $query->whereHas('category', function ($q) use ($catSlug) {
+                $q->where('slug', $catSlug)
+                  ->orWhereHas('parent', function ($pq) use ($catSlug) {
+                      $pq->where('slug', $catSlug);
+                  });
+            });
         }
 
         // ── Lọc theo thương hiệu (tên) ────────────────────────────────

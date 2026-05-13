@@ -15,7 +15,7 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Cache::remember('categories_tree', 86400, function () {
+        $categories = Cache::remember('categories_tree', 300, function () {
             return Category::with('children')
                 ->whereNull('parent_id')
                 ->orderBy('name', 'asc')

@@ -15,6 +15,7 @@ const emptyForm: FormState = {
   min_order_value: null,
   max_discount_value: null,
   usage_limit: null,
+  usage_limit_per_user: null,
   category_ids: [],
   start_date: "",
   expiration_date: "",
@@ -154,6 +155,7 @@ export default function DiscountsPage() {
         min_order_value: form.min_order_value ? Number(form.min_order_value) : null,
         max_discount_value: form.max_discount_value ? Number(form.max_discount_value) : null,
         usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
+        usage_limit_per_user: form.usage_limit_per_user ? Number(form.usage_limit_per_user) : null,
         category_ids: form.category_ids && form.category_ids.length > 0 ? form.category_ids : null,
       };
 
@@ -180,6 +182,7 @@ export default function DiscountsPage() {
       min_order_value: discount.min_order_value,
       max_discount_value: discount.max_discount_value,
       usage_limit: discount.usage_limit,
+      usage_limit_per_user: discount.usage_limit_per_user,
       category_ids: discount.category_ids ?? [],
       start_date: discount.start_date ? new Date(discount.start_date).toISOString().slice(0, 16) : "",
       expiration_date: discount.expiration_date ? new Date(discount.expiration_date).toISOString().slice(0, 16) : "",
@@ -230,7 +233,7 @@ export default function DiscountsPage() {
 
   const formatMoney = (amount: number | null | undefined) => {
     if (!amount) return "";
-    return amount.toLocaleString("vi-VN") + "đ";
+    return Math.round(amount).toLocaleString("vi-VN") + " ₫";
   };
 
   return (
@@ -343,18 +346,33 @@ export default function DiscountsPage() {
                   </div>
 
                   {/* Giới hạn lượt */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">
-                      Giới hạn số lượt dùng (Bỏ trống = Vô hạn)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={form.usage_limit || ''}
-                      onChange={(e) => setForm({ ...form, usage_limit: e.target.value ? Number(e.target.value) : null })}
-                      placeholder="VD: 100 lượt"
-                      className="w-full text-gray-900 bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">
+                        Giới hạn tổng (Lượt)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={form.usage_limit || ''}
+                        onChange={(e) => setForm({ ...form, usage_limit: e.target.value ? Number(e.target.value) : null })}
+                        placeholder="Vô hạn"
+                        className="w-full text-gray-900 bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 mb-1">
+                        1 Người dùng (Lượt)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={form.usage_limit_per_user || ''}
+                        onChange={(e) => setForm({ ...form, usage_limit_per_user: e.target.value ? Number(e.target.value) : null })}
+                        placeholder="Vô hạn"
+                        className="w-full text-gray-900 bg-white border border-gray-200 rounded-lg p-2.5 text-sm focus:border-indigo-500 outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -556,6 +574,9 @@ export default function DiscountsPage() {
                                 <span className="text-gray-300 mx-1">/</span>
                                 {discount.usage_limit ? discount.usage_limit : '∞'}
                               </p>
+                              {discount.usage_limit_per_user && (
+                                <p className="text-[10px] text-gray-400 mt-0.5">Tối đa {discount.usage_limit_per_user} lần/người</p>
+                              )}
                             </div>
                             <div>
                               <p className="text-xs text-gray-400">Thời hạn</p>

@@ -16,7 +16,7 @@ type ShippingAddressSectionProps = {
     addressId?: number;
     manualData?: any;
     displayInfo: string;
-    shippingData: { province: string; district: string; ward: string };
+    shippingData: { province: string; province_code?: string; district: string; district_code?: string; ward: string };
     contactInfo: { name: string; phone: string; email: string };
     detailAddress?: string;
   }) => void;
@@ -76,7 +76,7 @@ export default function ShippingAddressSection({ isLoggedIn, onAddressSelect }: 
 
   // ── SINGLE SOURCE OF TRUTH ────────────────────────────────
   const [shippingInfo, setShippingInfo] = useState({
-    name: "", phone: "", email: user?.email || "", province: "", district: "", ward: "", addressDetail: ""
+    name: "", phone: "", email: user?.email || "", province: "", province_code: "", district: "", district_code: "", ward: "", addressDetail: ""
   });
 
   // ── Helper: áp dụng địa chỉ đã chọn lên shippingInfo ─────
@@ -88,7 +88,9 @@ export default function ShippingAddressSection({ isLoggedIn, onAddressSelect }: 
       phone: addr.phone_number || "",
       email: user?.email || "",
       province: addr.province?.name || "",
+      province_code: addr.province?.code || addr.province_code || "",
       district: addr.district?.name || "",
+      district_code: addr.district?.code || addr.district_code || "",
       ward: addr.ward?.name || "",
       addressDetail: addr.address_detail || "",
     });
@@ -136,7 +138,13 @@ export default function ShippingAddressSection({ isLoggedIn, onAddressSelect }: 
     onAddressSelect({
       addressId: selectedAddress?.id,
       displayInfo: `${shippingInfo.name} | ${shippingInfo.phone}\n${shippingInfo.addressDetail}, ${shippingInfo.ward}, ${shippingInfo.district}, ${shippingInfo.province}`,
-      shippingData: { province: shippingInfo.province, district: shippingInfo.district, ward: shippingInfo.ward },
+      shippingData: { 
+        province: shippingInfo.province, 
+        province_code: shippingInfo.province_code,
+        district: shippingInfo.district, 
+        district_code: shippingInfo.district_code,
+        ward: shippingInfo.ward 
+      },
       contactInfo: { name: shippingInfo.name, phone: shippingInfo.phone, email: shippingInfo.email },
       detailAddress: shippingInfo.addressDetail,
     });
@@ -149,7 +157,7 @@ export default function ShippingAddressSection({ isLoggedIn, onAddressSelect }: 
     const name = provinces.find(p => p.code === code)?.name || "";
     setSelectedProvinceCode(code); setSelectedDistrictCode(""); setSelectedWardCode("");
     setDistricts([]); setWards([]);
-    setShippingInfo(prev => ({ ...prev, province: name, district: "", ward: "" }));
+    setShippingInfo(prev => ({ ...prev, province: name, province_code: code, district: "", district_code: "", ward: "" }));
     if (code) fetch(`${API_BASE_URL}/districts/${code}`).then(r => r.json())
       .then(d => setDistricts(Array.isArray(d) ? d : d?.data || []));
   };
@@ -158,7 +166,7 @@ export default function ShippingAddressSection({ isLoggedIn, onAddressSelect }: 
     const code = e.target.value;
     const name = districts.find(d => d.code === code)?.name || "";
     setSelectedDistrictCode(code); setSelectedWardCode(""); setWards([]);
-    setShippingInfo(prev => ({ ...prev, district: name, ward: "" }));
+    setShippingInfo(prev => ({ ...prev, district: name, district_code: code, ward: "" }));
     if (code) fetch(`${API_BASE_URL}/wards/${code}`).then(r => r.json())
       .then(d => setWards(Array.isArray(d) ? d : d?.data || []));
   };

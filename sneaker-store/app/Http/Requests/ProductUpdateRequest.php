@@ -14,7 +14,7 @@ class ProductUpdateRequest extends FormRequest
 
     public function rules()
     {
-        $productId = $this->route('id');
+        $productId = $this->route('product') ?: $this->route('id');
 
         return [
             'name' => [
@@ -26,7 +26,7 @@ class ProductUpdateRequest extends FormRequest
             ],
             'category_id' => 'sometimes|required|integer|exists:categories,id',
             'brand_id' => 'sometimes|required|integer|exists:brands,id',
-            'description' => 'nullable|string|max:1000',
+            'description' => 'nullable|string|max:5000',
             // NOTE: base_image và gallery_images được validate thủ công trong Controller
             // vì PHP không convert nested file array (gallery_images[colorId][]) thành UploadedFile đúng cách
         ];

@@ -352,6 +352,7 @@ export const adminProductAPI = {
       headers: {
         ...getAuthHeaders(token).headers,
         'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json',
       },
     });
     return res.data;
@@ -365,6 +366,7 @@ export const adminProductAPI = {
       headers: {
         ...getAuthHeaders(token).headers,
         'Content-Type': 'multipart/form-data',
+        'Accept': 'application/json',
       },
     });
     return res.data;

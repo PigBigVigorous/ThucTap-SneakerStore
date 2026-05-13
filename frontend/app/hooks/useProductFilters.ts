@@ -41,6 +41,21 @@ export function useProductFilters(
   const [vouchers, setVouchers] = useState<Discount[]>([]);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Đồng bộ dữ liệu từ Server (page.tsx) khi user điều hướng bằng <Link>
+  useEffect(() => {
+    setProducts(initialProducts);
+    setMeta(initialMeta);
+    setPage(1);
+    setSearchTerm("");
+    // Khi điều hướng bằng Link (URL đổi), reset các filter client-side về khớp với URL hiện tại
+    setFilters({
+      brands: activeBrand ? [activeBrand] : [],
+      priceMin: "",
+      priceMax: "",
+      sortBy: "newest",
+    });
+  }, [initialProducts, initialMeta, activeBrand, activeCategory]);
+
   const [filters, setFilters] = useState<FilterState>({
     brands: activeBrand ? [activeBrand] : [],
     priceMin: "",

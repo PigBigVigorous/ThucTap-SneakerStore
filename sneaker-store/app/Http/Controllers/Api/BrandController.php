@@ -15,7 +15,7 @@ class BrandController extends Controller
      */
     public function index()
     {
-        $brands = Cache::remember('brands_list', 86400, function () {
+        $brands = Cache::remember('brands_list', 300, function () {
             return Brand::withCount('products')
                 ->orderBy('name', 'asc')
                 ->get();
@@ -38,7 +38,6 @@ class BrandController extends Controller
             'logo_url' => 'nullable|string',
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
         $brand = Brand::create($validated);
 
         Cache::forget('brands_list');
@@ -61,12 +60,7 @@ class BrandController extends Controller
             'name' => 'required|string|max:255|unique:brands,name,' . $id,
             'description' => 'nullable|string',
             'logo_url' => 'nullable|string',
-            'is_active' => 'nullable|boolean'
         ]);
-
-        if (isset($validated['name'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
 
         $brand->update($validated);
 

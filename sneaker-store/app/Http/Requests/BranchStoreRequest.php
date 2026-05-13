@@ -18,6 +18,8 @@ class BranchStoreRequest extends FormRequest
             'address' => 'required|string|max:500',
             'phone' => 'nullable|string|max:20|regex:/^[0-9\-\+\s\(\)]+$/',
             'email' => 'nullable|email|max:255|unique:branches,email',
+            'province_code' => 'nullable|string|max:20',
+            'district_code' => 'nullable|string|max:20',
             'is_main' => 'boolean',
         ];
     }

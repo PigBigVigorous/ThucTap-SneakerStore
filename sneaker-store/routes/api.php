@@ -20,6 +20,8 @@ use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\InventoryController;
 use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\ProductCatalogController;
+use App\Http\Controllers\Api\Admin\ColorController;
+use App\Http\Controllers\Api\Admin\SizeController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShipperTrackingController;
@@ -122,9 +124,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('products', ProductCatalogController::class);
 
 
-        // Brand & Category Management
+        // Brand, Category, Color & other resource management
         Route::apiResource('brands', BrandController::class);
         Route::apiResource('categories', CategoryController::class);
+        Route::apiResource('colors', ColorController::class);
+        Route::apiResource('sizes', SizeController::class);
         Route::apiResource('discounts', DiscountController::class);
         Route::apiResource('branches', BranchController::class);
 

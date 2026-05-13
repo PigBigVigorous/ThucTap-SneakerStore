@@ -15,7 +15,7 @@ export default function BranchManagementPage() {
   const [editingBranch, setEditingBranch] = useState<any>(null);
 
   const [formData, setFormData] = useState({
-    name: "", address: "", phone: "", email: "", is_main: false // 🚨 Thêm is_main
+    name: "", address: "", phone: "", email: "", province_code: "", district_code: "", is_main: false, is_active: true
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
@@ -39,11 +39,14 @@ export default function BranchManagementPage() {
       setFormData({
         name: branch.name || "", address: branch.address || "",
         phone: branch.phone || "", email: branch.email || "",
-        is_main: branch.is_main ? true : false // 🚨 Load dữ liệu cũ
+        province_code: branch.province_code || "",
+        district_code: branch.district_code || "",
+        is_main: branch.is_main ? true : false,
+        is_active: branch.is_active ? true : false
       });
     } else {
       setEditingBranch(null);
-      setFormData({ name: "", address: "", phone: "", email: "", is_main: false });
+      setFormData({ name: "", address: "", phone: "", email: "", province_code: "", district_code: "", is_main: false, is_active: true });
     }
     setIsModalOpen(true);
   };
@@ -124,12 +127,17 @@ export default function BranchManagementPage() {
                     )}
                   </div>
 
-                  {branch.is_main && (
-                    <span className="inline-block px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md mb-2 shadow-sm">
-                      🌟 Kho Tổng
-                    </span>
-                  )}
-                </div>
+                    {branch.is_main && (
+                      <span className="inline-block px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md mb-2 shadow-sm">
+                        🌟 Kho Tổng
+                      </span>
+                    )}
+                    {!branch.is_active && (
+                      <span className="ml-2 inline-block px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-gray-400 text-white rounded-md mb-2 shadow-sm">
+                        Ngừng Hoạt Động
+                      </span>
+                    )}
+                  </div>
 
                 {/* Body Thẻ */}
                 <div className="p-6 pt-4 flex-grow space-y-3">
@@ -222,6 +230,29 @@ export default function BranchManagementPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1 italic">Mã Tỉnh/Thành (Code)</label>
+                  <input
+                    type="text"
+                    value={formData.province_code}
+                    onChange={(e) => setFormData({ ...formData, province_code: e.target.value })}
+                    placeholder="Ví dụ: 01, 79..."
+                    className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border text-black font-medium bg-gray-50 focus:bg-white transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1 italic">Mã Quận/Huyện (Code)</label>
+                  <input
+                    type="text"
+                    value={formData.district_code}
+                    onChange={(e) => setFormData({ ...formData, district_code: e.target.value })}
+                    placeholder="Ví dụ: 001, 760..."
+                    className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border text-black font-medium bg-gray-50 focus:bg-white transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">Số điện thoại</label>
                   <input
                     type="tel"
@@ -243,29 +274,38 @@ export default function BranchManagementPage() {
                 </div>
               </div>
 
-              {/* 🚨 CHECKBOX KHO TỔNG CỰC ĐẸP ĐÃ ĐƯỢC LÀM LẠI */}
-              <div className="pt-2 border-t border-gray-100 flex items-center">
-                <label className={`w-full relative flex items-center justify-between cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${formData.is_main ? 'bg-purple-50 flex border-purple-400 shadow-md ring-4 ring-purple-100' : 'bg-gray-50 border-transparent hover:bg-purple-50/50'
-                  }`}>
+              <div className="pt-2 border-t border-gray-100 grid grid-cols-1 gap-4">
+                {/* 🚨 CHECKBOX KHO TỔNG */}
+                <label className={`relative flex items-center justify-between cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${formData.is_main ? 'bg-purple-50 border-purple-400 shadow-md ring-4 ring-purple-100' : 'bg-gray-50 border-transparent hover:bg-purple-50/50'}`}>
                   <div className="flex-1 pr-4">
                     <span className={`block text-sm font-black uppercase mb-1 ${formData.is_main ? 'text-purple-700' : 'text-gray-700'}`}>
                       🌟 Thiết lập làm Kho Tổng
                     </span>
-                    <p className={`text-xs font-medium leading-relaxed ${formData.is_main ? 'text-purple-600/80' : 'text-gray-500'}`}>
-                      Kho tổng có quyền năng đặc biệt: Nhận hàng hóa trực tiếp từ số lượng lớn của xưởng sản xuất hoặc NCC.
+                    <p className="text-[10px] font-medium text-gray-500 leading-tight">
+                      Kho tổng có quyền nhận hàng trực tiếp từ NCC.
                     </p>
                   </div>
-
-                  {/* Custom Toggle Switch */}
                   <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_main}
-                      onChange={(e) => setFormData({ ...formData, is_main: e.target.checked })}
-                      className="sr-only"
-                    />
-                    <div className={`block w-14 h-8 rounded-full transition-colors ${formData.is_main ? 'bg-purple-600' : 'bg-gray-300'}`}></div>
-                    <div className={`absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-sm ${formData.is_main ? 'transform translate-x-6' : ''}`}></div>
+                    <input type="checkbox" checked={formData.is_main} onChange={(e) => setFormData({ ...formData, is_main: e.target.checked })} className="sr-only" />
+                    <div className={`block w-12 h-7 rounded-full transition-colors ${formData.is_main ? 'bg-purple-600' : 'bg-gray-300'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-300 ${formData.is_main ? 'transform translate-x-5' : ''}`}></div>
+                  </div>
+                </label>
+
+                {/* 🚨 CHECKBOX TRẠNG THÁI */}
+                <label className={`relative flex items-center justify-between cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${formData.is_active ? 'bg-emerald-50 border-emerald-400' : 'bg-rose-50 border-rose-400'}`}>
+                  <div className="flex-1 pr-4">
+                    <span className={`block text-sm font-black uppercase mb-1 ${formData.is_active ? 'text-emerald-700' : 'text-rose-700'}`}>
+                      {formData.is_active ? '⚡ Đang Hoạt Động' : '🔒 Đang Tạm Khóa'}
+                    </span>
+                    <p className="text-[10px] font-medium text-gray-500 leading-tight">
+                      Chi nhánh khóa sẽ không thể thực hiện giao dịch mới.
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <input type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} className="sr-only" />
+                    <div className={`block w-12 h-7 rounded-full transition-colors ${formData.is_active ? 'bg-emerald-500' : 'bg-rose-500'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-300 ${formData.is_active ? 'transform translate-x-5' : ''}`}></div>
                   </div>
                 </label>
               </div>

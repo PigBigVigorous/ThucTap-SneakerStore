@@ -91,8 +91,8 @@ export default function MegaMenu() {
     let cancelled = false;
 
     Promise.all([
-      fetch(`${API}/categories`).then((r) => r.json()).catch(() => ({ success: false })),
-      fetch(`${API}/brands`).then((r) => r.json()).catch(() => ({ success: false })),
+      fetch(`${API}/categories`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({ success: false })),
+      fetch(`${API}/brands`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({ success: false })),
     ]).then(([catRes, brandRes]) => {
       if (cancelled) return;
       if (catRes.success) setRootCategories(catRes.data ?? []);
