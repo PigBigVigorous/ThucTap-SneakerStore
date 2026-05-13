@@ -20,29 +20,29 @@ class PaymentController extends Controller
 
     public function vnpayCallback(Request $request)
     {
-        $vnp_HashSecret = env('VNP_HASH_SECRET');
+        $vnp_HashSecret = config('services.vnpay.hash_secret');
         $inputData = array();
         foreach ($request->all() as $key => $value) {
             if (substr($key, 0, 4) == "vnp_") {
                 $inputData[$key] = $value;
             }
         }
-
-        $vnp_SecureHash = $inputData['vnp_SecureHash'];
+        $vnp_SecureHash = $inputData['vnp_SecureHash'] ?? '';
         unset($inputData['vnp_SecureHash']);
         unset($inputData['vnp_SecureHashType']);
         ksort($inputData);
+        
         $i = 0;
         $hashData = "";
         foreach ($inputData as $key => $value) {
             if ($i == 1) {
-                $hashData = $hashData . '&' . urlencode($key) . "=" . urlencode($value);
+                $hashData .= '&' . urlencode($key) . "=" . urlencode($value);
             } else {
-                $hashData = $hashData . urlencode($key) . "=" . urlencode($value);
+                $hashData .= urlencode($key) . "=" . urlencode($value);
                 $i = 1;
             }
         }
-
+        // QUAN TRỌNG: VNPay dùng SHA512 và chuỗi băm phải giống hệt lúc gửi đi
         $secureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
 
         if ($secureHash == $vnp_SecureHash) {
@@ -51,20 +51,22 @@ class PaymentController extends Controller
             if ($order) {
                 if ($request->vnp_ResponseCode == '00') {
                     // Payment successful
-                    $oldStatus = $order->payment_status;
                     $order->update([
                         'payment_status' => 'paid',
                         'transaction_id' => $request->vnp_TransactionNo,
-                        'status' => 'processing' // Update order status to processing
+                        'status' => 'processing'
                     ]);
 
-                    // Send confirmation email asynchronously
-                    $this->notificationService->sendOrderConfirmation($order);
+                    // Gửi email xác nhận (Bọc trong try-catch để tránh lỗi 500 nếu mail server chết)
+                    try {
+                        $this->notificationService->sendOrderConfirmation($order);
+                    } catch (\Exception $e) {
+                        Log::error('Lỗi gửi email xác nhận: ' . $e->getMessage());
+                    }
 
-                    Log::info('Payment successful and email queued', [
+                    Log::info('Thanh toán VNPay thành công', [
                         'order_id' => $order->id,
-                        'tracking_code' => $order->order_tracking_code,
-                        'amount' => $order->total_amount
+                        'tracking_code' => $order->order_tracking_code
                     ]);
 
                     return response()->json([

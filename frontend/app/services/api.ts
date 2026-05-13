@@ -210,7 +210,7 @@ export const orderAPI = {
   },
   getByTrackingCode: async (trackingCode: string, token?: string | null) => {
     const config = token ? getAuthHeaders(token) : {};
-    const res = await api.get(`/orders/${trackingCode}`, config);
+    const res = await api.get(`/orders/${encodeURIComponent(trackingCode)}`, config);
     return res.data;
   }
 };
@@ -360,7 +360,7 @@ export const adminProductAPI = {
   update: async (id: number, formData: FormData, token: string) => {
     // 💡 Mẹo Laravel: Để gửi FormData với PUT, ta thường dùng POST kèm _method=PUT
     if (formData instanceof FormData) {
-        formData.append('_method', 'PUT');
+      formData.append('_method', 'PUT');
     }
     const res = await api.post(`/admin/products/${id}`, formData, {
       headers: {
@@ -438,7 +438,7 @@ export const adminReportAPI = {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/json',
         },
       });
-      
+
       if (!response.ok) {
         throw new Error('Tải file thất bại');
       }
@@ -470,7 +470,7 @@ export const shipperAPI = {
   },
   updateTracking: async (id: number, formData: FormData, token: string) => {
     const res = await axios.post(`${API_BASE_URL}/shipper/orders/${id}/track`, formData, {
-      headers: { 
+      headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'multipart/form-data'
       }
@@ -502,6 +502,21 @@ export const adminStaffAPI = {
   },
   delete: async (id: number, token: string) => {
     const res = await api.delete(`/admin/staff/${id}`, getAuthHeaders(token));
+    return res.data;
+  }
+};
+
+export const adminReviewAPI = {
+  getAll: async (token: string, params?: { status?: string; search?: string; per_page?: number; page?: number }) => {
+    const res = await api.get('/admin/reviews', { params, ...getAuthHeaders(token) });
+    return res.data;
+  },
+  updateStatus: async (id: number, status: 'approved' | 'rejected' | 'pending', token: string) => {
+    const res = await api.put(`/admin/reviews/${id}/status`, { status }, getAuthHeaders(token));
+    return res.data;
+  },
+  delete: async (id: number, token: string) => {
+    const res = await api.delete(`/admin/reviews/${id}`, getAuthHeaders(token));
     return res.data;
   }
 };

@@ -10,6 +10,7 @@ use App\Models\ProductVariant;
 use App\Models\VariantBranchStock;
 use App\Http\Requests\BranchStoreRequest;
 use App\Http\Requests\BranchUpdateRequest;
+use Illuminate\Support\Facades\Cache;
 
 class BranchController extends Controller
 {

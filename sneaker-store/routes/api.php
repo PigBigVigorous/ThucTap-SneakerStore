@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\ProductCatalogController;
 use App\Http\Controllers\Api\Admin\ColorController;
 use App\Http\Controllers\Api\Admin\SizeController;
+use App\Http\Controllers\Api\Admin\ReviewController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ShipperTrackingController;
@@ -46,6 +47,7 @@ Route::get('/payment/vnpay-ipn', [PaymentController::class, 'vnpayIpn']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/price-range', [ProductController::class, 'priceRange']);
 Route::get('/products/{slug}', [ProductController::class, 'show']);
+Route::get('/products/{slug}/reviews', [ProductController::class, 'getReviews']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/branches', [BranchController::class, 'index']);
@@ -100,6 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
     Route::post('/orders/{id}/return', [OrderController::class, 'returnRequest']);
     Route::post('/orders', [OrderController::class, 'store']); // Place Order
+    Route::post('/products/{slug}/reviews', [ProductController::class, 'storeReview']);
     Route::post('/discounts/save/{id}', [DiscountController::class, 'saveUserVoucher']);
     Route::get('/user/vouchers', [DiscountController::class, 'getUserVouchers']);
 
@@ -131,6 +134,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('sizes', SizeController::class);
         Route::apiResource('discounts', DiscountController::class);
         Route::apiResource('branches', BranchController::class);
+
+        // Reviews Management
+        Route::get('/reviews', [ReviewController::class, 'index']);
+        Route::put('/reviews/{id}/status', [ReviewController::class, 'updateStatus']);
+        Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 
         // Inventory Management
         Route::get('/inventory/stocks', [InventoryController::class, 'getStocks']);

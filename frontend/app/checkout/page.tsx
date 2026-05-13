@@ -62,7 +62,7 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false); // Khóa nút sau khi đặt thành công
-  const [qrModalData, setQrModalData] = useState<{ amount: number; description: string; name: string } | null>(null);
+  const [qrModalData, setQrModalData] = useState<{ amount: number; description: string; name: string; trackingCode: string } | null>(null);
 
   const [provinces, setProvinces] = useState<LocationItem[]>([]);
   const [districts, setDistricts] = useState<LocationItem[]>([]);
@@ -75,9 +75,7 @@ export default function CheckoutPage() {
   const [formData, setFormData] = useState({
     email: "",
     province: "",
-    province_code: "",
     district: "",
-    district_code: "",
     ward: "",
     addressDetail: "",
     shipping_name: "",
@@ -113,9 +111,7 @@ export default function CheckoutPage() {
       shipping_phone: data.contactInfo?.phone || "",
       email: data.contactInfo?.email || f.email,
       province: data.shippingData?.province || "",
-      province_code: data.shippingData?.province_code || "",
       district: data.shippingData?.district || "",
-      district_code: data.shippingData?.district_code || "",
       ward: data.shippingData?.ward || "",
       addressDetail: data.detailAddress || ""
     }));
@@ -237,15 +233,15 @@ export default function CheckoutPage() {
     if (!isAuthenticated && !formData.email) { toast.error("Vui lòng nhập email để nhận thông báo đơn hàng!"); return; }
 
     if (paymentMethod === "qr") {
-      setQrModalData({
-        amount: total,
-        description: `SDT ${formData.shipping_phone}`,
-        name: "SNEAKER STORE"
-      });
+      executeOrder(); // Tạo đơn trước để có mã đơn, sau đó hiện QR modal
     } else {
       executeOrder();
     }
   };
+
+  // Xoá dấu tiếng Việt, chỉ giữ số
+  const removeVietnameseDiacritics = (str: string) =>
+    str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
 
   const executeOrder = async () => {
     setIsLoading(true);
@@ -255,7 +251,7 @@ export default function CheckoutPage() {
     // Dùng toast có ID cố định để update in-place, không bị mất khi re-render
     const toastId = "order-processing";
     toast.loading(
-      paymentMethod === "qr" ? "Đang xác nhận thanh toán..." : "Đang xử lý đơn hàng...",
+      paymentMethod === "qr" ? "Đang tạo đơn hàng..." : "Đang xử lý đơn hàng...",
       { id: toastId }
     );
 
@@ -265,9 +261,7 @@ export default function CheckoutPage() {
         user_id: user?.id || null,
         address_id: selectedAddressId,
         customer_name: formData.shipping_name, customer_phone: formData.shipping_phone, customer_email: formData.email,
-        province: formData.province, province_code: formData.province_code,
-        district: formData.district, district_code: formData.district_code,
-        ward: formData.ward,
+        province: formData.province, district: formData.district, ward: formData.ward,
         address_detail: formData.addressDetail, shipping_fee: shippingFee, total_amount: totalOriginal,
         discount_code: appliedDiscount ? appliedDiscount.code : null,
         payment_method: paymentMethod,
@@ -283,20 +277,30 @@ export default function CheckoutPage() {
 
       if (data.success) {
         const trackingCode = data.data?.order_tracking_code || "";
-        const msg = paymentMethod === "qr"
-          ? `✅ Thanh toán thành công! Mã đơn: ${trackingCode}`
-          : `✅ Đặt hàng thành công! Mã đơn: ${trackingCode}`;
 
-        // Update CÙNG toast ID thành success — nó sẽ hiện trên màn hình dù giỏ hàng bị xóa
-        toast.success(msg, { id: toastId, duration: 5000 });
-
-        // Đánh dấu đã đặt xong TRƯỚC khi clear cart để tránh flash "giỏ trống"
-        setOrderPlaced(true);
-        setOrderSuccess(true);
-        refreshUser();
-        setQrModalData(null);
-        clearSelectedItems();
-        setTimeout(() => router.push(user ? "/my-orders" : "/"), 3500);
+        if (paymentMethod === "qr") {
+          // Hiển thị QR modal với mã đơn thật + số tiền
+          toast.dismiss(toastId);
+          const amountStr = total.toString();
+          const ckContent = `${trackingCode}_${amountStr}`;
+          setQrModalData({
+            amount: total,
+            description: ckContent,
+            name: "SNEAKER STORE",
+            trackingCode
+          });
+          // Đánh dấu đã đặt xong để khoá nút đặt hàng
+          setOrderPlaced(true);
+          refreshUser();
+          clearSelectedItems();
+        } else {
+          toast.success(`✅ Đặt hàng thành công! Mã đơn: ${trackingCode}`, { id: toastId, duration: 5000 });
+          setOrderPlaced(true);
+          setOrderSuccess(true);
+          refreshUser();
+          clearSelectedItems();
+          setTimeout(() => router.push(user ? "/my-orders" : "/"), 3500);
+        }
       } else {
         toast.error(data.message || "Có lỗi xảy ra từ máy chủ.", { id: toastId, duration: 5000 });
       }
@@ -307,6 +311,13 @@ export default function CheckoutPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQrDone = () => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    setQrModalData(null);
+    setOrderSuccess(true);
+    setTimeout(() => router.push(user ? "/my-orders" : "/"), 500);
   };
 
   if (orderSuccess) {
@@ -565,7 +576,7 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Nhập mã ưu đãi..."
-                      className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/5 focus:border-gray-900 transition-all font-bold uppercase tracking-wider"
+                      className="w-full bg-gray-50 text-gray-900 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900/5 focus:border-gray-900 transition-all font-bold uppercase tracking-wider"
                       value={discountCode}
                       onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
                     />
@@ -663,42 +674,99 @@ export default function CheckoutPage() {
         </div>
       </main>
 
-      {qrModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full flex flex-col items-center relative animate-in fade-in zoom-in duration-300">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Thanh toán đơn hàng</h2>
-            <p className="text-sm text-gray-500 text-center mb-6">Mở app Ngân hàng của bạn và quét mã QR dưới đây để hoàn tất thanh toán.</p>
+      {qrModalData && (() => {
+        // VietQR động — nhúng số tiền + nội dung CK thẳng vào mã QR
+        // Khi khách quét, app ngân hàng tự điền sẵn, KHÔNG chỉnh sửa được
+        const BANK_ID = "VCB";
+        const ACCOUNT_NO = "1031485823";
+        const ACCOUNT_NAME = "TRAN NGUYEN GIA KHANG";
+        const vietQrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${qrModalData.amount}&addInfo=${encodeURIComponent(qrModalData.description)}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
 
-            <div className="bg-gray-50 p-4 rounded-xl mb-6 shadow-inner border border-gray-100 flex items-center justify-center relative overflow-hidden group">
-              <div className="absolute inset-0 bg-blue-600/5 rotate-45 scale-150 transition-transform group-hover:rotate-90"></div>
-              <img
-                src="/images/qr-bank-transfer.png"
-                alt="QR Code"
-                className="w-full max-w-[200px] h-auto object-contain relative z-10"
-              />
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm flex flex-col items-center relative animate-in fade-in zoom-in duration-300 overflow-hidden">
+              {/* Header */}
+              <div className="w-full bg-gradient-to-r from-indigo-600 to-blue-500 px-6 pt-6 pb-8 flex flex-col items-center text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                  <h2 className="text-lg font-black tracking-tight">Quét mã để thanh toán</h2>
+                </div>
+                <span className="text-xs font-bold bg-white/20 px-3 py-0.5 rounded-full text-white/90">
+                  Mã đơn: {qrModalData.trackingCode}
+                </span>
+              </div>
+
+              {/* QR Code động */}
+              <div className="-mt-6 mx-auto bg-white rounded-2xl shadow-xl border-4 border-white p-2 mb-4">
+                <img
+                  src={vietQrUrl}
+                  alt="VietQR động"
+                  className="w-[200px] h-[200px] object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).src = "/images/qr-bank-transfer.png"; }}
+                />
+              </div>
+
+              <p className="text-xs text-gray-400 text-center mb-4 px-4">
+                📌 Quét bằng app ngân hàng — số tiền &amp; nội dung CK <strong className="text-gray-700">tự điền sẵn, không thể sửa</strong>
+              </p>
+
+              {/* Thông tin thanh toán */}
+              <div className="w-full px-6 space-y-2 mb-5">
+                {/* Ngân hàng */}
+                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100">
+                  <span className="text-xs text-gray-400 font-semibold">Ngân hàng</span>
+                  <span className="text-sm font-black text-gray-800">Vietcombank (VCB)</span>
+                </div>
+                {/* STK */}
+                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100">
+                  <span className="text-xs text-gray-400 font-semibold">Số TK</span>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(ACCOUNT_NO); toast.success("Đã sao chép STK!"); }}
+                    className="text-sm font-black text-blue-600 hover:text-blue-700 flex items-center gap-1.5"
+                    title="Nhấn để sao chép"
+                  >
+                    {ACCOUNT_NO}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 opacity-60"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  </button>
+                </div>
+                {/* Chủ TK */}
+                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100">
+                  <span className="text-xs text-gray-400 font-semibold">Chủ TK</span>
+                  <span className="text-sm font-black text-gray-800">{ACCOUNT_NAME}</span>
+                </div>
+                {/* Số tiền */}
+                <div className="flex items-center justify-between bg-blue-50 rounded-xl px-4 py-2.5 border border-blue-100">
+                  <span className="text-xs text-blue-500 font-semibold">Số tiền</span>
+                  <span className="text-base font-black text-blue-700">{qrModalData.amount.toLocaleString('vi-VN')} ₫</span>
+                </div>
+                {/* Nội dung CK */}
+                <div className="flex items-center justify-between bg-amber-50 rounded-xl px-4 py-2.5 border border-amber-100">
+                  <span className="text-xs text-amber-500 font-semibold shrink-0 mr-2">Nội dung CK</span>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(qrModalData.description); toast.success("Đã sao chép nội dung CK!"); }}
+                    className="text-sm font-black text-amber-700 hover:text-amber-800 flex items-center gap-1.5 text-right break-all"
+                    title="Nhấn để sao chép"
+                  >
+                    {qrModalData.description}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 opacity-60 shrink-0"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Nút xác nhận */}
+              <div className="w-full px-6 pb-6">
+                <button
+                  onClick={handleQrDone}
+                  className="w-full py-4 bg-gray-900 hover:bg-blue-600 text-white font-black rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 text-sm uppercase tracking-widest"
+                >
+                  <Check size={18} /> Tôi đã chuyển khoản xong
+                </button>
+                <p className="text-[10px] text-gray-400 mt-2 text-center">Đơn hàng đã được ghi nhận. Xác nhận sau khi hoàn tất chuyển khoản.</p>
+              </div>
             </div>
-
-            <div className="w-full bg-gray-50 rounded-xl p-4 text-center border border-gray-100 space-y-2 mb-6">
-              <div className="text-xs text-gray-400 uppercase tracking-widest font-semibold">Tổng tiền thanh toán</div>
-              <div className="text-2xl font-black text-blue-600">{(qrModalData?.amount || 0).toLocaleString('vi-VN')} ₫</div>
-              <div className="text-sm text-gray-600 border-t border-dashed border-gray-300 pt-2 mt-2 font-medium">Nội dung CK: <strong className="text-gray-900">{qrModalData?.description || ""}</strong></div>
-            </div>
-
-            <button
-              onClick={executeOrder}
-              disabled={isLoading}
-              className="w-full px-6 py-3.5 bg-gray-900 hover:bg-blue-600 disabled:bg-gray-400 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                  Đang xử lý...
-                </>
-              ) : "Tôi đã thanh toán"}
-            </button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Render Modal Yêu cầu đăng nhập */}
       <AuthRequiredModal

@@ -258,8 +258,8 @@ export default function InventoryPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 min-w-[150px] flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold text-sm transition-all duration-300 ${activeTab === tab.id
-                  ? `${tab.activeBg || "bg-white text-gray-900"} shadow-sm border border-gray-200/50 ${tab.color || ""}`
-                  : "bg-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-200/50"
+                ? `${tab.activeBg || "bg-white text-gray-900"} shadow-sm border border-gray-200/50 ${tab.color || ""}`
+                : "bg-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-200/50"
                 }`}
             >
               <span className="text-lg">{tab.icon}</span> <span>{tab.label}</span>
@@ -279,8 +279,8 @@ export default function InventoryPage() {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Sản phẩm (SKU)</th>
-                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Thương hiệu</th>
-                        <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Phân loại</th>
+                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider w-28 text-center">Thương hiệu</th>
+                        <th className="px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider w-32 text-center">Phân loại</th>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Chi Nhánh</th>
                         <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Tồn Kho Hiện Tại</th>
                       </tr>
@@ -295,9 +295,9 @@ export default function InventoryPage() {
                               <div className="flex items-center gap-4">
                                 <div className="h-12 w-12 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-100 flex items-center justify-center">
                                   {item.variant?.product?.base_image_url ? (
-                                    <img 
-                                      src={item.variant.product.base_image_url.startsWith('http') ? item.variant.product.base_image_url : `${baseUrl.replace('/api', '')}/storage/${item.variant.product.base_image_url}`} 
-                                      alt="" 
+                                    <img
+                                      src={item.variant.product.base_image_url.startsWith('http') ? item.variant.product.base_image_url : `${baseUrl.replace('/api', '')}/storage/${item.variant.product.base_image_url}`}
+                                      alt=""
                                       className="h-full w-full object-cover"
                                       onError={(e: any) => { e.target.src = '/placeholder.png'; e.target.className = 'p-2 opacity-20'; }}
                                     />
@@ -311,18 +311,18 @@ export default function InventoryPage() {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                <span className="text-sm font-bold text-gray-700 bg-gray-100 px-2 py-1 rounded">
-                                    {item.variant?.product?.brand?.name || 'Chưa rõ'}
-                                </span>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <span className="text-[11px] font-black text-gray-700 bg-gray-100 px-2 py-1 rounded uppercase tracking-tighter">
+                                {item.variant?.product?.brand?.name || 'N/A'}
+                              </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-1.5 text-sm">
-                                  <span className="w-4 h-4 rounded-full shadow-inner border border-gray-200 block" style={{ backgroundColor: item.variant?.color?.name === 'Đen' ? '#000' : item.variant?.color?.name === 'Trắng' ? '#fff' : '#ccc' }}></span>
-                                  <span className="font-bold text-gray-700">{item.variant?.color?.name}</span>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="flex items-center gap-1.5 text-xs">
+                                  <span className="w-3 h-3 rounded-full shadow-inner border border-gray-200 block" style={{ backgroundColor: item.variant?.color?.name === 'Đen' ? '#000' : item.variant?.color?.name === 'Trắng' ? '#fff' : '#ccc' }}></span>
+                                  <span className="font-black text-gray-700">{item.variant?.color?.name}</span>
                                 </div>
-                                <div className="text-xs font-bold text-gray-500 border border-gray-200 bg-gray-50 rounded px-2 py-0.5 inline-block w-fit">Size {item.variant?.size?.name}</div>
+                                <div className="text-[10px] font-black text-gray-500 border border-gray-200 bg-gray-50 rounded px-1.5 py-0.5 inline-block w-fit">SIZE {item.variant?.size?.name}</div>
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -459,13 +459,13 @@ export default function InventoryPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex flex-col gap-1">
-                                {tx.from_branch && (
-                                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded w-fit uppercase">Từ: {tx.from_branch.name}</span>
-                                )}
-                                {tx.to_branch && (
-                                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded w-fit uppercase">Đến: {tx.to_branch.name}</span>
-                                )}
-                                {!tx.from_branch && !tx.to_branch && <span className="text-gray-400">N/A</span>}
+                              {tx.from_branch && (
+                                <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded w-fit uppercase">Từ: {tx.from_branch.name}</span>
+                              )}
+                              {tx.to_branch && (
+                                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded w-fit uppercase">Đến: {tx.to_branch.name}</span>
+                              )}
+                              {!tx.from_branch && !tx.to_branch && <span className="text-gray-400">N/A</span>}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 border-l border-gray-100">

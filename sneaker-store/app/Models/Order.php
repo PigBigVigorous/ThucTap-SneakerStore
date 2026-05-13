@@ -11,20 +11,19 @@ class Order extends Model
     'user_id',
     'status',
     'total_amount',
-    'shipping_fee', // 🟢 Thêm dòng này để cho phép lưu phí ship
+    'shipping_fee',
     'customer_name',
     'customer_phone',
     'customer_email',
     'province',
-    'province_code',
     'district',
-    'district_code',
     'ward',
     'address_detail',
     'sales_channel_id',
     'branch_id',
     'cashier_id',
-    'payment_status', // Nên thêm cả trường này nếu chưa có
+    'payment_method', // ✅ Phương thức thanh toán: cod / vnpay / qr / cash
+    'payment_status',
     'transaction_id',
     'discount_id',
     'discount_amount',

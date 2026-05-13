@@ -6,24 +6,25 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, ClipboardList, Package, Layers,
   Tag, Store, ArrowRightLeft, ShoppingCart, Ticket,
-  LogOut, ChevronRight, Users,
+  LogOut, ChevronRight, Users, MessageSquare
 } from "lucide-react";
 
 const NAV = [
-  { href: "/admin",           label: "Tổng quan",    icon: LayoutDashboard, perm: "view-dashboard" },
-  { href: "/admin/orders",    label: "Đơn hàng",     icon: ClipboardList,   perm: "manage-orders" },
-  { href: "/admin/products",  label: "Sản phẩm",     icon: Package,         perm: "manage-products" },
-  { href: "/admin/categories",label: "Danh mục",     icon: Layers,          perm: "manage-products" },
-  { href: "/admin/brands",    label: "Thương hiệu",  icon: Tag,             perm: "manage-products" },
-  { href: "/admin/discounts", label: "Mã giảm giá",  icon: Ticket,          reqRole: "super-admin" },
-  { href: "/admin/branches",  label: "Chi nhánh",    icon: Store,           perm: "manage-inventory" },
-  { href: "/admin/inventory", label: "Kho hàng",     icon: ArrowRightLeft,  perm: "manage-inventory" },
-  { href: "/admin/pos",       label: "POS",          icon: ShoppingCart,    perm: "pos-sale" },
-  { href: "/admin/staff",     label: "Nhân sự",      icon: Users,           perm: "view-staff" },
+  { href: "/admin", label: "Tổng quan", icon: LayoutDashboard, perm: "view-dashboard" },
+  { href: "/admin/orders", label: "Đơn hàng", icon: ClipboardList, perm: "manage-orders" },
+  { href: "/admin/products", label: "Sản phẩm", icon: Package, perm: "manage-products" },
+  { href: "/admin/reviews", label: "Đánh giá", icon: MessageSquare, perm: "manage-products" },
+  { href: "/admin/categories", label: "Danh mục", icon: Layers, perm: "manage-products" },
+  { href: "/admin/brands", label: "Thương hiệu", icon: Tag, perm: "manage-products" },
+  { href: "/admin/discounts", label: "Mã giảm giá", icon: Ticket, reqRole: "super-admin" },
+  { href: "/admin/branches", label: "Chi nhánh", icon: Store, perm: "manage-inventory" },
+  { href: "/admin/inventory", label: "Kho hàng", icon: ArrowRightLeft, perm: "manage-inventory" },
+  { href: "/admin/pos", label: "POS", icon: ShoppingCart, perm: "pos-sale" },
+  { href: "/admin/staff", label: "Nhân sự", icon: Users, perm: "view-staff" },
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
-  const pathname  = usePathname();
+  const pathname = usePathname();
   const { user, hasPermission, hasRole, logout } = useAuth();
 
   return (
@@ -50,7 +51,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           {NAV.map(({ href, label, icon: Icon, perm, reqRole }) => {
             if (reqRole && !hasRole(reqRole)) return null;
             if (perm && !hasPermission(perm)) return null;
-            
+
             const exact = href === "/admin";
             const active = exact ? pathname === href : pathname.startsWith(href);
             return (
@@ -102,13 +103,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile top bar */}
         <div className="lg:hidden flex items-center gap-3 bg-[#0f172a] text-white px-4 py-3 sticky top-0 z-40">
-          <div className="w-7 h-7 bg-red-500 rounded-lg flex items-center justify-center font-black text-sm">S</div>
+          <div className="w-7 h-7 bg-red-500 rounded-lg flex items-center justify-center font-black text-sm"></div>
           <span className="font-black text-[15px]">Admin Panel</span>
           <div className="ml-auto flex gap-2 overflow-x-auto scrollbar-hide">
             {NAV.map(({ href, label, icon: Icon, perm, reqRole }) => {
               if (reqRole && !hasRole(reqRole)) return null;
               if (perm && !hasPermission(perm)) return null;
-              
+
               const exact = href === "/admin";
               const active = exact ? pathname === href : pathname.startsWith(href);
               return (

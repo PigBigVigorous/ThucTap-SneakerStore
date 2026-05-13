@@ -16,10 +16,7 @@ import {
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const fmt = (n: number) =>
-  n >= 1_000_000
-    ? `${(n / 1_000_000).toFixed(1)}M ₫`
-    : `${n.toLocaleString("vi-VN")} ₫`;
+const fmt = (n: number) => `${n.toLocaleString("vi-VN")} ₫`;
 
 function StatCard({
   label, value, sub, icon: Icon, color,

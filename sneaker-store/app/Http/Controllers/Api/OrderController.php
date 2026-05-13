@@ -49,12 +49,10 @@ class OrderController extends Controller
             'customer_phone' => 'required|string|max:20',
             'customer_email' => 'nullable|email|max:255',
             'province' => 'required|string|max:100',
-            'province_code' => 'nullable|string|max:20',
             'district' => 'required|string|max:100',
-            'district_code' => 'nullable|string|max:20',
             'ward' => 'required|string|max:100',
             'address_detail' => 'required|string|max:255',
-            'payment_method' => 'required|string|in:cod,vnpay',
+            'payment_method' => 'required|string|in:cod,vnpay,qr',
             'items' => 'required|array|min:1',
             'items.*.variant_id' => 'required|exists:product_variants,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -192,6 +190,49 @@ class OrderController extends Controller
     private function createVnpayUrl($order)
     {
         // VNPay logic here (simplified)
-        return "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?order=" . $order->order_tracking_code;
+        $vnp_Url = config('services.vnpay.url');
+        $vnp_Returnurl = config('services.vnpay.return_url');
+        $vnp_TmnCode = config('services.vnpay.tmn_code');
+        $vnp_HashSecret = config('services.vnpay.hash_secret');
+        $vnp_TxnRef = $order->order_tracking_code; // Mã đơn hàng 
+        $vnp_OrderInfo = "Thanh toan don hang " . $order->order_tracking_code;
+        $vnp_OrderType = 'billpayment';
+        $vnp_Amount = (int) ($order->total_amount * 100); // VNPay bắt buộc là số nguyên
+        $vnp_Locale = 'vn';
+        $vnp_BankCode = ''; // Để trống để khách chọn tại cổng VNPay
+        $vnp_IpAddr = $_SERVER['REMOTE_ADDR'];
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $vnp_Amount,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => $vnp_IpAddr,
+            "vnp_Locale" => $vnp_Locale,
+            "vnp_OrderInfo" => $vnp_OrderInfo,
+            "vnp_OrderType" => $vnp_OrderType,
+            "vnp_ReturnUrl" => $vnp_Returnurl,
+            "vnp_TxnRef" => $vnp_TxnRef,
+        );
+        ksort($inputData);
+        $query = "";
+        $i = 0;
+        $hashdata = "";
+        foreach ($inputData as $key => $value) {
+            if ($i == 1) {
+                $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+            } else {
+                $hashdata .= urlencode($key) . "=" . urlencode($value);
+                $i = 1;
+            }
+            $query .= urlencode($key) . "=" . urlencode($value) . '&';
+        }
+        $vnp_Url = $vnp_Url . "?" . $query;
+        if (isset($vnp_HashSecret)) {
+            $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+            $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
+        }
+        return $vnp_Url;
     }
 }

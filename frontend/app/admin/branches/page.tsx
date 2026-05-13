@@ -15,7 +15,7 @@ export default function BranchManagementPage() {
   const [editingBranch, setEditingBranch] = useState<any>(null);
 
   const [formData, setFormData] = useState({
-    name: "", address: "", phone: "", email: "", province_code: "", district_code: "", is_main: false, is_active: true
+    name: "", address: "", phone: "", email: "", is_main: false, is_active: true
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
@@ -39,14 +39,12 @@ export default function BranchManagementPage() {
       setFormData({
         name: branch.name || "", address: branch.address || "",
         phone: branch.phone || "", email: branch.email || "",
-        province_code: branch.province_code || "",
-        district_code: branch.district_code || "",
         is_main: branch.is_main ? true : false,
         is_active: branch.is_active ? true : false
       });
     } else {
       setEditingBranch(null);
-      setFormData({ name: "", address: "", phone: "", email: "", province_code: "", district_code: "", is_main: false, is_active: true });
+      setFormData({ name: "", address: "", phone: "", email: "", is_main: false, is_active: true });
     }
     setIsModalOpen(true);
   };
@@ -226,29 +224,6 @@ export default function BranchManagementPage() {
                   className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border font-medium text-black bg-gray-50 focus:bg-white transition-colors"
                   required
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1 italic">Mã Tỉnh/Thành (Code)</label>
-                  <input
-                    type="text"
-                    value={formData.province_code}
-                    onChange={(e) => setFormData({ ...formData, province_code: e.target.value })}
-                    placeholder="Ví dụ: 01, 79..."
-                    className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border text-black font-medium bg-gray-50 focus:bg-white transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1 italic">Mã Quận/Huyện (Code)</label>
-                  <input
-                    type="text"
-                    value={formData.district_code}
-                    onChange={(e) => setFormData({ ...formData, district_code: e.target.value })}
-                    placeholder="Ví dụ: 001, 760..."
-                    className="w-full border-gray-300 rounded-lg focus:ring-black focus:border-black p-3 border text-black font-medium bg-gray-50 focus:bg-white transition-colors"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

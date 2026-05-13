@@ -300,31 +300,31 @@ export default function AdminStaffPage() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-[12px] font-black text-gray-400 uppercase tracking-wider ml-1">Họ và tên</label>
+                <label className="text-[12px] font-black text-gray-900 uppercase tracking-wider ml-1">Họ và tên</label>
                 <input
                   required
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   placeholder="VD: Nguyễn Văn A"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-red-400 transition-all font-medium text-[14px]"
+                  className="w-full px-4 py-3 bg-gray-50 text-gray-900 border border-gray-100 rounded-2xl outline-none focus:border-red-400 transition-all font-medium text-[14px]"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[12px] font-black text-gray-400 uppercase tracking-wider ml-1">Email đăng nhập</label>
+                <label className="text-[12px] font-black text-gray-900 uppercase tracking-wider ml-1">Email đăng nhập</label>
                 <input
                   required
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
                   placeholder="email@sneaker.com"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-red-400 transition-all font-medium text-[14px]"
+                  className="w-full px-4 py-3 bg-gray-50 text-gray-900 border border-gray-100 rounded-2xl outline-none focus:border-red-400 transition-all font-medium text-[14px]"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[12px] font-black text-gray-400 uppercase tracking-wider ml-1">
+                <label className="text-[12px] font-black text-gray-900 uppercase tracking-wider ml-1">
                   Mật khẩu {editingId && <span className="text-[10px] lowercase font-normal italic">(Để trống nếu không đổi)</span>}
                 </label>
                 <input
@@ -333,16 +333,16 @@ export default function AdminStaffPage() {
                   value={formData.password}
                   onChange={e => setFormData({ ...formData, password: e.target.value })}
                   placeholder="Tối thiểu 8 ký tự"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-red-400 transition-all font-medium text-[14px]"
+                  className="w-full px-4 py-3 bg-gray-50 text-gray-900 border border-gray-100 rounded-2xl outline-none focus:border-red-400 transition-all font-medium text-[14px]"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-[12px] font-black text-gray-400 uppercase tracking-wider ml-1">Chức vụ (Role)</label>
+                <label className="text-[12px] font-black text-gray-900 uppercase tracking-wider ml-1">Chức vụ (Role)</label>
                 <select
                   value={formData.role}
                   onChange={e => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-red-400 transition-all font-bold text-[14px] appearance-none"
+                  className="w-full px-4 py-3 bg-gray-50 text-gray-900 border border-gray-100 rounded-2xl outline-none focus:border-red-400 transition-all font-bold text-[14px] appearance-none"
                 >
                   {roles.map(r => (
                     <option key={r.id} value={r.name}>{r.name.toUpperCase()}</option>

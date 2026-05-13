@@ -38,67 +38,43 @@ class InventoryService
             if (!$chosenBranchId) {
                 $custProvince = mb_strtolower($customerData['province'] ?? '');
                 $custDistrict = mb_strtolower($customerData['district'] ?? '');
-                $custProvinceCode = $customerData['province_code'] ?? null;
-                $custDistrictCode = $customerData['district_code'] ?? null;
 
-                $allBranches = Branch::where('is_active', true)->get();
-                $variantIds = collect($items)->pluck('variant_id')->toArray();
-                
-                // Tối ưu: Lấy tất cả tồn kho cần thiết trong 1 câu query duy nhất
-                $allStocks = VariantBranchStock::whereIn('variant_id', $variantIds)
-                    ->whereIn('branch_id', $allBranches->pluck('id'))
-                    ->get()
-                    ->groupBy('branch_id');
-
+                $allBranches = Branch::all();
                 $eligibleBranches = [];
+
+                // VÒNG 1: Lọc tồn kho
                 foreach ($allBranches as $branch) {
-                    $branchStocks = $allStocks->get($branch->id, collect())->keyBy('variant_id');
                     $canFulfill = true;
                     foreach ($items as $item) {
-                        $stock = $branchStocks->get($item['variant_id']);
+                        $stock = VariantBranchStock::where('branch_id', $branch->id)
+                            ->where('variant_id', $item['variant_id'])
+                            ->first();
                         if (!$stock || $stock->stock < $item['quantity']) {
-                            $canFulfill = false;
-                            break;
+                            $canFulfill = false; break;
                         }
                     }
-                    if ($canFulfill) {
-                        $eligibleBranches[] = $branch;
-                    }
+                    if ($canFulfill) { $eligibleBranches[] = $branch; }
                 }
 
                 if (empty($eligibleBranches)) {
                     throw new Exception("Rất tiếc, hiện tại không có một kho nào đủ hàng để giao trọn vẹn đơn này. Vui lòng giảm số lượng hoặc tách đơn.");
                 }
 
-                // VÒNG 2: Chấm điểm khoảng cách (Ưu tiên so sánh Mã Vùng)
+                // VÒNG 2: Chấm điểm khoảng cách
                 $bestBranch = null;
                 $maxScore = -1;
                 foreach ($eligibleBranches as $branch) {
                     $score = 0;
-                    
-                    // 1. So sánh bằng CODE (Chính xác tuyệt đối)
-                    if ($custProvinceCode && $branch->province_code == $custProvinceCode) {
-                        if ($custDistrictCode && $branch->district_code == $custDistrictCode) {
-                            $score = 100; // Cùng Quận/Huyện -> Tối ưu nhất
+                    $branchAddress = mb_strtolower(($branch->name ?? '') . ' ' . ($branch->address ?? ''));
+                    if (Str::contains($branchAddress, $custProvince)) {
+                        if (Str::contains($branchAddress, $custDistrict)) {
+                            $score = 100; // Cùng Quận -> Hỏa Tốc
                         } else {
-                            $score = 50;  // Cùng Tỉnh/Thành phố
+                            $score = 50;  // Cùng Tỉnh -> Trong Ngày
                         }
-                    } 
-                    // 2. Dự phòng bằng String (Nếu không có code)
-                    else {
-                        $branchAddress = mb_strtolower(($branch->name ?? '') . ' ' . ($branch->address ?? ''));
-                        if (Str::contains($branchAddress, $custProvince)) {
-                            if (Str::contains($branchAddress, $custDistrict)) {
-                                $score = 100;
-                            } else {
-                                $score = 50;
-                            }
-                        } else {
-                            $score = 10;
-                        }
-                    }
+                    } else { $score = 10; }
                     
-                    if ($branch->is_main) { $score += 5; } // Ưu tiên Kho Tổng nếu cùng điểm
+                    if ($branch->is_main) { $score += 5; } // Ưu tiên Kho Tổng nếu bằng điểm
 
                     if ($score > $maxScore) {
                         $maxScore = $score;
@@ -130,9 +106,7 @@ class InventoryService
                 'customer_phone' => $isPos ? null : ($customerData['customer_phone'] ?? null),
                 'customer_email' => $isPos ? null : ($customerData['customer_email'] ?? null),
                 'province' => $isPos ? null : ($customerData['province'] ?? null),
-                'province_code' => $isPos ? null : ($customerData['province_code'] ?? null),
                 'district' => $isPos ? null : ($customerData['district'] ?? null),
-                'district_code' => $isPos ? null : ($customerData['district_code'] ?? null),
                 'ward' => $isPos ? null : ($customerData['ward'] ?? null),
                 'address_detail' => $isPos ? null : ($customerData['address_detail'] ?? null),
                 'sales_channel_id' => $salesChannelId,

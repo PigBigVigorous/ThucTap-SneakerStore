@@ -161,11 +161,13 @@ class ProductController extends Controller
         // Tránh tải toàn bộ db lên RAM
         $reviews = ProductReview::with('user:id,name')
             ->where('product_id', $product->id)
+            ->where('status', 'approved')
             ->orderBy('created_at', 'desc')
             ->paginate(10); // Lấy 10 đánh giá mỗi trang
 
         // Bắt buộc query độc lập vì paginate() sẽ làm xáo trộn phép tính AVG 
         $aggregates = ProductReview::where('product_id', $product->id)
+            ->where('status', 'approved')
             ->selectRaw('COUNT(id) as total, AVG(rating) as average')
             ->first();
 
@@ -215,11 +217,12 @@ class ProductController extends Controller
                 'user_id' => $user->id,
                 'rating' => $request->rating,
                 'comment' => $request->comment,
+                'status' => 'pending',
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cảm ơn bạn đã gửi đánh giá!',
+                'message' => 'Cảm ơn bạn đã gửi đánh giá! Đánh giá của bạn đang chờ quản trị viên kiểm duyệt.',
                 'data' => $review->load('user:id,name')
             ]);
             

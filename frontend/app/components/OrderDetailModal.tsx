@@ -222,12 +222,26 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
                         <p className="text-sm font-black uppercase tracking-widest text-gray-400">Tổng tiền</p>
                         <p className="text-2xl font-black text-white tracking-tighter">{Math.max(0, total).toLocaleString('vi-VN')}₫</p>
                       </div>
-                      <div className="flex items-center gap-2 pt-2">
-                        <span className="text-[10px] font-black uppercase bg-white/10 px-2 py-1 rounded-lg text-gray-300">
-                          {order.payment_method === 'cod' ? 'Tiền mặt' : 'Online'}
-                        </span>
+                      <div className="flex items-center gap-2 pt-2 flex-wrap">
+                        {/* Phương thức thanh toán */}
+                        {order.payment_method === 'cod' && (
+                          <span className="text-[10px] font-black uppercase bg-white/10 px-2 py-1 rounded-lg text-gray-300 flex items-center gap-1">
+                            Tiền mặt
+                          </span>
+                        )}
+                        {order.payment_method === 'vnpay' && (
+                          <span className="text-[10px] font-black uppercase bg-blue-500/20 px-2 py-1 rounded-lg text-blue-300 flex items-center gap-1">
+                            Chuyển khoản
+                          </span>
+                        )}
+                        {order.payment_method === 'qr' && (
+                          <span className="text-[10px] font-black uppercase bg-indigo-500/20 px-2 py-1 rounded-lg text-indigo-300 flex items-center gap-1">
+                            Chuyển khoản
+                          </span>
+                        )}
+                        {/* Trạng thái thanh toán */}
                         <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-lg ${order.payment_status === 'paid' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                          {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                          {order.payment_status === 'paid' ? '✓ Đã thanh toán' : '⏳ Chờ thanh toán'}
                         </span>
                       </div>
                     </div>
@@ -241,7 +255,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
         {/* Footer Actions */}
         <div className="p-6 border-t border-gray-100 flex flex-wrap gap-3 justify-end">
           {!order?.shipper_id && !['cancelled', 'returned', 'delivered'].includes(order?.status) && onAssignShipper && (
-            <button 
+            <button
               onClick={() => { onAssignShipper(order); onClose(); }}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
             >
