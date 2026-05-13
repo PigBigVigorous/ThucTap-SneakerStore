@@ -16,35 +16,33 @@ import toast from "react-hot-toast";
 // ─── Format tiền tệ ──────────────────────────────────────────────────────────
 const fmt = (n: number) => n.toLocaleString("vi-VN") + " ₫";
 
-// ─── Ngưỡng freeship ─────────────────────────────────────────────────────────
-const FREESHIP = 5_000_000;
-const SHIP_FEE = 30_000;
+
 
 // ─── CartPage ─────────────────────────────────────────────────────────────────
 
 export default function CartPage() {
   const router = useRouter();
-  const items        = useCartStore((s) => s.items);
+  const items = useCartStore((s) => s.items);
   const syncCartWithServer = useCartStore((s) => s.syncCartWithServer);
-  const removeFromCart  = useCartStore((s) => s.removeFromCart);
-  const updateQuantity  = useCartStore((s) => s.updateQuantity);
-  const getTotalPrice   = useCartStore((s) => s.getTotalPrice);
-  const toggleSelect    = useCartStore((s) => s.toggleSelect);
+  const removeFromCart = useCartStore((s) => s.removeFromCart);
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const getTotalPrice = useCartStore((s) => s.getTotalPrice);
+  const toggleSelect = useCartStore((s) => s.toggleSelect);
   const toggleSelectAll = useCartStore((s) => s.toggleSelectAll);
 
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
-  const favorites      = useFavoritesStore((s) => s.favorites);
+  const favorites = useFavoritesStore((s) => s.favorites);
 
-  const [promoCode, setPromoCode]     = useState("");
-  const [promoOpen, setPromoOpen]     = useState(false);
-  const [removingId, setRemovingId]   = useState<number | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [removingId, setRemovingId] = useState<number | null>(null);
 
   // --------------------------------------------------------------------------------
   // [BẢO VỆ ĐỒ ÁN] Lời giải cho câu hỏi: Đồng bộ giá LocalStorage vs Database
   // --------------------------------------------------------------------------------
   useEffect(() => {
     const validateCartData = async () => {
-      if (items.length === 0) return; 
+      if (items.length === 0) return;
 
       try {
         // Code mẫu gọi API (bạn có thể tạo API /api/cart/sync trên Laravel nếu cần chạy thật)
@@ -53,11 +51,11 @@ export default function CartPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ variant_ids: items.map(i => i.variant_id) })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.latestItems) {
-           syncCartWithServer(data.latestItems);
+          syncCartWithServer(data.latestItems);
         }
       } catch (error) {
         console.log('Chưa có API thực tế, đây là code minh chứng cho hội đồng:', error);
@@ -71,11 +69,8 @@ export default function CartPage() {
   const selectedCount = items.filter((i) => i.selected !== false).length;
   const isAllSelected = selectedCount === items.length && items.length > 0;
 
-  const subtotal  = getTotalPrice();
-  const shipping  = (subtotal >= FREESHIP || selectedCount === 0) ? 0 : SHIP_FEE;
-  const total     = subtotal + shipping;
-  const progress  = Math.min((subtotal / FREESHIP) * 100, 100);
-  const remaining = FREESHIP - subtotal;
+  const subtotal = getTotalPrice();
+  const total = subtotal;
 
   const handleRemove = (variantId: number) => {
     setRemovingId(variantId);
@@ -155,24 +150,7 @@ export default function CartPage() {
           ══════════════════════════════════════════ */}
           <div className="w-full lg:flex-1 min-w-0">
 
-            {/* Freeship banner */}
-            <div className="bg-white rounded-2xl p-4 mb-4 border border-gray-100 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-700">
-                  <Truck size={16} className={remaining > 0 ? "text-gray-400" : "text-green-500"} />
-                  {remaining > 0
-                    ? <span>Mua thêm <strong className="text-gray-900">{fmt(remaining)}</strong> để được <strong className="text-green-600">Miễn phí vận chuyển</strong></span>
-                    : <span className="text-green-600 font-bold">🎉 Bạn đã được miễn phí vận chuyển!</span>}
-                </div>
-                <span className="text-[12px] text-gray-400 font-medium">{Math.round(progress)}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-green-500 rounded-full transition-all duration-700 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
+
 
             {/* Select All Bar */}
             {items.length > 0 && (
@@ -204,12 +182,12 @@ export default function CartPage() {
                   >
                     {/* Item Checkbox */}
                     <div className="flex flex-col justify-center pt-1 sm:pt-2">
-                       <input
-                         type="checkbox"
-                         checked={item.selected !== false}
-                         onChange={() => toggleSelect(item.variant_id)}
-                         className="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer"
-                       />
+                      <input
+                        type="checkbox"
+                        checked={item.selected !== false}
+                        onChange={() => toggleSelect(item.variant_id)}
+                        className="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer"
+                      />
                     </div>
 
                     {/* Image */}
@@ -326,9 +304,9 @@ export default function CartPage() {
             {/* Trust badges */}
             <div className="grid grid-cols-3 gap-3 mt-5">
               {[
-                { icon: Truck,  label: "Freeship từ 5tr" },
+                { icon: Truck, label: "Giao hàng toàn quốc" },
                 { icon: Shield, label: "Hàng chính hãng" },
-                { icon: Tag,    label: "Giá tốt nhất" },
+                { icon: Tag, label: "Giá tốt nhất" },
               ].map(({ icon: Icon, label }) => (
                 <div key={label} className="bg-white rounded-xl p-3 flex flex-col items-center gap-1.5 border border-gray-100 shadow-sm text-center">
                   <Icon size={18} className="text-gray-400" strokeWidth={1.5} />
@@ -401,8 +379,8 @@ export default function CartPage() {
                       <Truck size={14} className="text-gray-400" />
                       Vận chuyển
                     </span>
-                    <span className={`font-semibold ${shipping === 0 ? "text-green-600" : "text-gray-900"}`}>
-                      {shipping === 0 ? "Miễn phí" : fmt(shipping)}
+                    <span className="font-medium text-gray-500 text-xs">
+                      Được tính ở thanh toán
                     </span>
                   </div>
                 </div>

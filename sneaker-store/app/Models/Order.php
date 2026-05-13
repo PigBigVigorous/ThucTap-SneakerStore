@@ -32,6 +32,7 @@ class Order extends Model
     'shipper_id',
     'latitude',
     'longitude',
+    'delivery_proof_image',
 ];
 
     protected $casts = [
