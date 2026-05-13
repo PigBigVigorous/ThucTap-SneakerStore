@@ -153,15 +153,21 @@ class InventoryService
                 ]);
             }
 
-            // 3. XỬ LÝ MÃ GIẢM GIÁ (BACKEND KIỂM SOÁT BẢO MẬT KÉP LẦN 2)
+            // 3. XỬ LÝ MÃ GIẢM GIÁ (TỐI ĐA 2 MÃ)
             $discountId = null;
+            $discountId2 = null;
             $discountAmount = 0;
-            // POS mảng mới hỗ trợ discount_code, POS string cũ thì không
-            $discountCode = is_string($customerData) ? null : ($customerData['discount_code'] ?? null);
+            
+            $discountCodes = is_string($customerData) ? [] : ($customerData['discount_codes'] ?? []);
+            if (empty($discountCodes) && !empty($customerData['discount_code'])) {
+                $discountCodes = [$customerData['discount_code']];
+            }
 
-            if ($discountCode) {
-                // Sử dụng LockForUpdate để tránh đua lệnh dùng mã
-                $discount = Discount::where('code', $discountCode)->lockForUpdate()->first();
+            if (!empty($discountCodes)) {
+                $discountCodes = array_slice($discountCodes, 0, 2); // Tối đa 2 mã
+                foreach ($discountCodes as $index => $dCode) {
+                    // Sử dụng LockForUpdate để tránh đua lệnh dùng mã
+                    $discount = Discount::where('code', $dCode)->lockForUpdate()->first();
                 
                 if ($discount && $discount->is_active) {
                     $now = Carbon::now();
@@ -214,26 +220,41 @@ class InventoryService
                         $baseAmount = $eligibleAmount !== null ? $eligibleAmount : $totalAmount;
 
                         if ($discount->type === 'fixed') {
-                            $discountAmount = $discount->value;
+                            $thisDiscountAmount = $discount->value;
                         } else {
-                            $discountAmount = ($baseAmount * $discount->value) / 100;
-                            if ($discount->max_discount_value !== null && $discountAmount > $discount->max_discount_value) {
-                                $discountAmount = $discount->max_discount_value;
+                            $thisDiscountAmount = ($baseAmount * $discount->value) / 100;
+                            if ($discount->max_discount_value !== null && $thisDiscountAmount > $discount->max_discount_value) {
+                                $thisDiscountAmount = $discount->max_discount_value;
                             }
                         }
 
-                        if ($discountAmount > $totalAmount) {
-                            $discountAmount = $totalAmount; // Không giảm quá tiền hàng
+                        if ($thisDiscountAmount > $totalAmount - $discountAmount) {
+                            $thisDiscountAmount = max(0, $totalAmount - $discountAmount);
                         }
+
+                        $discountAmount += $thisDiscountAmount;
 
                         // Cập nhật lại số lần đã dùng
                         $discount->used_count += 1;
                         $discount->save();
 
-                        $discountId = $discount->id;
+                        // Xóa mềm voucher khỏi ví người dùng (is_used = true)
+                        if ($userId) {
+                            $userModel = User::find($userId);
+                            if ($userModel) {
+                                $userModel->vouchers()->updateExistingPivot($discount->id, ['is_used' => true]);
+                            }
+                        }
+
+                        if ($index === 0) {
+                            $discountId = $discount->id;
+                        } else {
+                            $discountId2 = $discount->id;
+                        }
                     }
                 }
             }
+        }
 
             // 4. XỬ LÝ ĐIỂM TÍCH LŨY (LOYALTY POINTS)
             // Hỗ trợ POS mảng mới dùng điểm, online, nhưng POS string cũ thì không

@@ -27,7 +27,7 @@ export default function AuthNav() {
           <Heart size={16} /> 
         </Link>
         
-        <Link href="/my-orders" className="flex items-center gap-1.5 whitespace-nowrap text-gray-600 hover:text-blue-600 font-bold text-xs uppercase tracking-wide transition-colors">
+        <Link href="/user/purchase" className="flex items-center gap-1.5 whitespace-nowrap text-gray-600 hover:text-blue-600 font-bold text-xs uppercase tracking-wide transition-colors">
           <Package size={16} /> Đơn hàng
         </Link>
 

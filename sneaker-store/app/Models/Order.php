@@ -26,6 +26,7 @@ class Order extends Model
     'payment_status',
     'transaction_id',
     'discount_id',
+    'discount_id_2',
     'discount_amount',
     'points_used',
     'points_earned',

@@ -78,7 +78,7 @@ function VnpayReturnContent() {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Giao dịch thành công</h2>
             <p className="text-gray-600 mb-8">{message}</p>
             <div className="flex gap-4 justify-center w-full">
-              <Link href="/my-orders" className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800">
+              <Link href="/user/purchase" className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-gray-800">
                 Xem đơn hàng
               </Link>
               <Link href="/" className="bg-gray-100 text-black px-8 py-3 rounded-full font-medium hover:bg-gray-200">
