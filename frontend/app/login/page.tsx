@@ -68,7 +68,7 @@ export default function LoginPage() {
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Địa chỉ Email</label>
-              <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" placeholder="email@example.com" />
+              <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="appearance-none block w-full px-3 py-3 text-gray-900 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" placeholder="email@example.com" />
             </div>
 
             <div>
@@ -76,7 +76,7 @@ export default function LoginPage() {
                 <label className="block text-sm font-bold text-gray-700">Mật khẩu</label>
 
               </div>
-              <input required type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" placeholder="******" />
+              <input required type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} className="appearance-none block w-full px-3 py-3 text-gray-900 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" placeholder="******" />
             </div>
             <Link href="/forgot-password" title="Quên mật khẩu?" className="text-xs font-bold text-black hover:text-red-600 transition-colors">
               Quên mật khẩu?

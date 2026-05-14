@@ -25,8 +25,12 @@ export default function ForgotPasswordPage() {
       } else {
         toast.error(data.message || "Không thể gửi OTP. Vui lòng kiểm tra lại email.");
       }
-    } catch (error) {
-      toast.error("Lỗi kết nối đến máy chủ.");
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Lỗi kết nối đến máy chủ.");
+      }
     } finally {
       setLoading(false);
     }
@@ -48,20 +52,20 @@ export default function ForgotPasswordPage() {
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">Địa chỉ Email</label>
-              <input 
-                required 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors" 
-                placeholder="email@example.com" 
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="appearance-none block w-full px-3 py-3 text-gray-900 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors"
+                placeholder="email@example.com"
               />
             </div>
 
-            <button 
-              type="submit" 
-              disabled={loading} 
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all disabled:bg-gray-400 uppercase"
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center py-3 px-4 text-gray-900 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all disabled:bg-gray-400 uppercase"
             >
               {loading ? "Đang gửi..." : "Gửi mã xác thực"}
             </button>

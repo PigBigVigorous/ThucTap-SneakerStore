@@ -65,6 +65,7 @@
                     <tr><td class="info-label">Người nhận:</td><td class="info-value">{{ $order->customer_name }}</td></tr>
                     <tr><td class="info-label">Điện thoại:</td><td class="info-value">{{ $order->customer_phone }}</td></tr>
                     <tr><td class="info-label">Địa chỉ:</td><td class="info-value">{{ $order->address_detail }}, {{ $order->ward }}, {{ $order->district }}, {{ $order->province }}</td></tr>
+                    
                 </table>
             </div>
 

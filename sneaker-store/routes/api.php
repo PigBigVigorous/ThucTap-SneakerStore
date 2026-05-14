@@ -39,7 +39,7 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetOtp']);
 Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword']);
-
+Route::post('/change-password', [AuthController::class, 'changePassword']);
 // Thanh toán VNPay
 Route::get('/payment/vnpay-callback', [PaymentController::class, 'vnpayCallback']);
 Route::get('/payment/vnpay-ipn', [PaymentController::class, 'vnpayIpn']);

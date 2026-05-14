@@ -105,8 +105,12 @@ function ResetPasswordForm() {
       } else {
         toast.error(data.message || "Lỗi cập nhật mật khẩu.");
       }
-    } catch (error) {
-      toast.error("Lỗi kết nối đến máy chủ.");
+    } catch (error: any) {
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Lỗi kết nối đến máy chủ.");
+      }
     } finally {
       setLoading(false);
     }
@@ -139,7 +143,7 @@ function ResetPasswordForm() {
                     value={digit}
                     onChange={(e) => handleOtpChange(e.target.value, index)}
                     onKeyDown={(e) => handleKeyDown(e, index)}
-                    className="w-12 h-14 text-center text-xl font-bold border border-gray-300 rounded-xl focus:ring-black focus:border-black outline-none transition-all"
+                    className="w-12 h-14 text-center text-xl font-bold text-gray-900 border border-gray-300 rounded-xl focus:ring-black focus:border-black outline-none transition-all"
                   />
                 ))}
               </div>
@@ -168,7 +172,7 @@ function ResetPasswordForm() {
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors"
+                className="appearance-none block w-full px-3 py-3 text-gray-900 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors"
                 placeholder="******"
               />
             </div>
@@ -180,7 +184,7 @@ function ResetPasswordForm() {
                 type="password"
                 value={formData.password_confirmation}
                 onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
-                className="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors"
+                className="appearance-none block w-full px-3 py-3 text-gray-900 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-black focus:border-black sm:text-sm transition-colors"
                 placeholder="******"
               />
             </div>
@@ -188,7 +192,7 @@ function ResetPasswordForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all disabled:bg-gray-400 uppercase"
+              className="w-full flex justify-center py-3 px-4 text-gray-900 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all disabled:bg-gray-400 uppercase"
             >
               {loading ? "Đang xử lý..." : "Xác nhận đổi mật khẩu"}
             </button>

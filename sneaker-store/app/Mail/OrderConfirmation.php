@@ -34,7 +34,7 @@ class OrderConfirmation extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Xác nhận đơn hàng #' . $this->order->order_tracking_code,
+            subject: 'Xác nhận đơn hàng ' . $this->order->order_tracking_code,
         );
     }
 

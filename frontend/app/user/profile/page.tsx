@@ -72,7 +72,7 @@ export default function ProfilePage() {
       if (data.phone) formData.append("phone", data.phone);
       if (data.gender) formData.append("gender", data.gender);
       if (data.dob) formData.append("dob", data.dob);
-      
+
       if (selectedFile) {
         formData.append("avatar", selectedFile);
       }
@@ -82,7 +82,7 @@ export default function ProfilePage() {
       if (response.success) {
         toast.success("Cập nhật hồ sơ thành công!");
         if (login) {
-           login(response.data, token);
+          login(response.data, token);
         }
       } else {
         if (response.errors) {
@@ -129,9 +129,8 @@ export default function ProfilePage() {
                 <input
                   {...register("name", { required: "Vui lòng nhập tên" })}
                   type="text"
-                  className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500 ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  }`}
+                  className={`w-full text-gray-900 border rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500 ${errors.name ? "border-red-500" : "border-gray-300"
+                    }`}
                 />
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
               </div>
@@ -144,7 +143,7 @@ export default function ProfilePage() {
                   {...register("email")}
                   type="email"
                   readOnly
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-600 cursor-not-allowed focus:outline-none"
+                  className="w-full bg-gray-50 text-gray-900 border border-gray-200 rounded px-3 py-2 text-gray-600 cursor-not-allowed focus:outline-none"
                 />
               </div>
             </div>
@@ -155,7 +154,7 @@ export default function ProfilePage() {
                 <input
                   {...register("phone")}
                   type="text"
-                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  className="w-full text-gray-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
               </div>
             </div>
@@ -165,15 +164,15 @@ export default function ProfilePage() {
               <div className="md:col-span-3 flex gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input {...register("gender")} type="radio" value="male" className="accent-orange-500" />
-                  <span className="text-sm">Nam</span>
+                  <span className="text-gray-900 text-sm">Nam</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input {...register("gender")} type="radio" value="female" className="accent-orange-500" />
-                  <span className="text-sm">Nữ</span>
+                  <span className="text-gray-900 text-sm">Nữ</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input {...register("gender")} type="radio" value="other" className="accent-orange-500" />
-                  <span className="text-sm">Khác</span>
+                  <span className="text-gray-900 text-sm">Khác</span>
                 </label>
               </div>
             </div>
@@ -184,7 +183,7 @@ export default function ProfilePage() {
                 <input
                   {...register("dob")}
                   type="date"
-                  className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  className="text-gray-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 />
               </div>
             </div>
@@ -206,7 +205,7 @@ export default function ProfilePage() {
 
         {/* Right Column - Avatar */}
         <div className="md:w-1/3 flex flex-col items-center md:border-l border-gray-100 px-8">
-          <div className="w-32 h-32 rounded-full bg-gray-50 border border-gray-100 overflow-hidden mb-4 relative group">
+          <div className="w-32 h-32 rounded-full bg-gray-50 text-gray-900 border border-gray-100 overflow-hidden mb-4 relative group">
             {avatarPreview ? (
               <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
@@ -224,7 +223,7 @@ export default function ProfilePage() {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="border border-gray-300 px-4 py-2 text-sm rounded shadow-sm hover:bg-gray-50 transition-colors mb-4"
+            className="text-gray-900 border border-gray-300 px-4 py-2 text-sm rounded shadow-sm hover:bg-gray-50 transition-colors mb-4"
           >
             Chọn ảnh
           </button>
@@ -240,9 +239,9 @@ export default function ProfilePage() {
                 <Shield size={16} className="text-indigo-500" />
                 <span className="text-sm font-bold text-gray-700">Hạng thành viên</span>
               </div>
-              
+
               <div className="flex flex-col items-center py-2">
-                <div 
+                <div
                   className="w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-2 shadow-inner"
                   style={{ backgroundColor: user.rank.color + '22' }}
                 >
@@ -251,7 +250,7 @@ export default function ProfilePage() {
                 <p className="text-lg font-black" style={{ color: user.rank.color }}>
                   {user.rank.name}
                 </p>
-                
+
                 <div className="mt-4 w-full space-y-2">
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">Điểm hiện tại</span>
@@ -260,14 +259,14 @@ export default function ProfilePage() {
                       {user.points?.toLocaleString('vi-VN')} điểm
                     </span>
                   </div>
-                  
+
                   {/* Progress bar logic could be added here if we had next rank info */}
                   <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full rounded-full transition-all duration-1000"
-                      style={{ 
+                      style={{
                         width: `${Math.min(100, ((user.points ?? 0) / 500) * 100)}%`,
-                        backgroundColor: user.rank.color 
+                        backgroundColor: user.rank.color
                       }}
                     />
                   </div>

@@ -257,7 +257,6 @@ class InventoryService
         }
 
             // 4. XỬ LÝ ĐIỂM TÍCH LŨY (LOYALTY POINTS)
-            // Hỗ trợ POS mảng mới dùng điểm, online, nhưng POS string cũ thì không
             $pointsUsed = is_string($customerData) ? 0 : (int)($customerData['points_used'] ?? 0);
             $pointDiscount = 0;
 

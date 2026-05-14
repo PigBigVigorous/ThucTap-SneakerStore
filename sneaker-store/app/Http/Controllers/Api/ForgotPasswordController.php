@@ -34,7 +34,7 @@ class ForgotPasswordController extends Controller
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $email],
             [
-                'token' => $otp, // Ở đây dùng token làm OTP luôn cho đơn giản
+                'token' => $otp, 
                 'created_at' => Carbon::now()
             ]
         );
@@ -61,43 +61,50 @@ class ForgotPasswordController extends Controller
      */
     public function resetPassword(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'otp' => 'required|string|size:6',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:users,email',
+                'otp' => 'required|string|size:6',
+                'password' => 'required|string|min:6|confirmed',
+            ]);
 
-        $resetData = DB::table('password_reset_tokens')
-            ->where('email', $request->email)
-            ->where('token', $request->otp)
-            ->first();
+            $resetData = DB::table('password_reset_tokens')
+                ->where('email', $request->email)
+                ->where('token', $request->otp)
+                ->first();
 
-        if (!$resetData) {
+            if (!$resetData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mã OTP không chính xác.'
+                ], 400);
+            }
+
+            // Kiểm tra OTP hết hạn (15 phút)
+            if (Carbon::parse($resetData->created_at)->addMinutes(15)->isPast()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mã OTP đã hết hiệu lực. Vui lòng lấy mã mới.'
+                ], 400);
+            }
+
+            // Cập nhật mật khẩu mới cho User
+            $user = User::where('email', $request->email)->first();
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            // Xóa OTP sau khi đã dùng thành công
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mật khẩu của bạn đã được cập nhật thành công!'
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mã OTP không chính xác.'
-            ], 400);
+                'message' => 'Lỗi máy chủ: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Kiểm tra OTP hết hạn (15 phút)
-        if (Carbon::parse($resetData->created_at)->addMinutes(15)->isPast()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mã OTP đã hết hiệu lực. Vui lòng lấy mã mới.'
-            ], 400);
-        }
-
-        // Cập nhật mật khẩu mới cho User
-        $user = User::where('email', $request->email)->first();
-        $user->password = $request->password;
-        $user->save();
-
-        // Xóa OTP sau khi đã dùng thành công
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Mật khẩu của bạn đã được cập nhật thành công!'
-        ]);
     }
 }

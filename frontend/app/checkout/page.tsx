@@ -321,7 +321,7 @@ export default function CheckoutPage() {
           refreshUser();
           clearSelectedItems();
         } else {
-          toast.success(`✅ Đặt hàng thành công! Mã đơn: ${trackingCode}`, { id: toastId, duration: 5000 });
+          toast.success(`Đặt hàng thành công! Mã đơn: ${trackingCode}`, { id: toastId, duration: 5000 });
           setOrderPlaced(true);
           setOrderSuccess(true);
           refreshUser();
