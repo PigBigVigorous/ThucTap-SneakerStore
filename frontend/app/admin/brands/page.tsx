@@ -21,6 +21,7 @@ type FormState = {
 
 const emptyForm: FormState = { name: "", description: "" };
 
+/** BrandsPage - Trang quản lý thương hiệu: thêm, sửa inline và xóa */
 export default function BrandsPage() {
   const { token } = useAuth();
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -34,6 +35,7 @@ export default function BrandsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
 
+  /** fetchBrands - Lấy danh sách tất cả thương hiệu từ server */
   const fetchBrands = async () => {
     if (!token) return;
     setLoading(true);
@@ -50,6 +52,7 @@ export default function BrandsPage() {
     if (token) fetchBrands();
   }, [token]);
 
+  /** handleCreate - Tạo mới thương hiệu từ form */
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !token) return;
@@ -76,6 +79,7 @@ export default function BrandsPage() {
     setIsSubmitting(false);
   };
 
+  /** startEdit - Bật chế độ chỉnh sửa inline cho thương hiệu được chọn */
   const startEdit = (brand: Brand) => {
     setEditingId(brand.id);
     setEditForm({
@@ -84,6 +88,7 @@ export default function BrandsPage() {
     });
   };
 
+  /** handleUpdate - Cập nhật thông tin thương hiệu theo ID */
   const handleUpdate = async (id: number) => {
     if (!editForm.name.trim() || !token) return;
     setIsSubmitting(true);
@@ -110,6 +115,7 @@ export default function BrandsPage() {
     setIsSubmitting(false);
   };
 
+  /** handleDelete - Xóa thương hiệu (không thể xóa nếu còn sản phẩm liên kết) */
   const handleDelete = async (brand: Brand) => {
     if (!window.confirm(`Xóa thương hiệu "${brand.name}"?`)) return;
     if (!token) return;
@@ -263,7 +269,6 @@ export default function BrandsPage() {
                         key={brand.id}
                         className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors group"
                       >
-                        {/* Logo */}
                         <div className="shrink-0 w-12 h-12 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden">
                           {brand.logo_url ? (
                             // eslint-disable-next-line @next/next/no-img-element

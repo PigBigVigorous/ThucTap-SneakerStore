@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
 import { Plus, Edit, Trash2, MapPin, Phone, Mail, X, Store } from "lucide-react";
 
+/** BranchManagementPage - Trang quản lý chi nhánh: thêm, sửa, xóa và cài đặt kho tổng */
 export default function BranchManagementPage() {
   const { token } = useAuth();
   const [branches, setBranches] = useState<any[]>([]);
@@ -20,6 +21,7 @@ export default function BranchManagementPage() {
 
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
+  /** fetchBranches - Lấy danh sách tất cả chi nhánh từ server */
   const fetchBranches = async () => {
     setLoading(true);
     try {
@@ -33,6 +35,7 @@ export default function BranchManagementPage() {
 
   useEffect(() => { if (token) fetchBranches(); }, [token]);
 
+  /** openModal - Mở modal thêm mới hoặc chỉnh sửa chi nhánh */
   const openModal = (branch: any = null) => {
     if (branch) {
       setEditingBranch(branch);
@@ -49,8 +52,10 @@ export default function BranchManagementPage() {
     setIsModalOpen(true);
   };
 
+  /** closeModal - Đóng modal và reset trạng thái chỉnh sửa */
   const closeModal = () => { setIsModalOpen(false); setEditingBranch(null); };
 
+  /** handleSubmit - Gửi form tạo mới hoặc cập nhật chi nhánh */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -71,6 +76,7 @@ export default function BranchManagementPage() {
     } catch (error) { toast.error("Lỗi kết nối"); } finally { setIsSubmitting(false); }
   };
 
+  /** handleDelete - Xóa chi nhánh theo ID (có xác nhận) */
   const handleDelete = async (id: number) => {
     if (!window.confirm("CẢNH BÁO: Rủi ro liên quan đến tài sản! Bạn có chắc chắn muốn xóa?")) return;
     try {
@@ -80,7 +86,6 @@ export default function BranchManagementPage() {
         toast.success("Đã xóa!");
         fetchBranches();
       } else {
-        // 🚨 Hiển thị Toast thông báo lỗi nếu backend báo thất bại (kể cả lỗi kế toán hay phân quyền)
         toast.error(data.message || "Không thể xóa chi nhánh này!");
       }
     } catch (error) { toast.error("Lỗi mạng"); }
@@ -98,7 +103,6 @@ export default function BranchManagementPage() {
           </button>
         </div>
 
-        {/* Thay thế Table khô khan bằng Grid Card hiện đại */}
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-black"></div>
@@ -125,17 +129,17 @@ export default function BranchManagementPage() {
                     )}
                   </div>
 
-                    {branch.is_main && (
-                      <span className="inline-block px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md mb-2 shadow-sm">
-                        🌟 Kho Tổng
-                      </span>
-                    )}
-                    {!branch.is_active && (
-                      <span className="ml-2 inline-block px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-gray-400 text-white rounded-md mb-2 shadow-sm">
-                        Ngừng Hoạt Động
-                      </span>
-                    )}
-                  </div>
+                  {branch.is_main && (
+                    <span className="inline-block px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-md mb-2 shadow-sm">
+                      🌟 Kho Tổng
+                    </span>
+                  )}
+                  {!branch.is_active && (
+                    <span className="ml-2 inline-block px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-gray-400 text-white rounded-md mb-2 shadow-sm">
+                      Ngừng Hoạt Động
+                    </span>
+                  )}
+                </div>
 
                 {/* Body Thẻ */}
                 <div className="p-6 pt-4 flex-grow space-y-3">
@@ -250,7 +254,7 @@ export default function BranchManagementPage() {
               </div>
 
               <div className="pt-2 border-t border-gray-100 grid grid-cols-1 gap-4">
-                {/* 🚨 CHECKBOX KHO TỔNG */}
+                {/*  CHECKBOX KHO TỔNG */}
                 <label className={`relative flex items-center justify-between cursor-pointer p-4 rounded-xl border-2 transition-all duration-300 ${formData.is_main ? 'bg-purple-50 border-purple-400 shadow-md ring-4 ring-purple-100' : 'bg-gray-50 border-transparent hover:bg-purple-50/50'}`}>
                   <div className="flex-1 pr-4">
                     <span className={`block text-sm font-black uppercase mb-1 ${formData.is_main ? 'text-purple-700' : 'text-gray-700'}`}>

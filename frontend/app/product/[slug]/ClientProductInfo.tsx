@@ -44,6 +44,7 @@ type OverlayItem = {
   totalInCart: number;
 };
 
+/** AddToCartOverlay - Panel xác nhận đã thêm vào giỏ (popup Puma-style) / Confirmation overlay shown after adding a product to cart (Puma-style popup) */
 function AddToCartOverlay({
   item,
   onClose,
@@ -147,6 +148,7 @@ function AddToCartOverlay({
 
 // ─── Helper: Star row ─────────────────────────────────────────────────────────
 
+/** StarRow - Dãy sao đánh giá: hiển thị tĩnh hoặc cho phép chọn sao / Star rating row: display-only or interactive mode */
 function StarRow({
   rating,
   size = 16,
@@ -180,6 +182,7 @@ function StarRow({
 
 // ─── Helper: Rating breakdown bar ─────────────────────────────────────────────
 
+/** RatingBar - Thanh thống kê số đánh giá theo từng mức sao / Rating breakdown bar showing count per star level */
 function RatingBar({ star, count, total }: { star: number; count: number; total: number }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
@@ -199,6 +202,7 @@ function RatingBar({ star, count, total }: { star: number; count: number; total:
 
 // ─── Helper: Avatar initials ──────────────────────────────────────────────────
 
+/** Avatar - Hiển thị chữ viết tắt tên người dùng thay thế ảnh đại diện / Display user name initials as avatar placeholder */
 function Avatar({ name }: { name: string }) {
   const initials = name
     .split(" ")
@@ -225,6 +229,7 @@ function Avatar({ name }: { name: string }) {
 
 // ─── Review Card ──────────────────────────────────────────────────────────────
 
+/** ReviewCard - Card hiển thị một đánh giá sản phẩm cùng avatar, sao và nội dung / Product review card with avatar, star rating and comment */
 function ReviewCard({ review }: { review: Review }) {
   const name = review.user?.name || "Khách hàng";
   const date = new Date(review.created_at).toLocaleDateString("vi-VN", {
@@ -253,6 +258,7 @@ function ReviewCard({ review }: { review: Review }) {
 
 // ─── Related Product Card ─────────────────────────────────────────────────────
 
+/** RelatedCard - Card sản phẩm liên quan với ảnh, tên, giá và chấm màu biến thể / Related product card showing image, name, price and color variants */
 function RelatedCard({ item }: { item: RelatedProduct }) {
   const price = item.variants?.[0]?.price ?? 0;
   const colors = item.variants
@@ -323,6 +329,7 @@ function RelatedCard({ item }: { item: RelatedProduct }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+/** ClientProductInfo - Component chính của trang chi tiết sản phẩm: gallery, chọn size/màu, giỏ hàng, yêu thích, review / Main product detail page component: gallery, size/color selection, cart, favorites and reviews */
 export default function ClientProductInfo({ product }: { product: any }) {
   const { token } = useAuth();
   const addToCart = useCartStore((state) => state.addToCart);
@@ -362,6 +369,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
 
   // ── Data fetching ─────────────────────────────────────────────────────────
 
+  /** fetchReviews - Lấy danh sách đánh giá có phân trang cho sản phẩm hiện tại / Fetch paginated reviews for the current product */
   const fetchReviews = useCallback(
     async (page = 1) => {
       setReviewLoading(true);
@@ -388,6 +396,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
     [product.slug]
   );
 
+  /** fetchRelated - Lấy danh sách sản phẩm liên quan / Fetch related products for the current product */
   const fetchRelated = useCallback(async () => {
     try {
       const res = await fetch(`${API}/products/${product.slug}/related`);
@@ -415,6 +424,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
     }
   }, [product, fetchReviews, fetchRelated]);
 
+  /** handleReviewSubmit - Gửi đánh giá sản phẩm (yêu cầu đăng nhập) / Submit product review (requires authentication) */
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return toast.error("Vui lòng đăng nhập để đánh giá!");
@@ -444,6 +454,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
 
   // ── Gallery logic ─────────────────────────────────────────────────────────
 
+  /** handleColorChange - Thay đổi màu sắc, reset size và ảnh gallery về ảnh đầu tiên / Change selected color, reset selected size and gallery to first image */
   const handleColorChange = (color: any) => {
     setSelectedColor(color);
     setSelectedSize(null);
@@ -494,6 +505,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
   const selectedColorwayLabel =
     availableVariants[0]?.colorway_name || selectedColor?.name || "—";
 
+  /** nextImage / prevImage - Chuyển ảnh gallery sang trái/phải / Navigate gallery images forward or backward */
   const nextImage = () =>
     setMainImageIndex((prev) => (prev + 1) % currentGalleryImages.length);
   const prevImage = () =>
@@ -501,6 +513,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
       (prev) => (prev - 1 + currentGalleryImages.length) % currentGalleryImages.length
     );
 
+  /** handleAddToCart - Thêm sản phẩm vào giỏ và hiển thị overlay xác nhận / Add selected variant to cart and show confirmation overlay */
   const handleAddToCart = () => {
     if (!selectedSize) return toast.error("Vui lòng chọn Kích cỡ!");
     if (currentStock === 0) return toast.error("Phân loại này đã hết hàng.");
@@ -531,6 +544,7 @@ export default function ClientProductInfo({ product }: { product: any }) {
     });
   };
 
+  /** handleToggleFavorite - Thêm/xóa sản phẩm khỏi danh sách yêu thích / Toggle product in/out of favorites list with toast notification */
   const handleToggleFavorite = () => {
     const isAdded = toggleFavorite({
       product_id: product?.id,

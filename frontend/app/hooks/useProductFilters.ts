@@ -23,6 +23,7 @@ export type FilterState = {
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
+/** useProductFilters - Hook quản lý tất cả logic lọc/tìm kiếm/phân trang sản phẩm / Hook managing all product filtering, searching and pagination logic */
 export function useProductFilters(
   initialProducts: Product[],
   initialMeta: { current_page: number; last_page: number; total: number },
@@ -90,6 +91,7 @@ export function useProductFilters(
     fetchVouchers();
   }, [isAuthenticated]);
 
+  /** fetchProducts - Gọi API lấy danh sách sản phẩm theo bộ lọc và trang hiện tại / Fetch filtered and paginated product list from API */
   const fetchProducts = useCallback(
     async (overridePage = 1, overrideFilters?: FilterState, overrideSearch?: string) => {
       setLoading(true);
@@ -132,6 +134,7 @@ export function useProductFilters(
     [filters, searchTerm, activeCategory]
   );
 
+  /** applyFilters - Áp dụng bộ lọc mới và tải lại sản phẩm từ trang 1 / Apply new filter state and reload products from page 1 */
   const applyFilters = useCallback(
     (newFilters: FilterState) => {
       setFilters(newFilters);
@@ -150,6 +153,7 @@ export function useProductFilters(
     };
   }, [searchTerm]);
 
+  /** toggleBrand - Bật/tắt lọc theo thương hiệu được chọn / Toggle a brand filter on or off */
   const toggleBrand = (brandName: string) => {
     const next = filters.brands.includes(brandName)
       ? filters.brands.filter((b) => b !== brandName)
@@ -157,6 +161,7 @@ export function useProductFilters(
     applyFilters({ ...filters, brands: next });
   };
 
+  /** resetAll - Xóa tất cả bộ lọc và đưa về trạng thái mặc định / Reset all filters and search to default state */
   const resetAll = () => {
     setSearchTerm("");
     const def: FilterState = { brands: [], priceMin: "", priceMax: "", sortBy: "newest" };

@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
+/** ShipperDashboardPage - Trang tổng quan shipper: xem đơn được giao, lọc trạng thái, cập nhật tracking */
 export default function ShipperDashboardPage() {
   const { user, token, logout } = useAuth();
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function ShipperDashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
 
+  /** fetchMyOrders - Lấy danh sách đơn hàng được phân công cho shipper */
   const fetchMyOrders = async (isManual = false) => {
     if (!token) return;
     if (isManual) setRefreshing(true);
@@ -41,11 +43,13 @@ export default function ShipperDashboardPage() {
     fetchMyOrders();
   }, [token]);
 
+  /** filteredOrders - Lọc đơn hàng theo bộ lọc trạng thái hiện tại */
   const filteredOrders = orders.filter(o => {
     if (filter === 'all') return true;
     return o.status === filter;
   });
 
+  /** getStatusLabel - Chuyển mã trạng thái đơn hàng sang nhãn tiếng Việt */
   const getStatusLabel = (status: string) => {
     const labels: any = {
       'pending': 'Chờ xác nhận',
@@ -59,6 +63,7 @@ export default function ShipperDashboardPage() {
     return labels[status] || status;
   };
 
+  /** getStatusColor - Trả về class CSS màu sắc tương ứng với trạng thái đơn hàng */
   const getStatusColor = (status: string) => {
     const colors: any = {
       'pending': 'bg-amber-50 text-amber-600 border-amber-100',
@@ -128,8 +133,8 @@ export default function ShipperDashboardPage() {
               key={f}
               onClick={() => setFilter(f)}
               className={`px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all border ${filter === f
-                  ? 'bg-gray-900 text-white border-gray-900 shadow-xl shadow-gray-900/10'
-                  : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'
+                ? 'bg-gray-900 text-white border-gray-900 shadow-xl shadow-gray-900/10'
+                : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'
                 }`}
             >
               {f === 'all' ? 'Tất cả' : getStatusLabel(f)}

@@ -13,24 +13,24 @@ import OrderDetailModal from "../../components/OrderDetailModal";
 
 // ─── Status metadata ──────────────────────────────────────────────────────────
 const STATUS_MAP: Record<string, { label: string; cls: string; icon: any }> = {
-  pending:    { label: "Chờ xác nhận", cls: "bg-amber-50 text-amber-700 border border-amber-200",     icon: Clock },
+  pending: { label: "Chờ xác nhận", cls: "bg-amber-50 text-amber-700 border border-amber-200", icon: Clock },
   processing: { label: "Đang đóng gói", cls: "bg-indigo-50 text-indigo-700 border border-indigo-200", icon: Package },
-  shipped:    { label: "Vận chuyển",    cls: "bg-blue-50 text-blue-700 border border-blue-200",        icon: Truck },
-  delivering: { label: "Đang giao",    cls: "bg-orange-50 text-orange-700 border border-orange-200",  icon: Truck },
-  delivered:  { label: "Hoàn thành",   cls: "bg-green-50 text-green-700 border border-green-200",     icon: CheckCircle2 },
-  cancelled:  { label: "Đã hủy",       cls: "bg-red-50 text-red-700 border border-red-200",           icon: XCircle },
-  returned:   { label: "Trả hàng",     cls: "bg-gray-100 text-gray-600 border border-gray-200",       icon: RotateCcw },
-  failed:     { label: "Thất bại",     cls: "bg-rose-50 text-rose-700 border border-rose-200",        icon: XCircle },
+  shipped: { label: "Vận chuyển", cls: "bg-blue-50 text-blue-700 border border-blue-200", icon: Truck },
+  delivering: { label: "Đang giao", cls: "bg-orange-50 text-orange-700 border border-orange-200", icon: Truck },
+  delivered: { label: "Hoàn thành", cls: "bg-green-50 text-green-700 border border-green-200", icon: CheckCircle2 },
+  cancelled: { label: "Đã hủy", cls: "bg-red-50 text-red-700 border border-red-200", icon: XCircle },
+  returned: { label: "Trả hàng", cls: "bg-gray-100 text-gray-600 border border-gray-200", icon: RotateCcw },
+  failed: { label: "Thất bại", cls: "bg-rose-50 text-rose-700 border border-rose-200", icon: XCircle },
 };
 
 const TAB_FILTERS = [
-  { key: "all",        label: "Tất cả" },
-  { key: "pending",    label: "Chờ xác nhận" },
+  { key: "all", label: "Tất cả" },
+  { key: "pending", label: "Chờ xác nhận" },
   { key: "processing", label: "Đóng gói" },
-  { key: "shipped",    label: "Vận chuyển" },
-  { key: "delivered",  label: "Hoàn thành" },
-  { key: "cancelled",  label: "Đã hủy" },
-  { key: "returned",   label: "Trả hàng" },
+  { key: "shipped", label: "Vận chuyển" },
+  { key: "delivered", label: "Hoàn thành" },
+  { key: "cancelled", label: "Đã hủy" },
+  { key: "returned", label: "Trả hàng" },
 ];
 
 const PER_PAGE_OPTIONS = [10, 15, 25, 50];
@@ -52,7 +52,7 @@ function Pagination({
     }, []);
 
   const from = (page - 1) * perPage + 1;
-  const to   = Math.min(page * perPage, total);
+  const to = Math.min(page * perPage, total);
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-5 border-t border-gray-50">
@@ -94,7 +94,7 @@ function Pagination({
               className={`w-9 h-9 rounded-xl text-sm font-black transition-all ${p === page
                 ? "bg-gray-900 text-white shadow-lg shadow-gray-900/15"
                 : "border border-gray-200 text-gray-600 hover:border-gray-900 hover:text-gray-900 bg-white"
-              }`}
+                }`}
             >
               {p}
             </button>
@@ -114,26 +114,27 @@ function Pagination({
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
+/** AdminOrdersPage - Trang quản lý đơn hàng: lọc, tìm kiếm, xác nhận và phân công shipper / Admin order management: filter, search, confirm orders and assign shippers */
 export default function AdminOrdersPage() {
   const { token } = useAuth();
-  const [orders, setOrders]     = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [tab, setTab]           = useState("all");
-  const [search, setSearch]     = useState("");
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("all");
+  const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [shippers, setShippers] = useState<any[]>([]);
-  const [page, setPage]         = useState(1);
-  const [perPage, setPerPage]   = useState(15);
-  const [meta, setMeta]         = useState({ current_page: 1, last_page: 1, total: 0, per_page: 15 });
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0, per_page: 15 });
 
   // Modal states
-  const [isDetailOpen, setIsDetailOpen]               = useState(false);
-  const [selectedOrderId, setSelectedOrderId]         = useState<number | undefined>(undefined);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | undefined>(undefined);
   const [selectedOrderForAssign, setSelectedOrderForAssign] = useState<any | null>(null);
   const [assigning, setAssigning] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pollingRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── Fetch orders ────────────────────────────────────────────────────────────
   const fetchOrders = useCallback(async (opts: {
@@ -177,6 +178,7 @@ export default function AdminOrdersPage() {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [fetchOrders]);
 
+  /** fetchShippers - Lấy danh sách shipper để hiển thị trong modal phân công */
   const fetchShippers = async () => {
     if (!token) return;
     try {
@@ -219,6 +221,7 @@ export default function AdminOrdersPage() {
     }
   };
 
+  /** handleUpdateStatus - Cập nhật trạng thái đơn hàng (xác nhận, đóng gói...) */
   const handleUpdateStatus = async (orderId: number, status: string) => {
     if (!token) return;
     try {
@@ -234,6 +237,7 @@ export default function AdminOrdersPage() {
     }
   };
 
+  /** openDetail - Mở modal chi tiết đơn hàng */
   const openDetail = (id: number) => {
     setSelectedOrderId(id);
     setIsDetailOpen(true);
@@ -266,11 +270,10 @@ export default function AdminOrdersPage() {
             <button
               key={t.key}
               onClick={() => handleTabChange(t.key)}
-              className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                tab === t.key
+              className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${tab === t.key
                   ? "bg-gray-900 text-white shadow-lg shadow-gray-200"
                   : "bg-gray-50 text-gray-400 hover:bg-gray-100"
-              }`}
+                }`}
             >
               {t.label}
             </button>

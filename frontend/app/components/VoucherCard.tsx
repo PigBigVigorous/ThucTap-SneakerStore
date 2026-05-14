@@ -12,11 +12,13 @@ interface VoucherCardProps {
   onSaved?: () => void;
 }
 
+/** VoucherCard - Card hiển thị voucher giảm giá và cho phép lưu vào ví */
 export default function VoucherCard({ voucher, isAuthenticated, token, onSaved }: VoucherCardProps) {
   const [loading, setLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(voucher.is_saved || false);
   const [copied, setCopied] = useState(false);
 
+  /** handleSave - Lưu voucher vào ví của người dùng (yêu cầu đăng nhập) */
   const handleSave = async () => {
     if (!isAuthenticated) {
       toast.error("Vui lòng đăng nhập để lưu voucher!");
@@ -41,6 +43,7 @@ export default function VoucherCard({ voucher, isAuthenticated, token, onSaved }
     }
   };
 
+  /** handleCopyCode - Sao chép mã voucher vào clipboard */
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(voucher.code);
@@ -155,13 +158,12 @@ export default function VoucherCard({ voucher, isAuthenticated, token, onSaved }
           <button
             onClick={handleSave}
             disabled={loading || isSaved || isDisabled}
-            className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${
-              isSaved
-                ? 'bg-gray-100 text-gray-400 cursor-default'
-                : isDisabled
+            className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all shrink-0 ${isSaved
+              ? 'bg-gray-100 text-gray-400 cursor-default'
+              : isDisabled
                 ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
                 : 'bg-red-500 text-white hover:bg-red-600 active:scale-95 shadow-lg shadow-red-500/20'
-            }`}
+              }`}
           >
             {loading ? (
               <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

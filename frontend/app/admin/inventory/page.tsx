@@ -6,9 +6,9 @@ import { adminInventoryAPI, adminBranchAPI, adminBrandAPI, adminProductAPI } fro
 import toast, { Toaster } from "react-hot-toast";
 import { Search } from "lucide-react";
 
+/** InventoryPage - Trang quản lý kho hàng: xem tồn kho, nhập hàng, chuyển kho, kiểm kê và lịch sử giao dịch */
 export default function InventoryPage() {
   const { token } = useAuth();
-  // 🚨 MẶC ĐỊNH MỞ TAB "STOCKS" ĐẦU TIÊN KHI VÀO TRANG
   const [activeTab, setActiveTab] = useState("stocks");
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,12 +19,12 @@ export default function InventoryPage() {
   const [brands, setBrands] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
 
-  // 🚨 STATE CHO BẢNG TỒN KHO
+  // STATE CHO BẢNG TỒN KHO
   const [stocks, setStocks] = useState<any[]>([]);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState("");
   const [selectedBrandFilter, setSelectedBrandFilter] = useState("");
 
-  // 🚨 STATE CHO FORM NHẬP KHO TỔNG (MỚI THÊM)
+  // STATE CHO FORM NHẬP KHO TỔNG
   const [importForm, setImportForm] = useState({
     variant_id: "", branch_id: "", quantity: "", note: "",
   });
@@ -55,7 +55,7 @@ export default function InventoryPage() {
     }
   }, [activeTab, token]);
 
-  // LẤY DỮ LIỆU TỒN KHO TỪ BE
+  /** fetchStocks - Lấy dữ liệu tồn kho theo chi nhánh, từ khóa và thương hiệu */
   const fetchStocks = async (branchId = "") => {
     setLoading(true);
     try {
@@ -72,6 +72,7 @@ export default function InventoryPage() {
     }
   };
 
+  /** fetchTransactions - Lấy lịch sử giao dịch kho hàng */
   const fetchTransactions = async () => {
     setLoading(true);
     try {
@@ -81,6 +82,7 @@ export default function InventoryPage() {
     setLoading(false);
   };
 
+  /** fetchDropdownData - Lấy dữ liệu dropdown: chi nhánh, thương hiệu và biến thể sản phẩm */
   const fetchDropdownData = async () => {
     try {
       const branchData = await adminBranchAPI.getAll(token || "");
@@ -111,7 +113,7 @@ export default function InventoryPage() {
     } catch (error) { console.error(error); }
   };
 
-  // 🚨 HÀM XỬ LÝ NHẬP KHO TỔNG (MỚI THÊM)
+  /** handleImport - Nhập lô hàng mới vào kho tổng */
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -143,6 +145,7 @@ export default function InventoryPage() {
     }
   };
 
+  /** handleTransfer - Thực hiện lệnh chuyển hàng giữa hai chi nhánh */
   const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (transferForm.from_branch_id === transferForm.to_branch_id) {
@@ -170,6 +173,7 @@ export default function InventoryPage() {
     finally { setIsSubmitting(false); }
   };
 
+  /** handleAdjust - Điều chỉnh số lượng tồn kho (kiểm kê / bù trừ) */
   const handleAdjust = async (e: React.FormEvent) => {
     e.preventDefault();
     if (Number(adjustForm.quantity_change) === 0) {

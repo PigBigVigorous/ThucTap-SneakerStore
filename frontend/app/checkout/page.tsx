@@ -16,6 +16,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/a
 type LocationItem = { code: string; name: string; };
 
 // --- Mini Components ---
+/** FloatingInput - Input có label nổi (floating label) cho form thông tin giao hàng */
 const FloatingInput = ({ label, name, type = "text", value, onChange, icon }: any) => (
   <div className="relative w-full group">
     {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-800 transition-colors z-10 pointer-events-none">{icon}</div>}
@@ -30,6 +31,7 @@ const FloatingInput = ({ label, name, type = "text", value, onChange, icon }: an
   </div>
 );
 
+/** CustomSelect - Dropdown có label nổi cho chọn tỉnh/huyện/xã */
 const CustomSelect = ({ label, value, onChange, options, disabled, defaultOption, icon }: any) => (
   <div className="relative w-full group">
     {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">{icon}</div>}
@@ -53,6 +55,7 @@ const CustomSelect = ({ label, value, onChange, options, disabled, defaultOption
   </div>
 );
 
+/** CheckoutPage - Trang thanh toán: nhập địa chỉ, chọn phương thức thanh toán, áp mã giảm giá và đặt hàng */
 export default function CheckoutPage() {
   const router = useRouter();
   const allCartItems = useCartStore((state) => state.items);
@@ -106,7 +109,7 @@ export default function CheckoutPage() {
     if (isAuthenticated && token) {
       discountAPI.getUserVouchers(token).then(res => {
         if (res.success) {
-           setUserVouchers(res.data.filter((v: any) => !v.pivot.is_used));
+          setUserVouchers(res.data.filter((v: any) => !v.pivot.is_used));
         }
       });
     }
@@ -114,6 +117,7 @@ export default function CheckoutPage() {
 
   // Removed old address fetching logic, handled in AddressSection component
 
+  /** handleAddressSelect - Nhận dữ liệu địa chỉ từ ShippingAddressSection và cập nhật form */
   const handleAddressSelect = useCallback((data: any) => {
     setSelectedAddressId(data.addressId || null);
     setFormData(f => ({
@@ -129,7 +133,7 @@ export default function CheckoutPage() {
     setAddressDisplay(data.displayInfo || "");
   }, []);
 
-  // Centralized calculations
+  /** Centralized calculations (useMemo) - Tính toán tổng tiền, giảm giá, điểm học một lần */
   const { totalOriginal, pointDiscountValue, total, potentialPoints } = useMemo(() => {
     const original = subtotal + shippingFee;
     const pointValue = usePoints ? pointsToUse * 1000 : 0;
@@ -152,7 +156,6 @@ export default function CheckoutPage() {
       .catch(() => { });
   }, []);
 
-  // Auto calculate shipping via API
   useEffect(() => {
     // Chỉ tính phí khi đã chọn đủ Tỉnh và Huyện
     if (formData.province && formData.district) {
@@ -167,7 +170,6 @@ export default function CheckoutPage() {
           }
         } catch (error) {
           console.error("Lỗi tính phí ship:", error);
-          // Fallback nếu API lỗi (giữ lại 30k làm dự phòng)
           setShippingFee(30000);
         }
       };
@@ -175,22 +177,24 @@ export default function CheckoutPage() {
     }
   }, [formData.province, formData.district, formData.ward]);
 
+  /** handleInputChange - Cập nhật giá trị form khi người dùng nhập liệu */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setFormData(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const isFormValid = formData.shipping_name && formData.shipping_phone && formData.province && formData.district && formData.ward && formData.addressDetail;
 
+  /** handleApplyDiscount - Áp dụng mã giảm giá vào đơn hàng (tối đa 2 mã) */
   const handleApplyDiscount = async (codeToApply?: string) => {
     const code = (codeToApply || discountCode).trim();
     if (!code) return;
-    
+
     if (appliedDiscounts.some(d => d.code === code)) {
-        toast.error("Mã này đã được áp dụng!");
-        return;
+      toast.error("Mã này đã được áp dụng!");
+      return;
     }
     if (appliedDiscounts.length >= 2) {
-        toast.error("Chỉ được áp dụng tối đa 2 mã giảm giá!");
-        return;
+      toast.error("Chỉ được áp dụng tối đa 2 mã giảm giá!");
+      return;
     }
 
     setIsApplyingDiscount(true);
@@ -200,7 +204,7 @@ export default function CheckoutPage() {
         variant_id: item.variant_id,
         quantity: item.quantity,
       })), token || undefined);
-      
+
       if (res.success) {
         setAppliedDiscounts(prev => [...prev, {
           code: res.data.code,
@@ -217,11 +221,13 @@ export default function CheckoutPage() {
     setIsApplyingDiscount(false);
   };
 
+  /** removeDiscount - Gỡ bỏ mã giảm giá đã áp dụng */
   const removeDiscount = (codeToRemove: string) => {
     setAppliedDiscounts(prev => prev.filter(d => d.code !== codeToRemove));
     toast.success("Đã gỡ mã giảm giá");
   };
 
+  /** handleTogglePoints - Bật/tắt sử dụng điểm tích lũy để giảm giá */
   const handleTogglePoints = () => {
     if (!isAuthenticated) {
       setIsAuthModalOpen(true);
@@ -243,8 +249,8 @@ export default function CheckoutPage() {
     }
   };
 
+  /** handlePreSubmit - Kiểm tra form trước khi đặt hàng, hiển thị lỗi nếu thiếu thông tin */
   const handlePreSubmit = () => {
-    // Kiểm tra lần lượt từng điều kiện và hiển thị thông báo lỗi cụ thể
     if (!formData.shipping_name) { toast.error("Vui lòng nhập tên người nhận!"); return; }
     if (!formData.shipping_phone) { toast.error("Vui lòng nhập số điện thoại!"); return; }
     if (!formData.province) { toast.error("Vui lòng chọn Tỉnh / Thành phố!"); return; }
@@ -254,16 +260,17 @@ export default function CheckoutPage() {
     if (!isAuthenticated && !formData.email) { toast.error("Vui lòng nhập email để nhận thông báo đơn hàng!"); return; }
 
     if (paymentMethod === "qr") {
-      executeOrder(); // Tạo đơn trước để có mã đơn, sau đó hiện QR modal
+      executeOrder();
     } else {
       executeOrder();
     }
   };
 
-  // Xoá dấu tiếng Việt, chỉ giữ số
+  /** removeVietnameseDiacritics - Xóa dấu tiếng Việt, chuẩn hoá chuỗi để gửi lên API */
   const removeVietnameseDiacritics = (str: string) =>
     str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
 
+  /** executeOrder - Gửi yêu cầu tạo đơn hàng lên server, xử lý QR/VNPay/COD */
   const executeOrder = async () => {
     setIsLoading(true);
     const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -310,7 +317,6 @@ export default function CheckoutPage() {
             name: "SNEAKER STORE",
             trackingCode
           });
-          // Đánh dấu đã đặt xong để khoá nút đặt hàng
           setOrderPlaced(true);
           refreshUser();
           clearSelectedItems();
@@ -326,7 +332,6 @@ export default function CheckoutPage() {
         toast.error(data.message || "Có lỗi xảy ra từ máy chủ.", { id: toastId, duration: 5000 });
       }
     } catch (err: any) {
-      // Ưu tiên lấy message từ body response của server (lỗi 4xx/5xx)
       const serverMsg = err?.response?.data?.message || err.message || "Không thể kết nối đến máy chủ.";
       toast.error(serverMsg, { id: toastId, duration: 5000 });
     } finally {
@@ -334,6 +339,7 @@ export default function CheckoutPage() {
     }
   };
 
+  /** handleQrDone - Xử lý sau khi người dùng xác nhận đã chuyển khoản QR xong */
   const handleQrDone = () => {
     const user = JSON.parse(localStorage.getItem("user") || "null");
     setQrModalData(null);
@@ -419,7 +425,7 @@ export default function CheckoutPage() {
           {/* Left Column: Checkout Form */}
           <div className="w-full lg:w-[62%] space-y-8">
 
-            {/* 1 & 2. Thông tin nhận hàng & Địa chỉ */}
+            {/* Thông tin nhận hàng & Địa chỉ */}
             <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-lg font-black text-gray-900 mb-6 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-xl bg-gray-900 text-white text-xs flex items-center justify-center font-bold shadow-lg shadow-gray-900/20">1</span>
@@ -589,7 +595,7 @@ export default function CheckoutPage() {
               {/* Promo Code */}
               <div className="space-y-3 mb-8 relative z-10">
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Mã giảm giá (Voucher)</label>
-                
+
                 {/* Vouchers từ Ví */}
                 {userVouchers.length > 0 && (
                   <div className="flex flex-col gap-2 mb-3">
@@ -597,17 +603,17 @@ export default function CheckoutPage() {
                       const isApplied = appliedDiscounts.some(d => d.code === v.code);
                       return (
                         <div key={v.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm">
-                           <div>
-                              <p className="text-sm font-black text-gray-900">{v.code}</p>
-                              <p className="text-[11px] font-bold text-emerald-600 mt-0.5">Giảm {v.type === 'percent' ? `${v.value}%` : `${v.value.toLocaleString('vi-VN')}đ`}</p>
-                           </div>
-                           <button 
-                             onClick={() => isApplied ? removeDiscount(v.code) : handleApplyDiscount(v.code)}
-                             disabled={!isApplied && appliedDiscounts.length >= 2}
-                             className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isApplied ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50'}`}
-                           >
-                             {isApplied ? 'Bỏ chọn' : 'Áp dụng'}
-                           </button>
+                          <div>
+                            <p className="text-sm font-black text-gray-900">{v.code}</p>
+                            <p className="text-[11px] font-bold text-emerald-600 mt-0.5">Giảm {v.type === 'percent' ? `${v.value}%` : `${v.value.toLocaleString('vi-VN')}đ`}</p>
+                          </div>
+                          <button
+                            onClick={() => isApplied ? removeDiscount(v.code) : handleApplyDiscount(v.code)}
+                            disabled={!isApplied && appliedDiscounts.length >= 2}
+                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isApplied ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50'}`}
+                          >
+                            {isApplied ? 'Bỏ chọn' : 'Áp dụng'}
+                          </button>
                         </div>
                       )
                     })}
@@ -636,7 +642,7 @@ export default function CheckoutPage() {
                     Áp dụng
                   </button>
                 </div>
-                
+
                 {/* Danh sách mã đã áp dụng */}
                 {appliedDiscounts.length > 0 && (
                   <div className="space-y-2 mt-3">
@@ -726,7 +732,6 @@ export default function CheckoutPage() {
 
       {qrModalData && (() => {
         // VietQR động — nhúng số tiền + nội dung CK thẳng vào mã QR
-        // Khi khách quét, app ngân hàng tự điền sẵn, KHÔNG chỉnh sửa được
         const BANK_ID = "VCB";
         const ACCOUNT_NO = "1031485823";
         const ACCOUNT_NAME = "TRAN NGUYEN GIA KHANG";
@@ -776,7 +781,7 @@ export default function CheckoutPage() {
                     title="Nhấn để sao chép"
                   >
                     {ACCOUNT_NO}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 opacity-60"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 opacity-60"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
                   </button>
                 </div>
                 {/* Chủ TK */}
@@ -798,7 +803,7 @@ export default function CheckoutPage() {
                     title="Nhấn để sao chép"
                   >
                     {qrModalData.description}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 opacity-60 shrink-0"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 opacity-60 shrink-0"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
                   </button>
                 </div>
               </div>

@@ -17,7 +17,7 @@ export type CartItem = {
   selected?: boolean;
 };
 
-// 2. Định nghĩa các hành động (Actions) của Giỏ hàng
+// 2. Định nghĩa các hành động của Giỏ hàng
 interface CartState {
   items: CartItem[];
   syncCartWithServer: (latestItems: any[]) => void;
@@ -32,13 +32,13 @@ interface CartState {
   getTotalPrice: () => number;
 }
 
-// 3. Khởi tạo Zustand Store (Đã tích hợp sẵn Persist để tự động lưu LocalStorage)
+// 3. Khởi tạo Zustand Store 
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [], // Giỏ hàng ban đầu trống
 
-      // ĐỒNG BỘ GIỎ HÀNG VỚI SERVER (Giải quyết câu hỏi Hội đồng)
+      /** syncCartWithServer - Đồng bộ giá/tồn kho từ server vào giỏ hàng local / Sync price/stock from server to local cart */
       syncCartWithServer: (latestItems: any[]) => {
         set((state) => {
           const syncedItems = state.items.map(oldItem => {
@@ -52,7 +52,7 @@ export const useCartStore = create<CartState>()(
         });
       },
 
-      // THÊM VÀO GIỎ
+      /** addToCart - Thêm sản phẩm vào giỏ; tự động cộng số lượng nếu đã tồn tại */
       addToCart: (newItem) => {
         set((state) => {
           const existingItem = state.items.find((i) => i.variant_id === newItem.variant_id);
@@ -73,7 +73,7 @@ export const useCartStore = create<CartState>()(
         });
       },
 
-      // XÓA KHỎI GIỎ
+      /** removeFromCart - Xóa sản phẩm khỏi giỏ hàng theo variant_id */
       removeFromCart: (variant_id) => {
         set((state) => ({
           items: state.items.filter((i) => i.variant_id !== variant_id),
@@ -81,7 +81,7 @@ export const useCartStore = create<CartState>()(
         toast.success("Đã xóa sản phẩm khỏi giỏ!");
       },
 
-      // CẬP NHẬT SỐ LƯỢNG (Dấu + / -)
+      /** updateQuantity - Cập nhật số lượng sản phẩm, kiểm tra không vượt tồn kho */
       updateQuantity: (variant_id, quantity) => {
         set((state) => {
           const item = state.items.find((i) => i.variant_id === variant_id);
@@ -99,7 +99,7 @@ export const useCartStore = create<CartState>()(
         });
       },
 
-      // TOGGLE CHỌN SẢN PHẨM
+      /** toggleSelect - Chọn/bỏ chọn một sản phẩm trong giỏ để thanh toán */
       toggleSelect: (variant_id) => {
         set((state) => ({
           items: state.items.map((i) =>
@@ -108,35 +108,35 @@ export const useCartStore = create<CartState>()(
         }));
       },
 
-      // CHỌN / BỎ CHỌN TẤT CẢ
+      /** toggleSelectAll - Chọn/bỏ chọn tất cả sản phẩm trong giỏ */
       toggleSelectAll: (selected) => {
         set((state) => ({
           items: state.items.map((i) => ({ ...i, selected })),
         }));
       },
 
-      // XÓA SẠCH GIỎ (Dùng khi đặt hàng xong)
+      /** clearCart - Xóa sạch toàn bộ giỏ hàng (dùng sau khi đặt hàng xong hoặc đăng xuất) */
       clearCart: () => set({ items: [] }),
 
-      // XÓA CÁC SẢN PHẨM ĐÃ CHỌN (Sau khi thanh toán thành công)
+      /** clearSelectedItems - Xóa các sản phẩm đã được chọn (sau khi thanh toán thành công) */
       clearSelectedItems: () => {
         set((state) => ({
           items: state.items.filter((i) => i.selected === false),
         }));
       },
 
-      // TÍNH TỔNG SỐ LƯỢNG HÀNG (Dùng cho icon cái túi)
+      /** getTotalItems - Tính tổng số lượng sản phẩm */
       getTotalItems: () => {
         return get().items.reduce((total, item) => total + item.quantity, 0);
       },
 
-      // TÍNH TỔNG TIỀN (Dùng cho trang Checkout, chỉ tính sản phẩm được chọn)
+      /** getTotalPrice - Tính tổng tiền các sản phẩm được chọn */
       getTotalPrice: () => {
         return get().items.filter(i => i.selected !== false).reduce((total, item) => total + item.price * item.quantity, 0);
       },
     }),
     {
-      name: 'sneaker-cart-storage', 
+      name: 'sneaker-cart-storage',
     }
   )
 );

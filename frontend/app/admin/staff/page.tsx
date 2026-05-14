@@ -9,6 +9,7 @@ import {
   Trash2, Mail, RefreshCw, Search, X, Check
 } from "lucide-react";
 
+/** AdminStaffPage - Trang quản lý nhân sự: thêm, sửa, phân quyền và khóa tài khoản */
 export default function AdminStaffPage() {
   const { token, user: currentUser, hasPermission } = useAuth();
 
@@ -19,7 +20,6 @@ export default function AdminStaffPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form state
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -30,6 +30,7 @@ export default function AdminStaffPage() {
 
   const canManage = hasPermission("manage-users");
 
+  /** fetchData - Lấy danh sách nhân viên và danh sách vai trò song song */
   const fetchData = async () => {
     if (!token) return;
     setLoading(true);
@@ -52,6 +53,7 @@ export default function AdminStaffPage() {
     fetchData();
   }, [token]);
 
+  /** handleToggleStatus - Khóa/mở khóa tài khoản nhân viên */
   const handleToggleStatus = async (id: number) => {
     if (!token || !canManage) return;
     try {
@@ -67,6 +69,7 @@ export default function AdminStaffPage() {
     }
   };
 
+  /** handleDelete - Xóa vĩnh viễn tài khoản nhân viên (có xác nhận) */
   const handleDelete = async (id: number) => {
     if (!token || !canManage) return;
     if (!window.confirm("⚠️ Bạn có chắc muốn xóa nhân viên này? Thao tác này không thể hoàn tác.")) return;
@@ -84,6 +87,7 @@ export default function AdminStaffPage() {
     }
   };
 
+  /** handleSubmit - Lưu thông tin nhân viên (tạo mới hoặc cập nhật) */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !canManage) return;
@@ -112,23 +116,26 @@ export default function AdminStaffPage() {
     }
   };
 
+  /** openAddModal - Mở modal để thêm mới nhân viên */
   const openAddModal = () => {
     setEditingId(null);
     setFormData({ name: "", email: "", password: "", role: "cashier" });
     setIsModalOpen(true);
   };
 
+  /** openEditModal - Mở modal chỉnh sửa thông tin nhân viên */
   const openEditModal = (user: any) => {
     setEditingId(user.id);
     setFormData({
       name: user.name,
       email: user.email,
-      password: "", // Để trống password khi sửa
+      password: "",
       role: user.roles?.[0]?.name || "cashier"
     });
     setIsModalOpen(true);
   };
 
+  /** filteredStaff - Lọc nhân viên theo tên, email hoặc vai trò */
   const filteredStaff = staff.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||

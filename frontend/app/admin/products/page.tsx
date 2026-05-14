@@ -6,6 +6,7 @@ import { adminProductAPI } from "../../services/api";
 import toast, { Toaster } from "react-hot-toast";
 import { Package, Plus, X, Upload, Edit, Trash2, Pipette, Ruler, Search, ToggleLeft, ToggleRight } from "lucide-react";
 
+/** ProductsPage - Trang quản lý sản phẩm: thêm, sửa, xóa, ẩn hiện và quản lý biến thể + gallery */
 export default function ProductsPage() {
   const { token } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
@@ -91,6 +92,7 @@ export default function ProductsPage() {
     }
   }, [token, searchTerm]);
 
+  /** fetchProducts - Lấy danh sách sản phẩm */
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -102,7 +104,7 @@ export default function ProductsPage() {
     setLoading(false);
   };
 
-  // Tạo màu mới ngay trong form — gọi API POST /colors
+  /** handleCreateColor - Tạo màu sắc mới trực tiếp trong form */
   const handleCreateColor = async () => {
     if (!newColorForm.name.trim()) return toast.error("Vui lòng nhập tên màu!");
     setIsCreatingColor(true);
@@ -116,9 +118,9 @@ export default function ProductsPage() {
       const data = await res.json();
       if (data.success) {
         const created = { id: String(data.data.id), name: data.data.name, hex_code: data.data.hex_code };
-        // Thêm màu mới vào danh sách
+
         setColorOptions(prev => [...prev, created]);
-        // Tự động chọn màu mới cho dòng biến thể cuối cùng
+
         setVariants(prev => {
           const newV = [...prev];
           newV[newV.length - 1] = { ...newV[newV.length - 1], color_id: created.id };
@@ -136,7 +138,7 @@ export default function ProductsPage() {
     setIsCreatingColor(false);
   };
 
-  // Khi bấm nút Sửa trên từng dòng sản phẩm
+  /** handleEditClick - Đổ dữ liệu sản phẩm (biến thể, gallery) vào form và mở modal sửa */
   const handleEditClick = (product: any) => {
     setEditingId(product.id);
 
@@ -154,9 +156,7 @@ export default function ProductsPage() {
     // Reset gallery mới upload
     setGalleryByColor({});
 
-    // ============================================================
-    // 🎨 LOAD ẢNH GALLERY HIỆN CÓ — NHÓM THEO MÀU SẮC
-    // ============================================================
+
     const groupedByColor: Record<string, string[]> = {};
     if (product.images && product.images.length > 0) {
       product.images.forEach((img: any) => {
@@ -181,11 +181,11 @@ export default function ProductsPage() {
       setVariants([{ color_id: "1", size_id: "1", price: "0", stock: "0", colorway_name: "" }]);
     }
 
-    setActiveModalTab("info"); // Reset về tab info khi mở
+    setActiveModalTab("info");
     setShowModal(true);
   };
 
-  // Tạo size mới ngay trong form — gọi API POST /admin/sizes
+  /** handleCreateSize - Tạo cỡ size mới trực tiếp trong form */
   const handleCreateSize = async () => {
     if (!newSizeName.trim()) return toast.error("Vui lòng nhập tên size!");
     setIsCreatingSize(true);
@@ -199,9 +199,7 @@ export default function ProductsPage() {
       const data = await res.json();
       if (data.success) {
         const created = { id: String(data.data.id), name: data.data.name };
-        // Thêm size mới vào danh sách
         setSizeOptions(prev => [...prev, created]);
-        // Tự động chọn size mới cho dòng biến thể cuối cùng
         setVariants(prev => {
           const newV = [...prev];
           newV[newV.length - 1] = { ...newV[newV.length - 1], size_id: created.id };
@@ -220,6 +218,7 @@ export default function ProductsPage() {
   };
 
 
+  /** handleImageChange - Xử lý chọn file ảnh đại diện sản phẩm */
   const handleImageChange = (e: any) => {
     const file = e.target.files[0];
     if (file) {
@@ -228,7 +227,7 @@ export default function ProductsPage() {
     }
   };
 
-  // Hàm xử lý Upload Gallery cho TỪNG MÀU SẮC
+  /** handleGalleryByColorChange - Xử lý upload ảnh gallery nhóm theo từng màu sắc */
   const handleGalleryByColorChange = (colorId: string, e: any) => {
     if (e.target.files) {
       const files = Array.from(e.target.files) as File[];
@@ -247,7 +246,7 @@ export default function ProductsPage() {
     }
   };
 
-  // Xóa bớt ảnh gallery của một màu
+  /** removeColorGalleryImage - Xóa một ảnh khỏi gallery của màu tương ứng */
   const removeColorGalleryImage = (colorId: string, indexToRemove: number) => {
     setGalleryByColor(prev => {
       const existing = prev[colorId];
@@ -262,7 +261,7 @@ export default function ProductsPage() {
     });
   };
 
-  // Xử lý Submit Form
+  /** handleSubmit - Gửi form tạo mới hoặc cập nhật sản phẩm kèm biến thể và gallery */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -278,7 +277,7 @@ export default function ProductsPage() {
 
       if (imageFile) formData.append("base_image", imageFile);
 
-      // 🚀 BÍ QUYẾT GÓI DỮ LIỆU: Đóng gói ảnh gallery theo đúng key ID màu sắc
+      // Đóng gói ảnh gallery theo đúng key ID màu sắc
       Object.entries(galleryByColor).forEach(([colorId, data]) => {
         data.files.forEach((file) => {
           formData.append(`gallery_images[${colorId}][]`, file);
@@ -313,13 +312,11 @@ export default function ProductsPage() {
         }
         setShowModal(false);
         fetchProducts();
-        // Reset Form...
       } else {
         toast.error(res.message || "Có lỗi xảy ra");
       }
     } catch (error: any) {
-      // Log toàn bộ error để debug
-      console.error("❌ Lỗi khi lưu sản phẩm:", error);
+      console.error(" Lỗi khi lưu sản phẩm:", error);
 
       const status = error?.response?.status;
       const serverData = error?.response?.data;
@@ -328,11 +325,8 @@ export default function ProductsPage() {
       console.error("🔢 HTTP Status:", status);
 
       if (serverData) {
-        // 1. Laravel trả về { message: "..." }
         if (serverData.message) {
           toast.error(`[${status}] ${serverData.message}`, { duration: 6000 });
-
-        // 2. Laravel validation errors: { errors: { field: ["msg"] } }
         } else if (serverData.errors) {
           const allErrors = Object.entries(serverData.errors)
             .map(([field, msgs]) =>
@@ -340,8 +334,6 @@ export default function ProductsPage() {
             )
             .join("\n");
           toast.error(`Lỗi validation:\n${allErrors}`, { duration: 8000 });
-
-        // 3. Trường hợp khác — dump toàn bộ response
         } else {
           const raw = typeof serverData === "string"
             ? serverData.slice(0, 300)
@@ -349,7 +341,6 @@ export default function ProductsPage() {
           toast.error(`[${status}] Lỗi server:\n${raw}`, { duration: 8000 });
         }
       } else if (error?.message) {
-        // Lỗi mạng hoặc timeout
         toast.error(`Lỗi kết nối: ${error.message}`);
       } else {
         toast.error("Lỗi không xác định. Kiểm tra Console (F12) để biết chi tiết.");
@@ -358,8 +349,9 @@ export default function ProductsPage() {
     setIsSubmitting(false);
   };
 
+  /** handleDelete - Ẩn sản phẩm */
   const handleDelete = async (id: number) => {
-    if (!window.confirm("⚠️ Bạn có chắc muốn xóa sản phẩm này? (Dữ liệu sẽ được ẩn đi để bảo toàn lịch sử hóa đơn)")) return;
+    if (!window.confirm("⚠️ Bạn có chắc muốn xóa sản phẩm này?")) return;
 
     if (!token) return;
     try {
@@ -375,13 +367,12 @@ export default function ProductsPage() {
     }
   };
 
+  /** handleToggleStatus - Đổi trạng thái kinh doanh sản phẩm (optimistic update) */
   const handleToggleStatus = async (product: any) => {
     if (!token) return;
     const newStatus = !product.is_active;
     const label = newStatus ? "Đang bán" : "Ngừng bán";
     if (!window.confirm(`Xác nhận chuyển sản phẩm "${product.name}" sang trạng thái: ${label}?`)) return;
-
-    // Optimistic update — cập nhật UI ngay lập tức
     setProducts((prev: any[]) =>
       prev.map((p: any) => p.id === product.id ? { ...p, is_active: newStatus } : p)
     );
@@ -391,7 +382,6 @@ export default function ProductsPage() {
       if (res.success) {
         toast.success(res.message);
       } else {
-        // Revert nếu server báo lỗi
         setProducts((prev: any[]) =>
           prev.map((p: any) => p.id === product.id ? { ...p, is_active: product.is_active } : p)
         );
@@ -434,7 +424,7 @@ export default function ProductsPage() {
               setForm({ name: "", category_id: categoryOptions[0]?.id || "1", brand_id: brandOptions[0]?.id || "1", description: "", branch_id: "1" });
               setImageFile(null); setPreviewUrl(null); setGalleryByColor({}); setExistingGalleryByColor({});
               setVariants([{ color_id: colorOptions[0]?.id || "1", size_id: sizeOptions[0]?.id || "1", price: "2500000", stock: "50", colorway_name: "" }]);
-              setActiveModalTab("info"); // Đặt mặc định mở tab thông tin
+              setActiveModalTab("info");
               setShowModal(true);
             }}
             className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl font-bold hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl"
@@ -493,9 +483,6 @@ export default function ProductsPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-600">
                           <span className="px-2.5 py-1 bg-gray-100 rounded-lg">{product.brand?.name}</span>
                         </td>
-                        {/* ================================================
-                            🎨 CỘT MÀU SẮC — HIỆN DOT TRÒN MỖI BIẾN THỂ MÀU
-                            ================================================ */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-wrap gap-2 max-w-[120px]">
                             {(() => {
@@ -531,17 +518,13 @@ export default function ProductsPage() {
                             ? `${Number(product.variants[0].price).toLocaleString('vi-VN')} ₫`
                             : "N/A"}
                         </td>
-
-                        {/* ============================================
-                            🔘 CỘT TRẠNG THÁI KINH DOANH + NÚT TOGGLE
-                            ============================================ */}
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <button
                             onClick={() => handleToggleStatus(product)}
                             title={product.is_active ? "Nhấn để Ngừng bán" : "Nhấn để Mở bán"}
                             className={`group/toggle inline-flex flex-col items-center gap-1.5 px-3 py-2 rounded-xl border-2 transition-all duration-300 ${product.is_active
-                                ? "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-400 hover:shadow-md hover:shadow-emerald-100"
-                                : "border-gray-200 bg-gray-50 hover:bg-orange-50 hover:border-orange-300 hover:shadow-md hover:shadow-orange-100"
+                              ? "border-emerald-200 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-400 hover:shadow-md hover:shadow-emerald-100"
+                              : "border-gray-200 bg-gray-50 hover:bg-orange-50 hover:border-orange-300 hover:shadow-md hover:shadow-orange-100"
                               }`}
                           >
                             {product.is_active ? (
@@ -725,7 +708,6 @@ export default function ProductsPage() {
 
                       return (
                         <div key={colorId} className="mb-4 p-4 border border-dashed border-gray-300 rounded-xl bg-gray-50/50">
-                          {/* Header: hex dot + tên màu */}
                           <div className="flex items-center gap-2 mb-3">
                             <span
                               className="shrink-0 w-4 h-4 rounded-full border border-gray-300 shadow-sm"
@@ -735,8 +717,6 @@ export default function ProductsPage() {
                               📸 Ảnh cho màu: <span className="text-orange-600">{colorName}</span>
                             </p>
                           </div>
-
-                          {/* Ảnh gallery hiện có (khi đang chỉnh sửa) */}
                           {editingId && existingImages.length > 0 && (
                             <div className="mb-3">
                               <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Ảnh hiện có:</p>
@@ -751,15 +731,11 @@ export default function ProductsPage() {
                               <p className="text-[10px] text-gray-400 mt-1">Upload ảnh mới bên dưới sẽ thay thế toàn bộ ảnh trên.</p>
                             </div>
                           )}
-
-                          {/* Upload ảnh mới */}
                           <input
                             type="file" multiple accept="image/*"
                             onChange={(e) => handleGalleryByColorChange(colorId, e)}
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-black hover:file:bg-gray-300 transition-colors mb-3"
                           />
-
-                          {/* Preview ảnh mới chọn */}
                           {colorData.previews.length > 0 && (
                             <div>
                               <p className="text-[11px] font-bold text-green-600 uppercase tracking-wider mb-1.5">Ảnh mới sẽ upload:</p>
@@ -955,7 +931,7 @@ export default function ProductsPage() {
                             )}
                           </div>
 
-                          {/* 🎨 COLORWAY NAME — TÔN PHỐI MÀU (trải dài full width) */}
+                          {/* COLORWAY NAME - TÊN PHỐI MÀU (trải dài full width) */}
                           <div className="col-span-4 mt-2 mb-1 px-1">
                             <div className="flex items-center gap-2 mb-1.5">
                               <span className="text-xs font-black text-orange-600 uppercase">Phối Màu Kỹ Thuật Số (Tùy Chọn)</span>
@@ -1094,7 +1070,7 @@ export default function ProductsPage() {
               </div>
             </form>
 
-            {/* Nút Submit CHUNG nằm ngoài Form Scroll (Luôn hiển thị) */}
+            {/* Nút Submit CHUNG nằm ngoài Form Scroll */}
             <div className="p-6 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-white">
               <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3.5 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors">
                 Thoát

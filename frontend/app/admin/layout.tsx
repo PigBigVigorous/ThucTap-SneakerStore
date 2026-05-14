@@ -23,6 +23,7 @@ const NAV = [
   { href: "/admin/staff", label: "Nhân sự", icon: Users, perm: "view-staff" },
 ];
 
+/** AdminShell - Layout chính của khu vực quản trị: sidebar nav, RBAC filter, mobile menu */
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, hasPermission, hasRole, logout } = useAuth();

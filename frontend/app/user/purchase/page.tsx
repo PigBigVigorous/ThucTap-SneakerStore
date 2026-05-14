@@ -35,6 +35,7 @@ const TABS = [
   { id: 'returned', label: 'Trả hàng', icon: <RotateCcw size={16} /> },
 ];
 
+/** StatusBadge - Badge hiển thị trạng thái đơn hàng có icon và màu sắc tương ứng */
 const StatusBadge = ({ status }: { status: string }) => {
   const configs: any = {
     pending: { label: 'Chờ xác nhận', color: 'text-amber-600 bg-amber-50 border-amber-100', icon: <Clock size={12} /> },
@@ -56,6 +57,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
+/** UserPurchasePage - Trang lịch sử đơn hàng: lọc theo trạng thái, tìm kiếm, hủy và trả hàng */
 export default function UserPurchasePage() {
   const { user, token, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<OrderStatus>('all');
@@ -72,12 +74,14 @@ export default function UserPurchasePage() {
   const [returnReason, setReturnReason] = useState("");
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
 
+  /** handleOpenReturnModal - Mở modal yêu cầu trả hàng cho đơn hàng đã chọn */
   const handleOpenReturnModal = (orderId: number) => {
     setReturnOrderId(orderId);
     setReturnReason("");
     setIsReturnModalOpen(true);
   };
 
+  /** fetchOrders - Lấy danh sách đơn hàng của người dùng (có chế độ silent để polling) */
   const fetchOrders = useCallback(async (isSilent = false) => {
     if (!token) return;
     if (!isSilent) setLoading(true);
@@ -96,7 +100,7 @@ export default function UserPurchasePage() {
   useEffect(() => {
     fetchOrders();
 
-    // 🔄 Real-time Polling mỗi 5 giây
+    // Real-time Polling mỗi 5 giây
     const interval = setInterval(() => {
       fetchOrders(true);
     }, 5000);
@@ -104,6 +108,7 @@ export default function UserPurchasePage() {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
+  /** handleCancelOrder - Hủy đơn hàng sau khi người dùng xác nhận */
   const handleCancelOrder = async (orderId: number) => {
     if (!token) return;
     if (!confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?")) return;
@@ -122,10 +127,12 @@ export default function UserPurchasePage() {
     }
   };
 
+  /** handleReturnOrder - Mở modal để nhập lý do trả hàng */
   const handleReturnOrder = (orderId: number) => {
     handleOpenReturnModal(orderId);
   };
 
+  /** submitReturnRequest - Gửi yêu cầu trả hàng kèm lý do cho server */
   const submitReturnRequest = async () => {
     if (!token || !returnOrderId) return;
     if (!returnReason.trim()) {
@@ -150,11 +157,13 @@ export default function UserPurchasePage() {
     }
   };
 
+  /** openDetail - Mở modal chi tiết đơn hàng theo ID */
   const openDetail = (id: number) => {
     setSelectedOrderId(id);
     setIsDetailOpen(true);
   };
 
+  /** filteredOrders (useMemo) - Lọc danh sách đơn hàng theo tab trạng thái và từ khóa tìm kiếm */
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       const matchesTab = activeTab === 'all' || order.status === activeTab;

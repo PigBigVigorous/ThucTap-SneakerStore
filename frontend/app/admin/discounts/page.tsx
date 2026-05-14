@@ -23,6 +23,7 @@ const emptyForm: FormState = {
   is_active: true,
 };
 
+/** DiscountsPage - Trang quản lý mã giảm giá/voucher: tạo, chỉnh sửa và xóa */
 export default function DiscountsPage() {
   const { token } = useAuth();
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -38,6 +39,7 @@ export default function DiscountsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<FormState>(emptyForm);
 
+  /** fetchDiscounts - Lấy danh sách tất cả mã giảm giá từ server */
   const fetchDiscounts = async () => {
     if (!token) return;
     setLoading(true);
@@ -72,6 +74,7 @@ export default function DiscountsPage() {
     return Array.from(uniqueMap.values());
   };
 
+  /** getAllChildrenIds - Đệ quy lấy tất cả ID danh mục con của một danh mục cha */
   const getAllChildrenIds = (categoryId: number, allCategories: Category[]): number[] => {
     const category = allCategories.find(c => c.id === categoryId);
     if (!category || !category.children) return [];
@@ -86,6 +89,7 @@ export default function DiscountsPage() {
     return childrenIds;
   };
 
+  /** toggleCategorySelection - Chọn/bỏ chọn một danh mục và tất cả các con của nó */
   const toggleCategorySelection = (categoryId: number, currentSelected: number[], allCategories: Category[]) => {
     const childrenIds = getAllChildrenIds(categoryId, allCategories);
     const allIds = [categoryId, ...childrenIds];
@@ -112,11 +116,13 @@ export default function DiscountsPage() {
     }).length;
   };
 
+  /** toggleAllCategories - Chọn tất cả hoặc bỏ chọn tất cả danh mục */
   const toggleAllCategories = (currentSelected: number[], allCategories: Category[]) => {
     const allIds = allCategories.map(c => c.id);
     return currentSelected.length === allIds.length ? [] : allIds;
   };
 
+  /** fetchCategories - Lấy và làm phẳng cây danh mục phục vụ bộ lọc voucher */
   const fetchCategories = async () => {
     if (!token) return;
     try {
@@ -131,6 +137,7 @@ export default function DiscountsPage() {
     }
   };
 
+  /** handleCreate - Validate và gửi form tạo mã giảm giá mới */
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.code.trim() || !token) return;
@@ -173,6 +180,7 @@ export default function DiscountsPage() {
     setIsSubmitting(false);
   };
 
+  /** startEdit - Bật chế độ chỉnh sửa và đổ dữ liệu voucher vào form */
   const startEdit = (discount: Discount) => {
     setEditingId(discount.id);
     setEditForm({
@@ -191,6 +199,7 @@ export default function DiscountsPage() {
     });
   };
 
+  /** handleUpdate - Gửi cập nhật voucher theo ID */
   const handleUpdate = async (id: number) => {
     if (!editForm.code.trim() || !token) return;
     setIsSubmitting(true);
@@ -215,6 +224,7 @@ export default function DiscountsPage() {
     setIsSubmitting(false);
   };
 
+  /** handleDelete - Xóa vĩnh viễn mã giảm giá (có xác nhận) */
   const handleDelete = async (id: number, code: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn voucher "${code}"?`)) return;
     if (!token) return;

@@ -14,12 +14,14 @@ import {
 import toast from "react-hot-toast";
 
 // ─── Format tiền tệ ──────────────────────────────────────────────────────────
+/** fmt - Định dạng số tiền sang chuỗi VND */
 const fmt = (n: number) => n.toLocaleString("vi-VN") + " ₫";
 
 
 
 // ─── CartPage ─────────────────────────────────────────────────────────────────
 
+/** CartPage - Trang giỏ hàng: xem, chỉnh sửa số lượng, xóa sản phẩm và chuyển đến thanh toán */
 export default function CartPage() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);

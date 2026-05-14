@@ -95,8 +95,8 @@ function AssistantBubble({ msg }: { msg: Message }) {
 }
 
 // ─── Main Widget ──────────────────────────────────────────────────────────────
+/** ChatbotWidget - Widget chatbot AI tư vấn giày, ẩn ở trang admin/shipper */
 export default function ChatbotWidget() {
-  // KHAI BÁO TẤT CẢ HOOKS Ở ĐẦU TIÊN (QUY TẮC BẮT BUỘC)
   const { user } = useAuth();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -114,11 +114,11 @@ export default function ChatbotWidget() {
     if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, open]);
 
-  // SAU KHI GỌI HOOKS MỚI ĐƯỢC KIỂM TRA ĐIỀU KIỆN RETURN
   const isAdmin = pathname?.startsWith("/admin");
 
   if (isAdmin || user?.role === 'shipper') return null;
 
+  /** sendMessage - Gửi tin nhắn của người dùng đến Chatbot API và xử lý phản hồi */
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;

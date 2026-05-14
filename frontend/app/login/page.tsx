@@ -6,6 +6,7 @@ import { authAPI } from "../services/api";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
+/** LoginPage - Trang đăng nhập: xác thực và phân luồng theo vai trò (admin/shipper/user) */
 export default function LoginPage() {
   const { login, isAuthenticated, user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -24,6 +25,7 @@ export default function LoginPage() {
     return null;
   }
 
+  /** handleLogin - Xử lý form đăng nhập và điều hướng theo role */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

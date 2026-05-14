@@ -16,6 +16,7 @@ import {
 
 // ─── Search overlay ───────────────────────────────────────────────────────────
 
+/** SearchOverlay - Thanh tìm kiếm dạng full-screen overlay / Full-screen search overlay component */
 function SearchOverlay({ onClose }: { onClose: () => void }) {
   const router   = useRouter();
   const [q, setQ] = useState("");
@@ -26,6 +27,7 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  /** submit - Xử lý sự kiện submit form tìm kiếm, điếu hướng đến kết quả / Handle search form submit and redirect */
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!q.trim()) return;
@@ -75,6 +77,7 @@ function SearchOverlay({ onClose }: { onClose: () => void }) {
 
 // ─── User dropdown ────────────────────────────────────────────────────────────
 
+/** UserMenu - Menu dropdown người dùng: hiển thị avatar, tên, các link hồ sơ / User avatar dropdown with profile links and logout */
 function UserMenu() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
@@ -177,6 +180,7 @@ function UserMenu() {
 
 // ─── Cart icon ────────────────────────────────────────────────────────────────
 
+/** CartIcon - Icon giỏ hàng và yêu thích có badge đếm số lượng / Cart and favorites icons with quantity badges */
 function CartIcon() {
   const [mounted, setMounted] = useState(false);
   const items      = useCartStore((s) => s.items);
@@ -222,6 +226,7 @@ function CartIcon() {
 
 // ─── Main Header ─────────────────────────────────────────────────────────────
 
+/** Header - Thanh điều hướng chính: logo, mega menu, tìm kiếm, giỏ hàng, tài khoản / Main navigation bar with logo, search, cart and user actions */
 export default function Header() {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);

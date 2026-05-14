@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
 
+/** useGeolocation - Custom hook lấy vị trí GPS của người dùng từ trình duyệt / Custom hook to get user's GPS location from the browser */
 export const useGeolocation = () => {
   const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  /** fetchLocation - Yêu cầu quyền định vị và lấy tọa độ lat/lng hiện tại / Request geolocation permission and retrieve current lat/lng coordinates */
   const fetchLocation = useCallback(() => {
     setLoading(true);
     setError(null);

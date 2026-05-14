@@ -7,18 +7,21 @@ import { useFavoritesStore } from "../store/useFavoritesStore";
 import { Heart, ShoppingBag, ArrowRight, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 
+/** fmt - Định dạng số tiền sang chuỗi VND / Format a number to Vietnamese Dong currency string */
 const fmt = (n: number) => Number(n).toLocaleString("vi-VN") + " ₫";
 
+/** FavoritesPage - Trang danh sách sản phẩm yêu thích: xem, xóa, chuyển đến trang chọn size để mua */
 export default function FavoritesPage() {
-  const favorites     = useFavoritesStore((s) => s.favorites);
+  const favorites = useFavoritesStore((s) => s.favorites);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const clearFavorites = useFavoritesStore((s) => s.clearFavorites);
 
-  const addToCart  = useCartStore((s) => s.addToCart);
-  const cartItems  = useCartStore((s) => s.items);
+  const addToCart = useCartStore((s) => s.addToCart);
+  const cartItems = useCartStore((s) => s.items);
 
   const [removingId, setRemovingId] = useState<number | null>(null);
 
+  /** handleRemove - Xóa sản phẩm khỏi danh sách yêu thích với hiệu ứng fade-out */
   const handleRemove = (item: typeof favorites[0]) => {
     setRemovingId(item.product_id);
     setTimeout(() => {
@@ -27,8 +30,8 @@ export default function FavoritesPage() {
     }, 260);
   };
 
+  /** handleMoveToCart - Chuyển hướng đến trang sản phẩm để chọn size và thêm vào giỏ */
   const handleMoveToCart = (item: typeof favorites[0]) => {
-    // Chuyển sang trang sản phẩm để chọn size — không thể add trực tiếp vì chưa có variant
     toast("Chọn size để thêm vào giỏ hàng", { icon: "👟" });
     window.location.href = `/product/${item.slug}`;
   };

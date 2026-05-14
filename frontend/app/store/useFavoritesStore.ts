@@ -24,7 +24,7 @@ export const useFavoritesStore = create<FavoritesState>()(
     (set, get) => ({
       favorites: [],
 
-      // Thêm hoặc Xóa khỏi danh sách yêu thích
+      /** toggleFavorite - Thêm hoặc xóa sản phẩm khỏi danh sách yêu thích / Toggle product in favorites list; returns true if added, false if removed */
       toggleFavorite: (newItem) => {
         const currentFavorites = get().favorites;
         const existingIndex = currentFavorites.findIndex((i) => i.product_id === newItem.product_id);
@@ -40,7 +40,7 @@ export const useFavoritesStore = create<FavoritesState>()(
         }
       },
 
-      // Xóa sạch (Dùng khi Đăng xuất)
+      /** clearFavorites - Xóa toàn bộ danh sách yêu thích (dùng khi đăng xuất) / Clear all favorites (used on logout) */
       clearFavorites: () => set({ favorites: [] }),
     }),
     {

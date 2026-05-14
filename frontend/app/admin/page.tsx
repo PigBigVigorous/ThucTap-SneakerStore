@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+/** fmt - Định dạng số tiền sang chuỗi VND */
 const fmt = (n: number) => `${n.toLocaleString("vi-VN")} ₫`;
 
+/** StatCard - Card thống kê hiển thị số liệu với icon và màu sắc / Statistics card displaying a key metric with icon and color */
 function StatCard({
   label, value, sub, icon: Icon, color,
 }: {
@@ -48,6 +50,7 @@ const TX_TYPE_MAP: Record<string, { label: string; cls: string }> = {
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
+/** AdminDashboard - Trang tổng quan quản trị: doanh thu, đơn hàng, kho, top sản phẩm / Admin dashboard showing revenue stats, orders, inventory and top products */
 export default function AdminDashboard() {
   const { token, hasPermission, user } = useAuth();
   const router = useRouter();
@@ -110,6 +113,7 @@ export default function AdminDashboard() {
     })();
   }, [token]);
 
+  /** formatChartDate - Định dạng ngày tháng phù hợp với tần suất hiển thị biểu đồ / Format date string based on the selected chart period (day/month/year) */
   const formatChartDate = (date: string, period: string) => {
     if (period === 'year') return date;
     if (period === 'month') {
@@ -119,6 +123,7 @@ export default function AdminDashboard() {
     return new Date(date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
   };
 
+  /** fetchDetailedRevenue - Tải dữ liệu doanh thu chi tiết theo kỳ (ngày/tháng/năm) / Fetch detailed revenue data by the selected reporting period */
   const fetchDetailedRevenue = async (period: 'day' | 'month' | 'year') => {
     if (!token) return;
     setChartLoading(true);
@@ -139,6 +144,7 @@ export default function AdminDashboard() {
     }
   };
 
+  /** handleExport - Xuất báo cáo doanh thu ra file Excel và tải về / Export revenue report to Excel file and trigger download */
   const handleExport = async () => {
     if (!token) return;
     const loadingToast = toast.loading("Đang tạo file báo cáo...");

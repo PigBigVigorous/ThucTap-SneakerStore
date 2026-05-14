@@ -14,6 +14,7 @@ type Category = {
   children?: Category[];
 };
 
+/** CategoriesPage - Trang quản lý danh mục 2 cấp: thêm và xóa danh mục cha/con */
 export default function CategoriesPage() {
   const { token } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -24,6 +25,7 @@ export default function CategoriesPage() {
   const [newName, setNewName] = useState("");
   const [newParentId, setNewParentId] = useState<string>("");
 
+  /** fetchCategories - Lấy cây danh mục và làm phẳng thành mảng một chiều */
   const fetchCategories = async () => {
     if (!token) return;
     setLoading(true);
@@ -61,6 +63,7 @@ export default function CategoriesPage() {
     if (token) fetchCategories();
   }, [token]);
 
+  /** handleCreate - Tạo danh mục mới (có thể chọn danh mục cha) */
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !token) return;
@@ -89,6 +92,7 @@ export default function CategoriesPage() {
     setIsSubmitting(false);
   };
 
+  /** handleDelete - Xóa danh mục; danh mục con sẽ được chuyển lên cấp trên */
   const handleDelete = async (cat: Category) => {
     if (
       !window.confirm(
@@ -113,6 +117,7 @@ export default function CategoriesPage() {
   // Phân cấp: danh mục gốc (parent_id = null)
   const rootCategories = categories.filter((c) => c.parent_id === null);
   // Danh mục con theo parent_id
+  /** getChildren - Lấy danh sách danh mục con theo ID cha */
   const getChildren = (parentId: number) =>
     categories.filter((c) => c.parent_id === parentId);
 

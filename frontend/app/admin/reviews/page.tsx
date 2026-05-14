@@ -5,6 +5,7 @@ import { adminReviewAPI, getFileUrl } from "../../services/api";
 import { Search, CheckCircle, XCircle, Trash2, ExternalLink, Star } from "lucide-react";
 import toast from "react-hot-toast";
 
+/** AdminReviewPage - Trang kiểm duyệt đánh giá sản phẩm: duyệt, từ chối hoặc xóa */
 export default function AdminReviewPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,7 @@ export default function AdminReviewPage() {
   const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
 
+  /** fetchReviews - Lấy danh sách đánh giá có lọc theo trạng thái và từ khóa tìm kiếm  */
   const fetchReviews = async (page = 1) => {
     try {
       setLoading(true);
@@ -36,6 +38,7 @@ export default function AdminReviewPage() {
     fetchReviews();
   }, [statusFilter]);
 
+  /** handleUpdateStatus - Duyệt hoặc từ chối đánh giá (cập nhật trạng thái tại chỗ) */
   const handleUpdateStatus = async (id: number, status: 'approved' | 'rejected') => {
     try {
       const token = localStorage.getItem("token") || "";
@@ -49,6 +52,7 @@ export default function AdminReviewPage() {
     }
   };
 
+  /** handleDelete - Xóa vĩnh viễn đánh giá sau khi xác nhận  */
   const handleDelete = async (id: number) => {
     if (!confirm("Bạn có chắc muốn xóa đánh giá này vĩnh viễn?")) return;
     try {
@@ -63,6 +67,7 @@ export default function AdminReviewPage() {
     }
   };
 
+  /** getStatusBadge - Trả về badge hiển thị trạng thái kiểm duyệt của đánh giá */
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending': return <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium">Chờ duyệt</span>;

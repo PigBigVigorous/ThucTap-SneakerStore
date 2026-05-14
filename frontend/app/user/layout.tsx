@@ -5,43 +5,44 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import { getFileUrl } from "../services/api";
-import { 
-  User as UserIcon, 
-  MapPin, 
-  Lock, 
-  ClipboardList, 
-  Ticket, 
+import {
+  User as UserIcon,
+  MapPin,
+  Lock,
+  ClipboardList,
+  Ticket,
   Coins,
   ChevronDown,
   Camera
 } from "lucide-react";
 
-const SidebarItem = ({ 
-  href, 
-  icon: Icon, 
-  label, 
-  isActive, 
-  isSubItem = false 
-}: { 
-  href: string; 
-  icon?: any; 
-  label: string; 
+/** SidebarItem - Link mục menu trong sidebar của trang tài khoản người dùng */
+const SidebarItem = ({
+  href,
+  icon: Icon,
+  label,
+  isActive,
+  isSubItem = false
+}: {
+  href: string;
+  icon?: any;
+  label: string;
   isActive: boolean;
   isSubItem?: boolean;
 }) => (
-  <Link 
-    href={href} 
-    className={`flex items-center gap-3 py-2 px-4 rounded-md transition-colors ${
-      isActive 
-        ? "text-orange-600 font-semibold" 
-        : "text-gray-700 hover:text-orange-500"
-    } ${isSubItem ? "ml-8 text-sm" : "text-base"}`}
+  <Link
+    href={href}
+    className={`flex items-center gap-3 py-2 px-4 rounded-md transition-colors ${isActive
+      ? "text-orange-600 font-semibold"
+      : "text-gray-700 hover:text-orange-500"
+      } ${isSubItem ? "ml-8 text-sm" : "text-base"}`}
   >
     {Icon && <Icon size={isSubItem ? 16 : 20} className={isActive ? "text-orange-600" : "text-gray-500"} />}
     <span>{label}</span>
   </Link>
 );
 
+/** UserLayout - Layout trang tài khoản người dùng: sidebar, menu, bảo vệ Hydration */
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
@@ -55,7 +56,7 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
   if (!mounted) {
     return (
       <div className="bg-[#f5f5f5] min-h-screen pt-24 pb-12 flex items-center justify-center">
-         <div className="w-8 h-8 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -124,24 +125,24 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
           <nav className="space-y-1">
             {menuItems.map((item) => {
               const isMainActive = pathname.startsWith(item.href) || !!(item.subItems?.some(sub => pathname === sub.href));
-              
+
               return (
                 <div key={item.id} className="mb-2">
-                  <SidebarItem 
-                    href={item.href} 
-                    icon={item.icon} 
-                    label={item.label} 
-                    isActive={isMainActive && (!item.subItems || pathname === item.href)} 
+                  <SidebarItem
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.label}
+                    isActive={isMainActive && (!item.subItems || pathname === item.href)}
                   />
                   {item.subItems && (
                     <div className="mt-1 space-y-1">
                       {item.subItems.map((sub) => (
-                        <SidebarItem 
-                          key={sub.label} 
-                          href={sub.href} 
-                          label={sub.label} 
-                          isActive={pathname === sub.href} 
-                          isSubItem 
+                        <SidebarItem
+                          key={sub.label}
+                          href={sub.href}
+                          label={sub.label}
+                          isActive={pathname === sub.href}
+                          isSubItem
                         />
                       ))}
                     </div>

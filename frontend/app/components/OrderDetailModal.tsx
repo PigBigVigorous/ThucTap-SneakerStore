@@ -21,11 +21,13 @@ interface OrderDetailModalProps {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
+/** OrderDetailModal - Modal hiển thị chi tiết đơn hàng: sản phẩm, thanh toán, shipper / Modal displaying full order details including items, payment and delivery info */
 export default function OrderDetailModal({ isOpen, onClose, order: initialOrder, orderId, onCancel, onReturn, onAssignShipper }: OrderDetailModalProps) {
   const { token } = useAuth();
   const [order, setOrder] = useState<any>(initialOrder);
   const [loading, setLoading] = useState(!initialOrder && !!orderId);
 
+  /** fetchOrderDetail - Lấy chi tiết đơn hàng từ API tương ứng (admin/shipper/user) / Fetch order detail from the correct API based on current user role */
   const fetchOrderDetail = useCallback(async () => {
     if (!orderId || !token) return;
     setLoading(true);
@@ -62,6 +64,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
 
   if (!isOpen) return null;
 
+  /** getStatusLabel - Chuyển mã trạng thái đơn hàng thành nhãn tiếng Việt / Convert order status code to Vietnamese display label */
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       'pending': 'Chờ xác nhận',
@@ -76,6 +79,7 @@ export default function OrderDetailModal({ isOpen, onClose, order: initialOrder,
     return labels[status] || status;
   };
 
+  /** getStatusColor - Trả về class màu sắc tương ứng với tạng thái đơn hàng / Return color CSS classes based on order status */
   const getStatusColor = (status: string) => {
     if (['delivered'].includes(status)) return 'text-emerald-600 bg-emerald-50';
     if (['cancelled', 'failed'].includes(status)) return 'text-rose-600 bg-rose-50';

@@ -31,6 +31,7 @@ const DestinationIcon = L.divIcon({
 });
 
 // Component to handle Map Bounds and View
+/** MapController - Tự động điều chỉnh view/zoom bản đồ để vừa khựp các điểm */
 function MapController({ points }: { points: [number, number][] }) {
   const map = useMap();
   useEffect(() => {
@@ -58,6 +59,7 @@ type MapProps = {
   destination?: { lat: number; lng: number; address: string };
 };
 
+/** OrderTrackingMap - Bản đồ thời gian thực theo dõi đơn hàng và vị trí shipper */
 export default function OrderTrackingMap({ trackings, destination }: MapProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -65,7 +67,7 @@ export default function OrderTrackingMap({ trackings, destination }: MapProps) {
     setMounted(true);
   }, []);
 
-  // Lọc và format các điểm tọa độ để vẽ Polyline
+  /** routePoints (useMemo) - Lọc và chuẩn hóa các tọa độ GPS để vẽ đường Polyline */
   const routePoints = useMemo(() => {
     return trackings
       .filter(t => t.latitude && t.longitude)
@@ -73,7 +75,7 @@ export default function OrderTrackingMap({ trackings, destination }: MapProps) {
       .reverse(); // Đảo ngược để vẽ từ điểm cũ đến điểm mới
   }, [trackings]);
 
-  // Tất cả các điểm quan trọng để căn chỉnh khung hình (Shipper + Khách hàng)
+  /** allKeyPoints (useMemo) - Tổng hợp tất cả điểm quan trọng (shipper + đích) để căn chỉnh khung bản đồ */
   const allKeyPoints = useMemo(() => {
     const pts: [number, number][] = [];
     if (routePoints.length > 0) {
@@ -99,9 +101,9 @@ export default function OrderTrackingMap({ trackings, destination }: MapProps) {
 
   return (
     <div className="h-[400px] w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white relative z-0">
-      <MapContainer 
-        center={allKeyPoints[0] || [10.762622, 106.660172]} 
-        zoom={15} 
+      <MapContainer
+        center={allKeyPoints[0] || [10.762622, 106.660172]}
+        zoom={15}
         className="h-full w-full"
       >
         <TileLayer
@@ -111,12 +113,12 @@ export default function OrderTrackingMap({ trackings, destination }: MapProps) {
 
         {/* Vẽ đường đi của Shipper */}
         {routePoints.length > 1 && (
-          <Polyline 
-            positions={routePoints} 
-            color="#f97316" 
-            weight={4} 
-            opacity={0.7} 
-            dashArray="10, 10" 
+          <Polyline
+            positions={routePoints}
+            color="#f97316"
+            weight={4}
+            opacity={0.7}
+            dashArray="10, 10"
           />
         )}
 

@@ -39,8 +39,10 @@ interface Customer {
   rank_icon: string;
 }
 
+/** fmt - Định dạng số tiền sang chuỗi VND có đơn vị */
 const fmt = (n: number) => Number(n).toLocaleString("vi-VN") + " ₫";
 
+/** PosPage - Trang bán hàng trực tiếp (POS): quản lý giỏ hàng, áp mã giảm giá, tìm khách hàng thân thiết và in hóa đơn */
 export default function PosPage() {
   const { token, user } = useAuth();
   const searchRef = useRef<HTMLInputElement>(null);
@@ -63,10 +65,10 @@ export default function PosPage() {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   // Discount Code
-  const [discountCode, setDiscountCode]     = useState("");
-  const [discountInput, setDiscountInput]   = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountInput, setDiscountInput] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [discountError, setDiscountError]   = useState("");
+  const [discountError, setDiscountError] = useState("");
   const [applyingDiscount, setApplyingDiscount] = useState(false);
 
   // Payment Calculation
@@ -127,6 +129,7 @@ export default function PosPage() {
   }, [products, searchQuery]);
 
   // ─── Cart Logic ──────────────────────────────────────────────────────────────
+  /** addToCart - Thêm sản phẩm vào giỏ hàng, kiểm tra tồn kho */
   const addToCart = (product: Product) => {
     if (product.stock <= 0) return toast.error("Hết hàng!");
     setCart(prev => {
@@ -139,6 +142,7 @@ export default function PosPage() {
     });
   };
 
+  /** updateQuantity - Cập nhật số lượng mặt hàng trong giỏ, xóa nếu số lượng về 0 */
   const updateQuantity = (variantId: number, qty: number) => {
     if (qty <= 0) return setCart(prev => prev.filter(i => i.variant_id !== variantId));
     const maxStock = products.find(p => p.id === variantId)?.stock || 0;
@@ -147,9 +151,9 @@ export default function PosPage() {
   };
 
   // ─── Math ────────────────────────────────────────────────────────────────────
-  const subtotal    = cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0);
   const totalAmount = Math.max(0, subtotal - discountAmount);
-  const totalItems  = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const customerCash = Number(customerCashStr.replace(/\D/g, '')) || 0;
   const change = customerCash - totalAmount;
 
@@ -169,7 +173,6 @@ export default function PosPage() {
           setShowCustomerDropdown(true);
         }
       } catch {
-        // ignore
       } finally {
         setCustomerSearching(false);
       }
@@ -177,6 +180,7 @@ export default function PosPage() {
     return () => clearTimeout(timer);
   }, [customerQuery, token]);
 
+  /** handleSelectCustomer - Chọn khách hàng từ dropdown tìm kiếm */
   const handleSelectCustomer = (c: Customer) => {
     setSelectedCustomer(c);
     setCustomerQuery("");
@@ -184,6 +188,7 @@ export default function PosPage() {
     setCustomerResults([]);
   };
 
+  /** handleClearCustomer - Xóa khách hàng đã chọn khỏi phiếu */
   const handleClearCustomer = () => {
     setSelectedCustomer(null);
     setCustomerQuery("");
@@ -193,6 +198,7 @@ export default function PosPage() {
   const pointsWillEarn = Math.floor(totalAmount / 100000);
 
   // ─── Apply Discount ──────────────────────────────────────────────────────────
+  /** handleApplyDiscount - Gửi kiểm tra và áp dụng mã giảm giá cho đơn hàng hiện tại */
   const handleApplyDiscount = async () => {
     const code = discountInput.trim().toUpperCase();
     if (!code) return;
@@ -223,6 +229,7 @@ export default function PosPage() {
     }
   };
 
+  /** handleRemoveDiscount - Xóa mã giảm giá đã áp dụng */
   const handleRemoveDiscount = () => {
     setDiscountCode("");
     setDiscountInput("");
@@ -231,6 +238,7 @@ export default function PosPage() {
   };
 
   // ─── Checkout ────────────────────────────────────────────────────────────────
+  /** handleCheckout - Thanh toán POS: tạo đơn hàng, xuất PDF hóa đơn và in */
   const handleCheckout = async () => {
     if (!cart.length) return toast.error("Giỏ hàng trống!");
     if (!branchId) return toast.error("Chọn chi nhánh!");
@@ -319,7 +327,7 @@ export default function PosPage() {
     }
   };
 
-  // Nhanh tiền mặt
+  /** addCash - Cộng nhanh mệnh giá tiền mặt vào ô nhập tiền khách đưa */
   const addCash = (amount: number) => {
     const current = Number(customerCashStr.replace(/\D/g, '')) || 0;
     setCustomerCashStr((current + amount).toString());
@@ -328,10 +336,6 @@ export default function PosPage() {
   return (
     <>
       <div className="h-[calc(100vh-80px)] flex gap-4 overflow-hidden -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8 bg-[#f4f6fb] print:hidden">
-
-        {/* ════════════════════════════════════════════════════
-          BÊN TRÁI: SẢN PHẨM (MÁY POS)
-      ════════════════════════════════════════════════════ */}
         <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden min-w-0">
 
           {/* Header POS */}
@@ -385,7 +389,7 @@ export default function PosPage() {
             </div>
           </div>
 
-          {/* Lưới Sản phẩm (Có thể scroll) */}
+          {/* Lưới Sản phẩm */}
           <div className="flex-1 overflow-y-auto p-6 pt-4 custom-scrollbar">
             {loading ? (
               <div className="h-full flex items-center justify-center">
@@ -453,11 +457,8 @@ export default function PosPage() {
           </div>
         </div>
 
-        {/* ════════════════════════════════════════════════════
-          BÊN PHẢI: HÓA ĐƠN & THANH TOÁN (BILLING)
-      ════════════════════════════════════════════════════ */}
+        {/* Bên phải: Hóa đơn & Thanh toán */}
         <div className="w-[380px] xl:w-[420px] flex flex-col bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden shrink-0">
-
           {/* Header Giỏ */}
           <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between shrink-0">
             <h2 className="text-base font-black text-gray-900 uppercase tracking-widest">Chi tiết đơn</h2>
@@ -465,13 +466,11 @@ export default function PosPage() {
               {totalItems} MÓN
             </span>
           </div>
-
           {/* ── Khu vực Khách hàng thân thiết ── */}
           <div className="px-4 py-3 border-b border-gray-100 bg-indigo-50/40 shrink-0">
             <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-1">
               <User size={11} /> Khách hàng thân thiết
             </p>
-
             {selectedCustomer ? (
               /* Card khách đã chọn */
               <div className="flex items-center gap-3 bg-white border border-indigo-200 rounded-2xl px-3 py-2.5 shadow-sm">
@@ -604,7 +603,6 @@ export default function PosPage() {
 
           {/* Khối tính tiền - Sticky Bottom */}
           <div className="mt-auto bg-white border-t border-gray-100 p-5 shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-
             <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
               <button
                 onClick={() => setPaymentMethod('cash')}
@@ -719,8 +717,8 @@ export default function PosPage() {
                 ))}
                 <button
                   onClick={() => setCustomerCashStr(totalAmount.toString())}
-                className="flex-1 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg py-2 text-xs font-black text-green-700 transition-colors"
-              >
+                  className="flex-1 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg py-2 text-xs font-black text-green-700 transition-colors"
+                >
                   Vừa đủ
                 </button>
               </div>
@@ -796,9 +794,7 @@ export default function PosPage() {
         </div>
       )}
 
-      {/* ════════════════════════════════════════════════════
-          KHU VỰC ẨN: TEMPLATE HÓA ĐƠN IN FORMAT 80mm
-      ════════════════════════════════════════════════════ */}
+      {/* TEMPLATE HÓA ĐƠN IN FORMAT 80mm*/}
       <style>{`
         @media print {
           body {
@@ -827,7 +823,7 @@ export default function PosPage() {
           }
         }
       `}</style>
-      
+
       {(() => {
         const currentBranch = branches.find(b => b.id === branchId);
         return (
@@ -866,35 +862,35 @@ export default function PosPage() {
               ))}
             </div>
 
-        <div className="text-[11px] space-y-1 text-black">
-          <div className="flex justify-between">
-            <span>Tạm tính:</span>
-            <span>{fmt(totalAmount)}</span>
-          </div>
-          {change < 0 ? null : (
-            <>
+            <div className="text-[11px] space-y-1 text-black">
               <div className="flex justify-between">
-                <span>Khách đưa:</span>
-                <span>{fmt(customerCash)}</span>
+                <span>Tạm tính:</span>
+                <span>{fmt(totalAmount)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Tiền thừa:</span>
-                <span>{fmt(Math.abs(change))}</span>
+              {change < 0 ? null : (
+                <>
+                  <div className="flex justify-between">
+                    <span>Khách đưa:</span>
+                    <span>{fmt(customerCash)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Tiền thừa:</span>
+                    <span>{fmt(Math.abs(change))}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between text-[14px] font-black pt-1 border-t border-black border-dashed mt-1">
+                <span>TỔNG CỘNG:</span>
+                <span>{fmt(totalAmount)}</span>
               </div>
-            </>
-          )}
-          <div className="flex justify-between text-[14px] font-black pt-1 border-t border-black border-dashed mt-1">
-            <span>TỔNG CỘNG:</span>
-            <span>{fmt(totalAmount)}</span>
-          </div>
-        </div>
+            </div>
 
-        <div className="text-center mt-6 text-[11px] italic font-semibold text-black">
-          Cảm ơn quý khách và hẹn gặp lại!
-        </div>
-      </div>
-      );
-    })()}
+            <div className="text-center mt-6 text-[11px] italic font-semibold text-black">
+              Cảm ơn quý khách và hẹn gặp lại!
+            </div>
+          </div>
+        );
+      })()}
 
     </>
   );

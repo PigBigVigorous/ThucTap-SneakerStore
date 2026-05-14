@@ -6,6 +6,7 @@ import { authAPI } from "../services/api";
 import toast from "react-hot-toast";
 import Link from "next/link";
 
+/** RegisterPage - Trang đăng ký tài khoản mới và tự động đăng nhập sau khi tạo xong */
 export default function RegisterPage() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,7 @@ export default function RegisterPage() {
     password_confirmation: "",
   });
 
+  /** handleRegister - Xử lý form đăng ký, xác nhận mật khẩu và gửi yêu cầu tạo tài khoản */
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault(); // Ngăn form tự động reload trang
 
