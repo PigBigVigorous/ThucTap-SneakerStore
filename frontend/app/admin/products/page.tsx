@@ -591,7 +591,7 @@ export default function ProductsPage() {
                 {[
                   { id: "info", label: "📝 Thông Tin Cơ Bản" },
                   { id: "variants", label: "🎨 Phân Loại & Biến Thể" },
-                  { id: "gallery", label: "📸 Bộ Sưu Tập (Gallery)" }
+
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -674,89 +674,6 @@ export default function ProductsPage() {
                     TAB 2: BIẾN THỂ & PHÂN LOẠI
                 ──────────────────────────────────────────────────────── */}
                 <div className={activeModalTab === "variants" ? "block animate-[fadeIn_0.3s_ease-out]" : "hidden"}>
-                  <div className="bg-purple-50 text-purple-800 p-4 rounded-xl mb-6 flex items-start gap-3 border border-purple-100">
-                    <span className="text-xl">🗂️</span>
-                    <p className="text-sm font-medium leading-relaxed">Xây dựng danh sách các tuỳ chọn mua hàng. Nút <strong>Tạo màu mới</strong> giúp bạn nhanh chóng thêm mã màu lạ (Kèm theo mã Hex) mà không cần phải rời trang.</p>
-                  </div>
-
-                  {/* Quản lý Biến thể (Màu / Size) */}
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm max-w-5xl mx-auto">
-                    <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-                      <label className="block text-lg font-black text-gray-900 uppercase">Danh sách Option</label>
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setShowAddColorForm(prev => !prev)}
-                          title="Tạo màu mới"
-                          className={`text-sm font-bold flex items-center gap-1.5 px-4 py-2 rounded-xl border-2 transition-all ${showAddColorForm ? "bg-purple-50 text-purple-700 border-purple-400 shadow-sm" : "text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"}`}
-                        >
-                          <Pipette size={16} /> Nhúng mã màu mới
-                        </button>
-                        <button type="button" onClick={() => setVariants([...variants, { color_id: colorOptions[0]?.id || "1", size_id: sizeOptions[0]?.id || "1", price: "2500000", stock: "0", colorway_name: "" }])} className="text-sm font-bold bg-gray-100 text-gray-800 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-200 transition-colors flex items-center gap-1.5 shadow-sm">
-                          <Plus size={16} /> Thêm dòng
-                        </button>
-                      </div>
-                    </div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Ảnh Gallery theo màu sắc</label>
-
-                    {uniqueSelectedColors.map((colorId) => {
-                      const colorOption = colorOptions.find(c => c.id === colorId);
-                      const colorName = colorOption?.name || "Màu chưa rõ";
-                      const hexColor = colorOption?.hex_code || "#cccccc";
-                      const colorData = galleryByColor[colorId] || { files: [], previews: [] };
-                      const existingImages = existingGalleryByColor[colorId] || [];
-
-                      return (
-                        <div key={colorId} className="mb-4 p-4 border border-dashed border-gray-300 rounded-xl bg-gray-50/50">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span
-                              className="shrink-0 w-4 h-4 rounded-full border border-gray-300 shadow-sm"
-                              style={{ backgroundColor: hexColor }}
-                            />
-                            <p className="text-sm font-bold text-gray-800">
-                              📸 Ảnh cho màu: <span className="text-orange-600">{colorName}</span>
-                            </p>
-                          </div>
-                          {editingId && existingImages.length > 0 && (
-                            <div className="mb-3">
-                              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Ảnh hiện có:</p>
-                              <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
-                                {existingImages.map((imgUrl, idx) => (
-                                  <div key={idx} className="relative shrink-0 w-20 h-20 border border-orange-200 rounded-xl overflow-hidden bg-white">
-                                    <img src={imgUrl} alt="" className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-orange-500/10" />
-                                  </div>
-                                ))}
-                              </div>
-                              <p className="text-[10px] text-gray-400 mt-1">Upload ảnh mới bên dưới sẽ thay thế toàn bộ ảnh trên.</p>
-                            </div>
-                          )}
-                          <input
-                            type="file" multiple accept="image/*"
-                            onChange={(e) => handleGalleryByColorChange(colorId, e)}
-                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-black hover:file:bg-gray-300 transition-colors mb-3"
-                          />
-                          {colorData.previews.length > 0 && (
-                            <div>
-                              <p className="text-[11px] font-bold text-green-600 uppercase tracking-wider mb-1.5">Ảnh mới sẽ upload:</p>
-                              <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                                {colorData.previews.map((preview, index) => (
-                                  <div key={index} className="relative shrink-0 w-20 h-20 border-2 border-green-300 rounded-xl overflow-hidden group">
-                                    <img src={preview} alt="New Gallery" className="w-full h-full object-cover" />
-                                    <button type="button" onClick={() => removeColorGalleryImage(colorId, index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <X size={12} />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {uniqueSelectedColors.length === 0 && <p className="text-xs text-gray-400 italic">Vui lòng chọn biến thể màu sắc ở bên dưới trước để tải ảnh lên.</p>}
-                  </div>
-
                   {/* Quản lý Biến thể (Màu / Size) */}
                   <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200">
                     <div className="flex justify-between items-center mb-3">
@@ -879,193 +796,287 @@ export default function ProductsPage() {
                       </div>
                     )}
 
-                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                      {variants.map((v, index) => (
-                        <div key={index} className="grid grid-cols-4 gap-4 bg-gray-50 border border-gray-200 p-4 rounded-xl relative group hover:border-gray-300 hover:shadow-sm transition-all">
-                          {variants.length > 1 && (
-                            <button type="button" title="Xoá dòng hiển thị này" onClick={() => setVariants(variants.filter((_, i) => i !== index))} className="absolute -top-3 -right-3 w-7 h-7 bg-white text-red-500 rounded-full border border-red-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:scale-110 shadow-sm z-10"><X size={14} /></button>
-                          )}
-                          <div className="col-span-1">
-                            <span className="text-xs font-black text-gray-500 uppercase">Màu cơ sở</span>
-                            <div className="flex items-center gap-2 mt-1.5 focus-within:ring-2 focus-within:ring-black rounded-lg transition-shadow">
-                              <span
-                                className="shrink-0 w-6 h-6 rounded-md border border-gray-300 shadow-sm ml-1"
-                                title={colorOptions.find(c => c.id === v.color_id)?.name || ""}
-                                style={{ backgroundColor: colorOptions.find(c => c.id === v.color_id)?.hex_code || "#cccccc" }}
-                              />
-                              <select
-                                value={v.color_id}
-                                onChange={e => { const newV = [...variants]; newV[index].color_id = e.target.value; setVariants(newV); }}
-                                className="w-full text-base font-bold bg-transparent border-0 py-2 pl-1 pr-3 focus:ring-0 text-gray-900 cursor-pointer"
+                    {/* ─── Danh sách phân loại: nhóm theo màu ─── */}
+                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+
+                      {/* Card "Thêm màu mới" */}
+                      <div className="border-2 border-dashed border-gray-200 rounded-2xl p-4 flex items-center justify-between bg-gray-50/60 hover:border-purple-200 transition-colors">
+                        <p className="text-sm font-bold text-gray-500">Chọn một màu để thêm vào sản phẩm</p>
+                        <div className="flex items-center gap-2">
+                          <select
+                            className="text-sm font-bold border border-gray-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-black text-gray-800 cursor-pointer"
+                            onChange={e => {
+                              const colorId = e.target.value;
+                              if (!colorId) return;
+                              // Kiểm tra màu này đã có chưa
+                              const alreadyExists = variants.some(v => v.color_id === colorId);
+                              if (alreadyExists) { toast.error("Màu này đã được thêm rồi!"); return; }
+                              // Thêm 1 biến thể mặc định với màu đó
+                              setVariants(prev => [...prev, {
+                                color_id: colorId,
+                                size_id: sizeOptions[0]?.id || "1",
+                                price: "2500000",
+                                stock: "0",
+                                colorway_name: ""
+                              }]);
+                              e.target.value = "";
+                            }}
+                            defaultValue=""
+                          >
+                            <option value="" disabled>-- Chọn màu --</option>
+                            {colorOptions.map(c => (
+                              <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Một card cho mỗi màu duy nhất */}
+                      {uniqueSelectedColors.map((colorId) => {
+                        const colorOpt = colorOptions.find(c => c.id === colorId);
+                        const colorName = colorOpt?.name || "Màu chưa rõ";
+                        const hexColor = colorOpt?.hex_code || "#cccccc";
+
+                        // Khai báo cho gallery
+                        const colorData = galleryByColor[colorId] || { files: [], previews: [] };
+                        const existingImages = existingGalleryByColor[colorId] || [];
+
+                        // Tất cả biến thể của màu này
+                        const colorVariants = variants.filter(v => v.color_id === colorId);
+
+                        // Colorway name dùng chung cho cả nhóm màu (lấy từ biến thể đầu tiên)
+                        const firstVariant = colorVariants[0];
+                        const colorwayName = (firstVariant as any)?.colorway_name || "";
+
+                        // Hàm cập nhật price/stock theo size_id trong màu này
+                        const updateVariantField = (sizeId: string, field: "price" | "stock", value: string) => {
+                          setVariants(prev => prev.map(v =>
+                            v.color_id === colorId && v.size_id === sizeId
+                              ? { ...v, [field]: value }
+                              : v
+                          ));
+                        };
+
+                        // Hàm toggle bật/tắt một size trong màu này
+                        const toggleSize = (sizeId: string) => {
+                          const exists = colorVariants.some(v => v.size_id === sizeId);
+                          if (exists) {
+                            // Xóa size này (nhưng giữ ít nhất 1 size)
+                            if (colorVariants.length <= 1) { toast.error("Mỗi màu cần ít nhất 1 size!"); return; }
+                            setVariants(prev => prev.filter(v => !(v.color_id === colorId && v.size_id === sizeId)));
+                          } else {
+                            // Thêm size mới vào màu này, kế thừa giá từ size đầu tiên
+                            const basePrice = colorVariants[0]?.price || "2500000";
+                            setVariants(prev => [...prev, {
+                              color_id: colorId,
+                              size_id: sizeId,
+                              price: basePrice,
+                              stock: "0",
+                              colorway_name: colorwayName
+                            }]);
+                          }
+                        };
+
+                        // Hàm xóa toàn bộ màu
+                        const removeColor = () => {
+                          if (uniqueSelectedColors.length <= 1) { toast.error("Sản phẩm cần ít nhất 1 màu!"); return; }
+                          setVariants(prev => prev.filter(v => v.color_id !== colorId));
+                        };
+
+                        // Hàm cập nhật colorway_name cho toàn bộ biến thể của màu này
+                        const updateColorwayName = (value: string) => {
+                          setVariants(prev => prev.map(v =>
+                            v.color_id === colorId ? { ...v, colorway_name: value } as any : v
+                          ));
+                        };
+
+                        return (
+                          <div key={colorId} className="border-2 border-gray-200 rounded-2xl overflow-hidden bg-white hover:border-gray-300 transition-colors shadow-sm">
+                            {/* Header màu */}
+                            <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-100">
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="w-7 h-7 rounded-lg border-2 border-white ring-1 ring-gray-200 shadow-sm shrink-0"
+                                  style={{ backgroundColor: hexColor }}
+                                />
+                                <span className="font-black text-gray-900 text-base">{colorName}</span>
+                                <span className="text-xs font-bold text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
+                                  {colorVariants.length} size
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={removeColor}
+                                className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                                title="Xóa màu này"
                               >
-                                {colorOptions.length === 0 ? <option value="">Đang tải...</option> : colorOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                              </select>
+                                <X size={16} />
+                              </button>
                             </div>
-                          </div>
 
-                          <div className="col-span-1 border-l border-gray-200 pl-4">
-                            <span className="text-xs font-black text-gray-500 uppercase">Size</span>
-                            <select value={v.size_id} onChange={e => { const newV = [...variants]; newV[index].size_id = e.target.value; setVariants(newV); }} className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 py-1 focus:ring-0 text-gray-900 cursor-pointer">
-                              {sizeOptions.length === 0 ? <option value="">Đang tải...</option> : sizeOptions.map(s => <option key={s.id} value={s.id}>US {s.name}</option>)}
-                            </select>
-                          </div>
+                            {/* Bảng size + giá */}
+                            <div className="p-4">
+                              {/* Hàng header bảng */}
+                              <div className="grid grid-cols-12 gap-2 mb-2 px-2">
+                                <div className="col-span-3 text-[10px] font-black text-gray-400 uppercase">Size</div>
+                                <div className="col-span-1 text-[10px] font-black text-gray-400 uppercase text-center">Bật</div>
+                                <div className="col-span-4 text-[10px] font-black text-gray-400 uppercase text-right">Giá bán (₫)</div>
+                                <div className="col-span-4 text-[10px] font-black text-gray-400 uppercase text-right">
+                                  {editingId ? "Kho (khoá)" : "Kho gốc"}
+                                </div>
+                              </div>
 
-                          <div className="col-span-1 border-l border-gray-200 pl-4">
-                            <span className="text-xs font-black text-gray-500 uppercase">Giá bán lẻ</span>
-                            <input type="number" placeholder="2,500,000" value={v.price} onChange={e => { const newV = [...variants]; newV[index].price = e.target.value; setVariants(newV); }} className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 focus:ring-0 text-blue-600 appearance-none" />
-                          </div>
+                              <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
+                                {sizeOptions.map(size => {
+                                  const activeVariant = colorVariants.find(v => v.size_id === size.id);
+                                  const isActive = !!activeVariant;
 
-                          <div className="col-span-1 border-l border-gray-200 pl-4">
-                            <div className="flex justify-between items-end mb-1">
-                              <span className="text-xs font-black text-gray-500 uppercase">{(v as any).id ? "Kho hiện tại" : "Kho gốc"}</span>
-                            </div>
-                            {editingId ? (
-                              <div className="text-base font-black text-gray-400 mt-1.5 pl-1 italic" title="Quản lí kho từ module Kho Hàng">Khoá thay đổi</div>
-                            ) : (
-                              <input
-                                type="number" min="0" placeholder="0"
-                                value={v.stock || "0"}
-                                onChange={e => { const newV = [...variants]; newV[index].stock = e.target.value; setVariants(newV); }}
-                                className="w-full text-base font-black bg-transparent border-0 mt-1.5 p-0 focus:ring-0 text-green-600 appearance-none"
-                              />
-                            )}
-                          </div>
-
-                          {/* COLORWAY NAME - TÊN PHỐI MÀU (trải dài full width) */}
-                          <div className="col-span-4 mt-2 mb-1 px-1">
-                            <div className="flex items-center gap-2 mb-1.5">
-                              <span className="text-xs font-black text-orange-600 uppercase">Phối Màu Kỹ Thuật Số (Tùy Chọn)</span>
-                            </div>
-                            <div className="relative">
-                              <input
-                                type="text"
-                                placeholder="VD: Neutral Grey/Summit White/Infrared 23..."
-                                value={(v as any).colorway_name || ""}
-                                onChange={e => { const newV = [...variants]; (newV[index] as any).colorway_name = e.target.value; setVariants(newV); }}
-                                className="w-full text-sm border-0 border-b-2 border-orange-200 bg-orange-50/20 py-2 focus:ring-0 focus:border-orange-500 placeholder:text-gray-300 transition-colors font-medium text-gray-800"
-                              />
-                            </div>
-                            {(v as any).colorway_name && (
-                              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                                {((v as any).colorway_name as string).split('/').map((part: string, i: number) => {
-                                  if (!part.trim()) return null;
                                   return (
-                                    <span key={i} className="text-[10px] font-black uppercase tracking-wider bg-white border border-gray-200 text-gray-700 px-2 py-1 rounded-md shadow-sm">
-                                      {part.trim()}
-                                    </span>
-                                  )
+                                    <div
+                                      key={size.id}
+                                      className={`grid grid-cols-12 gap-2 items-center px-2 py-2 rounded-xl transition-all ${isActive ? "bg-blue-50 border border-blue-100" : "bg-gray-50 border border-transparent opacity-50"}`}
+                                    >
+                                      {/* Tên size */}
+                                      <div className="col-span-3">
+                                        <span className="text-sm font-black text-gray-800">US {size.name}</span>
+                                      </div>
+
+                                      {/* Checkbox toggle */}
+                                      <div className="col-span-1 flex justify-center">
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleSize(size.id)}
+                                          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isActive ? "bg-blue-600 border-blue-600" : "bg-white border-gray-300 hover:border-blue-400"}`}
+                                        >
+                                          {isActive && <span className="text-white text-[10px] font-black">✓</span>}
+                                        </button>
+                                      </div>
+
+                                      {/* Giá */}
+                                      <div className="col-span-4 flex justify-end">
+                                        {isActive ? (
+                                          <input
+                                            type="number"
+                                            value={activeVariant!.price}
+                                            onChange={e => updateVariantField(size.id, "price", e.target.value)}
+                                            className="w-full text-right text-sm font-black bg-white border border-blue-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-300 focus:border-blue-400 text-blue-700 appearance-none"
+                                            placeholder="2500000"
+                                          />
+                                        ) : (
+                                          <span className="text-sm text-gray-300 font-bold">—</span>
+                                        )}
+                                      </div>
+
+                                      {/* Kho */}
+                                      <div className="col-span-4 flex justify-end">
+                                        {isActive && !editingId ? (
+                                          <input
+                                            type="number"
+                                            min="0"
+                                            value={activeVariant!.stock || "0"}
+                                            onChange={e => updateVariantField(size.id, "stock", e.target.value)}
+                                            className="w-full text-right text-sm font-black bg-white border border-green-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-green-300 text-green-700 appearance-none"
+                                            placeholder="0"
+                                          />
+                                        ) : isActive && editingId ? (
+                                          <span className="text-xs text-gray-400 italic font-bold pr-1">Khoá</span>
+                                        ) : (
+                                          <span className="text-sm text-gray-300 font-bold">—</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
                                 })}
                               </div>
-                            )}
+
+                              {/* Colorway Name cho cả màu */}
+                              <div className="mt-4 pt-3 border-t border-gray-100">
+                                <label className="text-[10px] font-black text-orange-500 uppercase tracking-wider block mb-1.5">
+                                  Phối màu kỹ thuật số (tùy chọn)
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="VD: Neutral Grey/Summit White/Infrared 23..."
+                                  value={colorwayName}
+                                  onChange={e => updateColorwayName(e.target.value)}
+                                  className="w-full text-sm border border-orange-100 bg-orange-50/30 rounded-xl px-3 py-2 focus:ring-2 focus:ring-orange-300 focus:border-orange-300 placeholder:text-gray-300 font-medium text-gray-800 transition-colors"
+                                />
+                                {colorwayName && (
+                                  <div className="mt-2 flex flex-wrap gap-1.5">
+                                    {colorwayName.split('/').map((part: string, i: number) => (
+                                      part.trim() ? (
+                                        <span key={i} className="text-[10px] font-black uppercase tracking-wider bg-white border border-gray-200 text-gray-700 px-2 py-0.5 rounded-md shadow-sm">
+                                          {part.trim()}
+                                        </span>
+                                      ) : null
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Dòng mới: Ảnh theo màu */}
+                            <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span
+                                  className="shrink-0 w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                                  style={{ backgroundColor: hexColor }}
+                                />
+                                <p className="text-sm font-bold text-gray-800">
+                                  📸 Ảnh cho màu: <span className="text-orange-600">{colorName}</span>
+                                </p>
+                              </div>
+                              {editingId && existingImages.length > 0 && (
+                                <div className="mb-3">
+                                  <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Ảnh hiện có:</p>
+                                  <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                                    {existingImages.map((imgUrl, idx) => (
+                                      <div key={idx} className="relative shrink-0 w-20 h-20 border border-orange-200 rounded-xl overflow-hidden bg-white">
+                                        <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-orange-500/10" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <p className="text-[10px] text-gray-400 mt-1">Upload ảnh mới bên dưới sẽ thay thế toàn bộ ảnh trên.</p>
+                                </div>
+                              )}
+                              <input
+                                type="file" multiple accept="image/*"
+                                onChange={(e) => handleGalleryByColorChange(colorId, e)}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-black hover:file:bg-gray-300 transition-colors mb-3"
+                              />
+                              {colorData.previews.length > 0 && (
+                                <div>
+                                  <p className="text-[11px] font-bold text-green-600 uppercase tracking-wider mb-1.5">Ảnh mới sẽ upload:</p>
+                                  <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                                    {colorData.previews.map((preview, index) => (
+                                      <div key={index} className="relative shrink-0 w-20 h-20 border-2 border-green-300 rounded-xl overflow-hidden group">
+                                        <img src={preview} alt="New Gallery" className="w-full h-full object-cover" />
+                                        <button type="button" onClick={() => removeColorGalleryImage(colorId, index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <X size={12} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
+
+                      {uniqueSelectedColors.length === 0 && (
+                        <p className="text-sm text-gray-400 italic text-center py-6">Chọn màu từ dropdown bên trên để bắt đầu.</p>
+                      )}
                     </div>
+
                   </div>
 
-                  <div className="pt-8 flex justify-between items-center max-w-5xl mx-auto">
-                    <button type="button" onClick={() => setActiveModalTab("info")} className="text-gray-500 font-bold hover:text-black transition-colors underline decoration-2 underline-offset-4">
-                      ⬅️ Quay lại thông tin
-                    </button>
-                    <button type="button" onClick={() => setActiveModalTab("gallery")} className="bg-black text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-800 transition-all shadow-md">
-                      Tiếp theo: Bộ Sưu Tập Ảnh ➡️
-                    </button>
-                  </div>
+
                 </div>
 
-                {/* ────────────────────────────────────────────────────────
-                    TAB 3: GALLERY & MEDIA
-                ──────────────────────────────────────────────────────── */}
-                <div className={activeModalTab === "gallery" ? "block animate-[fadeIn_0.3s_ease-out]" : "hidden"}>
-                  <div className="bg-green-50 text-green-800 p-4 rounded-xl mb-6 flex items-start gap-3 border border-green-100">
-                    <span className="text-xl">📸</span>
-                    <p className="text-sm font-medium leading-relaxed">Mỗi góc chụp giúp trải nghiệm mua sắm của Khách hàng hoàn hảo hơn. Tải lên 3-5 ảnh cho mỗi màu sắc ở bên dưới.</p>
-                  </div>
 
-                  <div className="max-w-4xl mx-auto space-y-6">
-                    <label className="block text-lg font-black text-gray-900 border-b border-gray-100 pb-2 mb-4">Tải Ảnh (Group theo màu sắc)</label>
 
-                    {uniqueSelectedColors.map((colorId) => {
-                      const colorOption = colorOptions.find(c => c.id === colorId);
-                      const colorName = colorOption?.name || "Màu gốc";
-                      const hexColor = colorOption?.hex_code || "#cccccc";
-                      const colorData = galleryByColor[colorId] || { files: [], previews: [] };
-                      const existingImages = existingGalleryByColor[colorId] || [];
-
-                      return (
-                        <div key={colorId} className="p-6 border-2 border-dashed border-gray-200 rounded-2xl bg-white hover:border-gray-300 transition-colors">
-                          {/* Header: hex dot + tên màu */}
-                          <div className="flex items-center gap-3 mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100 w-fit">
-                            <span
-                              className="shrink-0 w-6 h-6 rounded-md border-2 border-white ring-1 ring-gray-200 shadow-sm"
-                              style={{ backgroundColor: hexColor }}
-                            />
-                            <p className="text-base font-black text-gray-800 uppercase tracking-wide">
-                              Màu <span className="text-green-700">{colorName}</span>
-                            </p>
-                          </div>
-
-                          {/* Ảnh gallery hiện có (khi đang chỉnh sửa) */}
-                          {editingId && existingImages.length > 0 && (
-                            <div className="mb-5 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                              <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">🖼️ Ảnh cũ đang lưu trữ</p>
-                              <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                                {existingImages.map((imgUrl, idx) => (
-                                  <div key={idx} className="relative shrink-0 w-24 h-24 border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm transition-transform hover:scale-105">
-                                    <img src={imgUrl} alt="" className="w-full h-full object-cover" />
-                                  </div>
-                                ))}
-                              </div>
-                              <p className="text-xs text-orange-500 font-bold mt-3 italic">⚠️ Nếu bạn chọn tải lên hình mới bên dưới, các hình cũ của màu này sẽ bị xóa bỏ.</p>
-                            </div>
-                          )}
-
-                          {/* Upload ảnh mới */}
-                          <div className="relative">
-                            <input
-                              type="file" multiple accept="image/*"
-                              onChange={(e) => handleGalleryByColorChange(colorId, e)}
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-sm"
-                            />
-                            <div className="w-full border-2 border-dashed border-green-200 rounded-xl p-6 flex flex-col items-center justify-center bg-green-50/50 hover:bg-green-50 transition-colors text-green-700">
-                              <Upload className="mb-2 opacity-50" size={24} />
-                              <p className="font-bold">Bấm vào đây duyệt file hoặc kéo thả ảnh</p>
-                            </div>
-                          </div>
-
-                          {/* Preview ảnh mới chọn */}
-                          {colorData.previews.length > 0 && (
-                            <div className="mt-5">
-                              <p className="text-xs font-black text-green-600 uppercase tracking-widest mb-3">✅ Ảnh chờ tải lên</p>
-                              <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                                {colorData.previews.map((preview, index) => (
-                                  <div key={index} className="relative shrink-0 w-28 h-28 border-[3px] border-green-400 rounded-xl overflow-hidden group shadow-sm transition-transform hover:scale-105">
-                                    <img src={preview} alt="New Gallery" className="w-full h-full object-cover" />
-                                    <button type="button" onClick={() => removeColorGalleryImage(colorId, index)} className="absolute top-1.5 right-1.5 bg-white text-red-500 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md hover:bg-red-50 hover:scale-110">
-                                      <X size={14} className="stroke-[3px]" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {uniqueSelectedColors.length === 0 && (
-                      <div className="text-center py-10 bg-gray-50 rounded-2xl border border-gray-200">
-                        <span className="text-4xl block mb-2 opacity-30">🎨</span>
-                        <p className="text-sm font-bold text-gray-500">Chưa có màu sắc nào được chọn. Hãy qua tab Biến Thể để cấu hình.</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-8 flex justify-between items-center max-w-4xl mx-auto">
-                    <button type="button" onClick={() => setActiveModalTab("variants")} className="text-gray-500 font-bold hover:text-black transition-colors underline decoration-2 underline-offset-4">
-                      ⬅️ Thu lại kho biến thể
-                    </button>
-                  </div>
-                </div>
 
               </div>
             </form>

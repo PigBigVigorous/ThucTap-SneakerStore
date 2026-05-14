@@ -22,7 +22,7 @@ class Order extends Model
     'sales_channel_id',
     'branch_id',
     'cashier_id',
-    'payment_method', // ✅ Phương thức thanh toán: cod / vnpay / qr / cash
+    'payment_method', 
     'payment_status',
     'transaction_id',
     'discount_id',

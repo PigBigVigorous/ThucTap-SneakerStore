@@ -131,7 +131,7 @@ export default function ChatbotWidget() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api"}/chatbot`,
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api"}/chatbot/chat`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
