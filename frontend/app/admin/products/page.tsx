@@ -808,10 +808,8 @@ export default function ProductsPage() {
                             onChange={e => {
                               const colorId = e.target.value;
                               if (!colorId) return;
-                              // Kiểm tra màu này đã có chưa
                               const alreadyExists = variants.some(v => v.color_id === colorId);
                               if (alreadyExists) { toast.error("Màu này đã được thêm rồi!"); return; }
-                              // Thêm 1 biến thể mặc định với màu đó
                               setVariants(prev => [...prev, {
                                 color_id: colorId,
                                 size_id: sizeOptions[0]?.id || "1",
@@ -837,18 +835,14 @@ export default function ProductsPage() {
                         const colorName = colorOpt?.name || "Màu chưa rõ";
                         const hexColor = colorOpt?.hex_code || "#cccccc";
 
-                        // Khai báo cho gallery
                         const colorData = galleryByColor[colorId] || { files: [], previews: [] };
                         const existingImages = existingGalleryByColor[colorId] || [];
 
-                        // Tất cả biến thể của màu này
                         const colorVariants = variants.filter(v => v.color_id === colorId);
 
-                        // Colorway name dùng chung cho cả nhóm màu (lấy từ biến thể đầu tiên)
                         const firstVariant = colorVariants[0];
                         const colorwayName = (firstVariant as any)?.colorway_name || "";
 
-                        // Hàm cập nhật price/stock theo size_id trong màu này
                         const updateVariantField = (sizeId: string, field: "price" | "stock", value: string) => {
                           setVariants(prev => prev.map(v =>
                             v.color_id === colorId && v.size_id === sizeId
@@ -877,13 +871,11 @@ export default function ProductsPage() {
                           }
                         };
 
-                        // Hàm xóa toàn bộ màu
                         const removeColor = () => {
                           if (uniqueSelectedColors.length <= 1) { toast.error("Sản phẩm cần ít nhất 1 màu!"); return; }
                           setVariants(prev => prev.filter(v => v.color_id !== colorId));
                         };
 
-                        // Hàm cập nhật colorway_name cho toàn bộ biến thể của màu này
                         const updateColorwayName = (value: string) => {
                           setVariants(prev => prev.map(v =>
                             v.color_id === colorId ? { ...v, colorway_name: value } as any : v

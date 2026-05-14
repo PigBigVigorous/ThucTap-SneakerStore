@@ -323,8 +323,8 @@ export default function InventoryPage() {
                             <td className="px-4 py-4 whitespace-nowrap">
                               <div className="flex flex-col items-center gap-1">
                                 <div className="flex items-center gap-1.5 text-xs">
-                                  <span className="w-3 h-3 rounded-full shadow-inner border border-gray-200 block" style={{ backgroundColor: item.variant?.color?.name === 'Đen' ? '#000' : item.variant?.color?.name === 'Trắng' ? '#fff' : '#ccc' }}></span>
-                                  <span className="font-black text-gray-700">{item.variant?.color?.name}</span>
+                                  <span className="w-3 h-3 rounded-full shadow-inner border border-gray-200 block" style={{ backgroundColor: item.variant?.color?.hex_code || '#ccc' }}></span>
+                                  <span className="font-black text-gray-700">{item.variant?.color?.name || 'N/A'}</span>
                                 </div>
                                 <div className="text-[10px] font-black text-gray-500 border border-gray-200 bg-gray-50 rounded px-1.5 py-0.5 inline-block w-fit">SIZE {item.variant?.size?.name}</div>
                               </div>
