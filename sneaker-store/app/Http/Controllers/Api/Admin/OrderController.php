@@ -170,7 +170,7 @@ class OrderController extends Controller
 
             $revenueByDay = Order::where('status', 'delivered')
                 ->where('created_at', '>=', now()->subDays(7))
-                ->select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total_amount) as total'))
+                ->select(DB::raw('DATE(DATE_ADD(created_at, INTERVAL 7 HOUR)) as date'), DB::raw('SUM(total_amount) as total'))
                 ->groupBy('date')
                 ->orderBy('date', 'asc')
                 ->get();

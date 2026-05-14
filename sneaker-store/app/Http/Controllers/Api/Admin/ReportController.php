@@ -27,16 +27,16 @@ class ReportController extends Controller
 
         switch ($period) {
             case 'year':
-                $groupBy = DB::raw("YEAR(created_at)");
-                $select = DB::raw("YEAR(created_at) as date, SUM(total_amount) as total, COUNT(id) as order_count");
+                $groupBy = DB::raw("YEAR(DATE_ADD(created_at, INTERVAL 7 HOUR))");
+                $select = DB::raw("YEAR(DATE_ADD(created_at, INTERVAL 7 HOUR)) as date, SUM(total_amount) as total, COUNT(id) as order_count");
                 break;
             case 'month':
-                $groupBy = DB::raw("DATE_FORMAT(created_at, '%Y-%m')");
-                $select = DB::raw("DATE_FORMAT(created_at, '%Y-%m') as date, SUM(total_amount) as total, COUNT(id) as order_count");
+                $groupBy = DB::raw("DATE_FORMAT(DATE_ADD(created_at, INTERVAL 7 HOUR), '%Y-%m')");
+                $select = DB::raw("DATE_FORMAT(DATE_ADD(created_at, INTERVAL 7 HOUR), '%Y-%m') as date, SUM(total_amount) as total, COUNT(id) as order_count");
                 break;
             default: // day
-                $groupBy = DB::raw("DATE(created_at)");
-                $select = DB::raw("DATE(created_at) as date, SUM(total_amount) as total, COUNT(id) as order_count");
+                $groupBy = DB::raw("DATE(DATE_ADD(created_at, INTERVAL 7 HOUR))");
+                $select = DB::raw("DATE(DATE_ADD(created_at, INTERVAL 7 HOUR)) as date, SUM(total_amount) as total, COUNT(id) as order_count");
                 $query->where('created_at', '>=', now()->subDays(30)); // Mặc định lấy 30 ngày gần nhất cho biểu đồ ngày
                 break;
         }
