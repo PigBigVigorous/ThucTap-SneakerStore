@@ -48,7 +48,6 @@ class InventoryController extends Controller
         return response()->json(['success' => true, 'message' => 'Lấy danh sách lịch sử kho thành công', 'data' => $transactions]);
     }
 
-    // 🚀 ĐÂY LÀ HÀM IMPORT BỊ THIẾU, TÔI ĐÃ THÊM VÀO GIÚP BẠN
     public function import(InventoryImportRequest $request)
     {
 
@@ -93,7 +92,6 @@ class InventoryController extends Controller
         $search = $request->query('search');
         $brandId = $request->query('brand_id');
         
-        // 🚀 SỬA LỖI UI CRASH: Chỉ lấy tồn kho của những Biến thể CHƯA BỊ XÓA (has('variant'))
         $query = \App\Models\VariantBranchStock::has('variant')->with([
             'variant.product.brand', 
             'variant.color', 

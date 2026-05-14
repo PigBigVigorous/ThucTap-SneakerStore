@@ -16,8 +16,6 @@ class StaffController extends Controller
      */
     public function index()
     {
-        // Lấy tất cả user có role (nhân viên) hoặc trừ khách hàng nếu cần
-        // Ở đây mình lấy tất cả và load roles
         $staff = User::with('roles')
             ->whereHas('roles', function($q) {
                 $q->where('name', '!=', 'customer');

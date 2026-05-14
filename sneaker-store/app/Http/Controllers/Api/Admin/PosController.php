@@ -124,7 +124,7 @@ class PosController extends Controller
                 ->get()
                 ->map(function ($user) {
                     // Tính hạng thành viên dựa trên tổng điểm tích lũy
-                    $totalEarned = \App\Models\PointTransaction::where('user_id', $user->id)
+                    $totalEarned = PointTransaction::where('user_id', $user->id)
                         ->where('type', 'earn')
                         ->sum('amount');
 
@@ -221,7 +221,7 @@ class PosController extends Controller
 
                 // 5. CỘNG ĐIỂM NGAY LẬP TỨC CHO ĐƠN POS
                 if ($order->user_id) {
-                    app(\App\Services\PointService::class)->awardPointsForOrder($order);
+                    app(PointService::class)->awardPointsForOrder($order);
                 }
 
                 // 6. Reload with relationships for response

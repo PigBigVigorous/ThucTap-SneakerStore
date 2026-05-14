@@ -25,8 +25,6 @@ class BranchController extends Controller
 
     public function store(BranchStoreRequest $request)
     {
-
-        // 🚀 BẢO MẬT: Nếu tạo Kho này là Kho Tổng, hãy hạ bệ các Kho Tổng cũ xuống thành Kho Phụ (Chỉ cho phép 1 Kho Tổng)
         if ($request->is_main) {
             Branch::where('is_main', true)->update(['is_main' => false]);
         }
@@ -64,8 +62,6 @@ class BranchController extends Controller
 
     public function update(BranchUpdateRequest $request, Branch $branch)
     {
-
-        // 🚀 BẢO MẬT: Nếu sửa Kho này thành Kho Tổng, hạ bệ các kho khác
         if ($request->has('is_main') && $request->is_main) {
             Branch::where('id', '!=', $branch->id)->update(['is_main' => false]);
         }
@@ -79,14 +75,13 @@ class BranchController extends Controller
 
     public function destroy(Branch $branch)
     {
-        // 🚀 BẢO VỆ CHỐNG THẤT THOÁT TÀI SẢN KẾ TOÁN:
         $hasStock = VariantBranchStock::where('branch_id', $branch->id)->where('stock', '>', 0)->exists();
         
         if ($hasStock) {
             return response()->json([
                 'success' => false,
                 'message' => 'LỖI KẾ TOÁN: Không thể xóa chi nhánh đang còn tồn kho. Vui lòng CHUYỂN KHO toàn bộ hàng hóa sang chi nhánh khác trước khi xóa!'
-            ], 400); // Trả về mã lỗi 400 (Bad Request) để Frontend hiện Toast Đỏ
+            ], 400); 
         }
 
         $branch->delete();

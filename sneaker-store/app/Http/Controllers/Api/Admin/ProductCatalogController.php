@@ -174,42 +174,42 @@ class ProductCatalogController extends Controller
             if (!empty($galleryFiles)) {
                 foreach ($galleryFiles as $colorId => $images) {
                     $validColorId = is_numeric($colorId) ? (int)$colorId : null;
-                    \App\Models\ProductImage::where('product_id', $product->id)->where('color_id', $validColorId)->delete();
+                    ProductImage::where('product_id', $product->id)->where('color_id', $validColorId)->delete();
                     foreach ($images as $index => $image) {
                         $galleryPath = $image->store('products/gallery', 'public');
-                        \App\Models\ProductImage::create(['product_id' => $product->id, 'color_id' => $validColorId, 'image_url' => asset('storage/' . $galleryPath), 'sort_order' => $index]);
+                        ProductImage::create(['product_id' => $product->id, 'color_id' => $validColorId, 'image_url' => asset('storage/' . $galleryPath), 'sort_order' => $index]);
                     }
                 }
             }
 
-            // 🚀 ĐỒNG BỘ TỒN KHO TỰ ĐỘNG KHI CẬP NHẬT BIẾN THỂ
+            // ĐỒNG BỘ TỒN KHO TỰ ĐỘNG KHI CẬP NHẬT BIẾN THỂ
             if ($request->has('variants')) {
                 $variants = json_decode($request->variants, true);
                 $existingVariantIds = $product->variants()->pluck('id')->toArray();
                 $receivedVariantIds = []; 
 
-                $allBranches = \App\Models\Branch::all();
+                $allBranches = Branch::all();
                 $mainBranch = $allBranches->where('is_main', true)->first() ?? $allBranches->first();
                 $now = now();
 
                 foreach ($variants as $v) {
                     if (isset($v['id'])) {
-                        \App\Models\ProductVariant::where('id', $v['id'])->update([
+                        ProductVariant::where('id', $v['id'])->update([
                             'color_id'      => $v['color_id'],
                             'size_id'       => $v['size_id'],
                             'price'         => $v['price'],
-                            'colorway_name' => $v['colorway_name'] ?? null, // 🎨 Cập nhật phối màu
+                            'colorway_name' => $v['colorway_name'] ?? null,
                         ]);
                         $receivedVariantIds[] = $v['id'];
                     } else {
                         // NẾU LÀ BIẾN THỂ MỚI (Ví dụ: Thêm size 42)
-                        $newVariant = \App\Models\ProductVariant::create([
+                        $newVariant = ProductVariant::create([
                             'product_id'   => $product->id,
                             'color_id'     => $v['color_id'],
                             'size_id'      => $v['size_id'],
-                            'sku'          => $v['sku'] ?? strtoupper(\Illuminate\Support\Str::random(8)),
+                            'sku'          => $v['sku'] ?? strtoupper(Str::random(8)),
                             'price'        => $v['price'],
-                            'colorway_name'=> $v['colorway_name'] ?? null, // 🎨 Tên phối màu
+                            'colorway_name'=> $v['colorway_name'] ?? null, 
                         ]);
                         $receivedVariantIds[] = $newVariant->id;
 
@@ -217,16 +217,16 @@ class ProductCatalogController extends Controller
                         $initialStock = isset($v['stock']) ? (int)$v['stock'] : 0;
 
                         foreach ($allBranches as $branch) {
-                            \App\Models\VariantBranchStock::create([
+                            VariantBranchStock::create([
                                 'variant_id' => $newVariant->id, 'branch_id' => $branch->id,
                                 'stock' => ($branch->id === $mainBranch->id) ? $initialStock : 0, 
                             ]);
                         }
 
                         if ($initialStock > 0 && $mainBranch) {
-                            \App\Models\InventoryTransaction::create([
-                                'product_variant_id' => $newVariant->id, // 🛑 SỬA LẠI KEY NÀY
-                                'to_branch_id'       => $mainBranch->id, // 🛑 SỬA LẠI KEY NÀY
+                            InventoryTransaction::create([
+                                'product_variant_id' => $newVariant->id, 
+                                'to_branch_id'       => $mainBranch->id, 
                                 'transaction_type'   => 'IMPORT',
                                 'quantity_change'    => $initialStock,
                                 'note'               => 'Khởi tạo tồn kho ban đầu khi bổ sung Size/Màu'
@@ -237,11 +237,11 @@ class ProductCatalogController extends Controller
 
                 $variantsToDelete = array_diff($existingVariantIds, $receivedVariantIds);
                 if (!empty($variantsToDelete)) {
-                    \App\Models\ProductVariant::whereIn('id', $variantsToDelete)->delete();
+                    ProductVariant::whereIn('id', $variantsToDelete)->delete();
                 }
             }
 
-            \Illuminate\Support\Facades\DB::commit();
+            DB::commit();
             return response()->json([
                 'success' => true,
                 'message' => 'Đã cập nhật sản phẩm thành công.',
@@ -249,8 +249,8 @@ class ProductCatalogController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
-            \Illuminate\Support\Facades\Log::error("Error updating product: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            DB::rollBack();
+            Log::error("Error updating product: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json(['success' => false, 'message' => 'Lỗi khi cập nhật: ' . $e->getMessage()], 500);
         }
     }
@@ -321,7 +321,7 @@ class ProductCatalogController extends Controller
             }
         }
 
-        // Kiểm tra gallery (nested: gallery_images[colorId][])
+        // Kiểm tra gallery 
         $galleryFiles = $request->file('gallery_images');
         if (!empty($galleryFiles)) {
             foreach ($galleryFiles as $colorId => $images) {
@@ -339,6 +339,6 @@ class ProductCatalogController extends Controller
             }
         }
 
-        return null; // Hợp lệ
+        return null; 
     }
 }

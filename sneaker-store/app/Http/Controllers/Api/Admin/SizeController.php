@@ -14,7 +14,6 @@ class SizeController extends Controller
      */
     public function index()
     {
-        // Sắp xếp theo tên số (39, 40, 41...) hoặc chữ (S, M, L...)
         $sizes = Size::orderByRaw('CAST(name AS UNSIGNED), name')->get();
 
         return response()->json([

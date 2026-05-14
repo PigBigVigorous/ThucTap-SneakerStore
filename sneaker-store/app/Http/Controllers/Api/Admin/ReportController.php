@@ -37,8 +37,7 @@ class ReportController extends Controller
             default: // day
                 $groupBy = DB::raw("DATE(DATE_ADD(created_at, INTERVAL 7 HOUR))");
                 $select = DB::raw("DATE(DATE_ADD(created_at, INTERVAL 7 HOUR)) as date, SUM(total_amount) as total, COUNT(id) as order_count");
-                $query->where('created_at', '>=', now()->subDays(30)); // Mặc định lấy 30 ngày gần nhất cho biểu đồ ngày
-                break;
+                $query->where('created_at', '>=', now()->subDays(30)); 
         }
 
         $data = $query->select($select)
@@ -73,7 +72,7 @@ class ReportController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // 1. Heading
+        // Heading
         $headings = [
             'Mã Đơn Hàng', 'Ngày Bán', 'Chi Nhánh', 'Kênh Bán', 
             'Tổng Tiền (VNĐ)', 'Giảm Giá (VNĐ)', 'Phí Ship (VNĐ)', 
@@ -93,7 +92,7 @@ class ReportController extends Controller
         
         $sheet->freezePane('A2');
 
-        // 2. Dữ liệu chính
+        // Dữ liệu chính
         $row = 2;
         foreach ($query->orderBy('created_at', 'desc')->cursor() as $order) {
             $totalAmount = $order->total_amount;
@@ -116,7 +115,7 @@ class ReportController extends Controller
             $row++;
         }
 
-        // 3. Định dạng cột
+        // Định dạng cột
         if ($row > 2) {
             $sheet->getStyle('B2:B' . ($row - 1))->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_DATE_DDMMYYYY);
             $sheet->getStyle('E2:H' . ($row - 1))->getNumberFormat()->setFormatCode('#,##0');
