@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Http\Requests\ProductStoreRequest;
 use App\Http\Requests\ProductUpdateRequest;
+use App\Models\InventoryTransaction;
+use Illuminate\Support\Facades\Log;
 
 class ProductCatalogController extends Controller
 {

@@ -29,7 +29,7 @@ export default function ProductsPage() {
   const [activeModalTab, setActiveModalTab] = useState("info"); // Tab Quản lý Modal
 
   // State Biến thể (Mặc định có 1 dòng)
-  const [variants, setVariants] = useState([
+  const [variants, setVariants] = useState<any[]>([
     { color_id: "1", size_id: "1", price: "2500000", stock: "50", colorway_name: "" }
   ]);
 
@@ -914,7 +914,7 @@ export default function ProductsPage() {
                                 <div className="col-span-1 text-[10px] font-black text-gray-400 uppercase text-center">Bật</div>
                                 <div className="col-span-4 text-[10px] font-black text-gray-400 uppercase text-right">Giá bán (₫)</div>
                                 <div className="col-span-4 text-[10px] font-black text-gray-400 uppercase text-right">
-                                  {editingId ? "Kho (khoá)" : "Kho gốc"}
+                                  {editingId ? "Kho (Chỉ biến thể mới)" : "Kho gốc"}
                                 </div>
                               </div>
 
@@ -961,7 +961,7 @@ export default function ProductsPage() {
 
                                       {/* Kho */}
                                       <div className="col-span-4 flex justify-end">
-                                        {isActive && !editingId ? (
+                                        {isActive && (!editingId || !activeVariant?.id) ? (
                                           <input
                                             type="number"
                                             min="0"
